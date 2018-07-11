@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function clean {
+    function get_size {
+        df -h / | grep / | head -1 | xargs | cut -d' ' -f3
+    }
+
+    _size_before="$(get_size)"
+    _exited="$(docker ps --filter "status=exited" -q)"
+    if [[ -n "$_exited" ]] ; then
+        echo "Cleaning stopped containers"
+        docker rm ${_exited} || true
+    else
+        echo "No stopped container to clean"
+    fi
+
+    _untagged="$(docker images -q -f dangling=true)"
+    if [[ -n "$_untagged" ]] ;then
+        echo "Cleaning untagged images"
+        docker rmi ${_untagged} || true
+    else
+        echo "No untagged image to clean"
+    fi
+    _size_after="$(get_size)"
+    echo "Cleaning got you from ${_size_before} to ${_size_after} disk usage"
+    unset _size_before _size_after _exited _untagged
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin clean [-h]
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    clean
+elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

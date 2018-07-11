@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function run_bash {
+    if "$IS_PROD"; then
+        export PS1="\[\033[38;31m\]$CLUSTER_CODE:$NAMESPACE> \[\033[0m\]"
+    else
+        export PS1="$CLUSTER_CODE:$NAMESPACE> "
+    fi
+    echo Launching bash shell. Press CTRL+D to exit.
+    bash --init-file "$SCRIPT_DIR/bash_profile.bash" "$@"
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin bash [-h]
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    run_bash
+elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

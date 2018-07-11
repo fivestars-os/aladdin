@@ -1,0 +1,21 @@
+{
+    "aladdin": {
+      "repo": "fivestarsos/aladdin",
+      "tag": "1.0.0"
+    },
+    "cluster_aliases": {
+        "DEV": "CLUSTERDEV",
+        "PROD": "CLUSTERPROD"
+    },
+    "git": {
+        "account": "fivestars-os"
+    },
+    "kubernetes": {
+        "label": "app"
+    },
+    "publish": {
+        "aws_profile": "abcdefgh",
+        "docker_ecr_repo": "xxxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/",
+        "s3_helm_chart_bucket": "helm-charts-xxxxxxxxxxxxxx"
+    }
+}

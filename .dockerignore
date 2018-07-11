@@ -1,0 +1,10 @@
+# ignoring files that are windows/mac specific
+scripts/infra_k8s_check_files/*
+scripts/infra_k8s_check
+scripts/dev/*
+.git/
+
+**.idea/
+
+*.pyc
+*.DS_Store

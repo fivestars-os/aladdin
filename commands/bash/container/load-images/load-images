@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function load_images {
+	pushd $HOME/.kube_local/images/$CLUSTER_CODE
+	ls *docker-image | xargs -I % docker load -i %
+	popd
+	echo "all images imported"
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin load-images [-h]
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    load_images
+elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

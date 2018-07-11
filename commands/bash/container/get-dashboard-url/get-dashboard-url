@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function get_dashboard_url {
+    base=$(kubectl cluster-info | grep "Kubernetes master" | cut -d '/' -f3)
+    if [[ $CLUSTER_CODE = "minikube" ]]; then
+        echo $(echo $base | cut -d ':' -f1):30000
+    else
+        user=$(kubectl config view --minify=true | grep username | tr -d ' ' | cut -d : -f2)
+        passwd=$(kubectl config view --minify=true | grep password | tr -d ' ' | cut -d : -f2)
+        base=$(kubectl cluster-info | grep "Kubernetes master" | cut -d '/' -f3)/api/v1/namespaces/kube-system/services/kubernetes-dashboard/proxy/#!/workload?namespace=$NAMESPACE
+        echo https://$user:$passwd@$base
+    fi
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin get-dashboard-url [-h]
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    get_dashboard_url
+elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

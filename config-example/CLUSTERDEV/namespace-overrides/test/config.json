@@ -1,0 +1,6 @@
+{
+    "service_dns_suffix": "exampletest.com",
+    "allowed_namespaces": [
+        "test"
+    ]
+}

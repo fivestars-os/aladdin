@@ -1,0 +1,47 @@
+{
+    "bash": {
+        "help": "Launch bash in the context of aladdin"
+    },
+    "clean": {
+        "help": "Remove stopped containers and unused docker images"
+    },
+    "cluster": {
+        "help": "Manipulate kubernetes clusters"
+    },
+    "config": {
+        "help": "Modify aladdin config"
+    },
+    "create-namespace": {
+        "help": "Create a new kubernetes namespace"
+    },
+    "delete-namespace": {
+        "help": "Clean up helm releases in a namespace before actually deleting the namespace"
+    },
+    "env": {
+        "help": "Set aladdin env variables : $(aladdin env)"
+    },
+    "get-minikube-endpoints": {
+        "help": "Show endpoints for all minikube services"
+    },
+    "get-dashboard-url": {
+        "help": "Show url for cluster dashboard"
+    },    
+    "helm-history": {
+        "help": "Show the history of a helm release"
+    },
+    "host": {
+        "help": "Give instructions to update local /etc/hosts file for minikube ingress compatibility"
+    },
+    "load-images": {
+        "help": "Import local images"
+    },
+    "save-images": {
+        "help": "Export images locally"
+    },
+    "test-local": {
+        "help": "Test aladdin local commands using a test minikube cluster"
+    },
+    "test-remote": {
+        "help": "Test aladdin remote commands on a remote test cluster"
+    }
+}

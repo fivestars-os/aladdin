@@ -1,0 +1,7 @@
+{
+    "cluster_name": "CLUSTERDEV",
+    "root_dns": "clusterdev.exampledev.info",
+    "allowed_namespaces": [
+        "*"
+    ]
+}

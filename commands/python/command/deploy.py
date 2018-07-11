@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+import logging
+import tempfile
+from arg_tools import add_namespace_argument
+from cluster_rules import cluster_rules
+from command import sync_ingress, sync_dns
+from config import load_git_configs
+from helm_rules import HelmRules
+from libs.git import Git
+from libs.k8s.helm import Helm
+from publish_rules import PublishRules
+
+
+def parse_args(sub_parser):
+    subparser = sub_parser.add_parser('deploy',
+                                      help='Start the helm chart in non local environments')
+    subparser.set_defaults(func=deploy_args)
+    add_namespace_argument(subparser)
+    subparser.add_argument('project', help='which project to deploy')
+    subparser.add_argument('git_ref', help='which git hash or tag or branch to deploy')
+    subparser.add_argument('--dry-run', '-d', action='store_true',
+                           help='Run the helm as test and don\'t actually run it')
+    subparser.add_argument('--force', '-f', action='store_true',
+                           help=('Skip git branch verification if check_branch is enabled on the '
+                                 'cluster'))
+    subparser.add_argument('--repo', help=('which git repo to pull from, which should be used if '
+                                           'it differs from chart name'))
+    subparser.add_argument('--set-override-values', default=[], nargs='+',
+                           help=('override values in the values file. Syntax: --set key1=value1 '
+                                 'key2=value2 ...'))
+
+
+def deploy_args(args):
+    deploy(args.project, args.git_ref, args.namespace, args.dry_run, args.force,
+           args.repo, args.set_override_values)
+
+
+def deploy(project, git_ref, namespace, dry_run, force, repo, set_override_values):
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        pr = PublishRules()
+        helm = Helm()
+        cr = cluster_rules(namespace=namespace)
+        helm_path = '{}/{}'.format(tmpdirname, project)
+        hr = HelmRules(cr, project)
+        git_account = load_git_configs()['account']
+        repo = repo or project
+        git_url = f'git@github.com:{git_account}/{repo}.git'
+        git_ref = Git.extract_hash(git_ref, git_url)
+
+        if not force and cr.check_branch and Git.extract_hash(cr.check_branch, git_url) != git_ref:
+            logging.warning(f'You are deploying hash {git_ref} which does not match branch '
+                            '{cr.check_branch} on cluster {cr.cluster_name} for project '
+                            '{project}... exiting')
+            return
+
+        helm.pull_package(project, pr, git_ref, tmpdirname)
+
+        # Values precedence is command < cluster rules < --set-override-values
+        # Deploy command values
+        values = {
+            'deploy.imageTag': git_ref,
+            'service.certificateArn': cr.get_certificate_arn(),
+            'deploy.ecr': pr.docker_registry,
+        }
+        # Update with cluster rule values
+        values.update(cr.values)
+        # Update with --set-override-values
+        value_overrides = {k: v for k, v in (value.split('=') for value in set_override_values)}
+        values.update(value_overrides)
+
+        if dry_run:
+            helm.dry_run(hr, helm_path, cr.cluster_name, namespace, **values)
+        else:
+            helm.start(hr, helm_path, cr.cluster_name, namespace, **values)
+            sync_ingress.sync_ingress(namespace)
+            sync_dns.sync_dns(namespace)

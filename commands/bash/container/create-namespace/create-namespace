@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function create_namespace {
+    kubectl create namespace $1
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin create-namespace [-h] namespace
+
+		positional arguments:
+		  namespace             the namespace you want to create
+          
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+else
+    create_namespace "$1"
+fi

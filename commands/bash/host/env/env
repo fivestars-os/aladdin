@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function env() {
+    echo 'export PATH="$PATH:'"$ALADDIN_DIR"\"
+    echo "# Run this command to configure your shell:"
+    echo "# eval \$($ALADDIN_DIR/aladdin.sh env)"
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin env [-h]
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    env
+elif [[ "$1" == "-h" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

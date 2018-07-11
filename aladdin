@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+bash "$0.sh" "$@"

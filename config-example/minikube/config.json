@@ -1,0 +1,16 @@
+{
+    "is_local": true,
+    "cluster_name": "minikube",
+    "root_dns": "minikube",
+    "allowed_namespaces": [
+        "*"
+    ],
+    "values": {
+        "service.publicServiceType": "NodePort",
+        "deploy.ecr": "",
+        "deploy.imagePullPolicy": "IfNotPresent",
+        "service.certificateArn": "no-certificate-on-minikube"
+    },
+    "cluster_init": [
+    ]
+}

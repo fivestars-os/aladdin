@@ -1,0 +1,225 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function help {
+    cat <<-EOF
+		usage: aladdin [-h] [--cluster CLUSTER] [--namespace NAMESPACE] [--admin]
+		               [--init] [--dev] cluster
+		               {backup,create-at-aws,create-config,delete,export-config,import-config,init,populate,rolling-update-at-aws,update-at-aws,view-config}
+		               ...
+
+		Manage kubernetes clusters
+
+		positional arguments:
+		  {backup,create-at-aws,create-config,delete,export-config,import-config,init,populate,rolling-update-at-aws,update-at-aws,view-config}
+		                        cluster subcommands
+		    backup              export all k8s resources for each namespace to $CLUSTER_CODE/<namespace>.yaml for later repopulation
+		    create-at-aws       create cluster $CLUSTER_CODE from kops configuration
+		    create-config       import kops configuration for cluster $CLUSTER_CODE based on $CLUSTER_CODE environment file
+		    delete              delete cluster $CLUSTER_CODE
+		    export-config       export kops configuration for cluster $CLUSTER_CODE to host machine
+		    import-config       update kops cluster $CLUSTER_CODE state with host machine cluster files
+		    init                deploy all cluster_init projects as specified by your $CLUSTER_CODE config.json file
+		    populate            populate a cluster using the $CLUSTER_CODE/<namespace>.yaml files generated from cluster backup
+		    rolling-update-at-aws
+		                        update cluster configuration by restarting cluster nodes
+		    update-at-aws       update cluster configuration without restarting cluster nodes
+		    view-config         display cluster info and configuration
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+		  --cluster CLUSTER, -c CLUSTER
+		                        cluster dns, defaults to minikube current : [minikube]
+		  --namespace NAMESPACE, -n NAMESPACE
+		                        namespace name, defaults to default current : [default]
+		  --init                force the initialization steps (dl latest docker, aws auth, etc...)
+		  --dev                 mount host's aladdin directory onto aladdin container 
+	EOF
+}
+
+function backup {
+
+    # This script creates a folder called backup in your $CLUSTER_CODE directory in your config folder
+    # This backup folder creates a namespaces.txt file with all the namespace names
+    # It also contains a yaml file for each namespace which has all the k8s resources from the namespace
+    # This can later be used to populate a cluster using "aladdin -c <CLUSTER> populate-cluster"
+
+    if ! "$SKIP_PROMPTS"; then
+        echo "Is the cluster you wish to back up $CLUSTER_CODE? [y/N] "
+        read answer
+        if [[ ! "$answer" =~ ^[Yy]$ ]] ; then
+            echo "Exiting script..."
+            exit 0
+        fi
+    fi
+
+    echo "Creating a directory named backup in your config folder, $CLUSTER_CODE subfolder "
+    sleep 1
+    local backup_folder="$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/backup"
+    mkdir -p "$backup_folder"
+    echo "Getting all namespaces and storing in file called namespaces... "
+    sleep 1
+    kubectl get namespaces -o=name | sed 's@.*/@@' > "$backup_folder/namespaces.txt"
+    echo "Exporting kubernetes resources... "
+    for ns in $(cat "$backup_folder/namespaces.txt")
+    do
+        # we do not export pv or pvc because there's an issue with copying them over in this manner
+        kubectl get -n $ns -o=yaml --export \
+        ingress,configmap,secret,service,deployment,replicaset,statefulset,hpa,cronjob > "$backup_folder/$ns.yaml";
+    done
+    echo "All resouces from cluster $CLUSTER_CODE have been exported to config folder $CLUSTER_CODE/backup subfolder"
+
+}
+
+function create_at_aws {
+    kops update cluster "$CLUSTER_NAME" --yes
+    # now save the config file too. This will prevent issue of missing config file because we never ran aladdin with --init flag
+    kops export kubecfg --name "$CLUSTER_NAME"
+    cp /root/.kube/config "/root/.kube_local/$CLUSTER_NAME.config"
+}
+
+function create_config {
+    local cmd="kops create cluster --cloud=$CLOUD --dns-zone=$DNS_ZONE --master-size=$MASTER_SIZE --node-size=$NODE_SIZE --zones=$ZONES --master-count=$MASTER_COUNT --master-zones=$MASTER_ZONES --node-count=$NODE_COUNT --kubernetes-version=$KUBERNETES_VERSION --authorization=$AUTHORIZATION --admin-access=$ADMIN_ACCESS --cloud-labels=$CLOUD_LABELS $CLUSTER_NAME"
+    [[ ! -z "${VPC:-}" ]] && cmd="$cmd --vpc $VPC"
+    [[ ! -z "${NETWORK_CIDR:-}" ]] && cmd="$cmd --network-cidr $NETWORK_CIDR"
+    [[ ! -z "${IMAGE:-}" ]] && cmd="$cmd --image $IMAGE"
+    aws s3api create-bucket --bucket "$DNS_ZONE"
+    eval "$cmd"
+}
+
+function _confirm {
+    local confirm_char=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 1)
+    read -r -p "${1:-Are you sure?} Enter $confirm_char to confirm: " response
+    if [[ "$response" = "$confirm_char" ]]; then
+        true
+    else
+        false
+    fi
+}
+
+function delete {
+    if "$SKIP_PROMPTS" || _confirm "Do you really want to delete cluster $CLUSTER_CODE?"; then
+        local wait_secs=5
+        echo "Deleting cluster $CLUSTER_CODE, counting down $wait_secs seconds before deleting. Press CTRL-C to exist script and stop deleting cluster"
+        while [ "$wait_secs" -gt 0 ]; do
+            echo -ne "\r$wait_secs\033[0K"
+            sleep 1
+            : $((wait_secs--))
+        done
+        echo
+        kops delete cluster --name=$CLUSTER_NAME --yes
+        echo "cluster deleted"
+    else
+        echo "Not deleting cluster"
+    fi
+}
+
+function export_config {
+    echo "Exporting kops configuration to your config directory $CLUSTER_CODE folder, kops-resources subfolder"
+    mkdir -p "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/kops-resources"
+    kops get cluster --name "$CLUSTER_NAME" -o yaml > "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/kops-resources/cluster_$CLUSTER_CODE.yaml"
+    kops get ig --name "$CLUSTER_NAME" | cut -f1 | grep -v NAME | xargs -i sh -c "kops get ig --name $CLUSTER_NAME {} -o yaml > $ALADDIN_CONFIG_DIR/$CLUSTER_CODE/kops-resources/ig_{}.$CLUSTER_CODE.yaml"
+    echo "Finished exporting kops configuration to your config directory $CLUSTER_CODE folder, kops-resources subfolder"
+}
+
+function import_config {
+    echo "Importing kops configuration from your config directory $CLUSTER_CODE folder, kops-resources subfolder"
+    for file in `ls "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/kops-resources/"`; do
+        kops replace -f "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/kops-resources/$file" --force;
+    done
+    echo "Finished importing kops configuration from your config directory $CLUSTER_CODE folder, kops-resources subfolder"
+}
+
+function init {
+    # Just call the cluster-init python command
+    $PY_MAIN cluster-init
+}
+
+function populate {
+
+    # This script creates all objects from files specified from a cluster backup, which can be obtained
+    # by running "aladdin backup-cluster".
+    # This script pulls from your backup folder in your $CLUSTER_CODE directory in your config directory
+    # It reads the namespaces.txt file and creates all those namepsaces, and then populates those
+    # namespaces with each namespace's yaml files to create all the k8s resources. 
+    # We then call sync-ingress and sync-dns to update the route 53 records and ingress resource if necessary. 
+
+    if ! "$SKIP_PROMPTS"; then
+        echo "Is the cluster you wish to populate $CLUSTER_CODE? [y/N] "
+        read answer
+        if [[ ! "$answer" =~ ^[Yy]$ ]] ; then
+            echo "Exiting script..."
+            exit 0
+        fi
+    fi
+
+    local path_to_resources="$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/backup"
+    if [[ ! -d "$path_to_resources" ]]; then
+        echo "Backup folder $path_to_resources doesn't exist. Please backup your cluster with aladdin before populating"
+        exit 1
+    fi
+
+    echo "Creating each namespace and all the resources for each namespace on the new cluster. "
+    sleep 1
+    for ns in $(cat "$path_to_resources/namespaces.txt")
+    do
+        kubectl create namespace "$ns" || true
+        kubectl apply -f "$path_to_resources/$ns.yaml" || true
+    done
+
+    echo "Sync ingress and dns on each new namespace"
+    sleep 1
+    for ns in $(cat "$path_to_resources/namespaces.txt")
+    do
+        $PY_MAIN sync-ingress --namespace "$ns"
+        $PY_MAIN sync-dns --namespace "$ns"
+    done
+}
+
+function rolling_update_at_aws {
+    local cmd="kops rolling-update cluster --name $CLUSTER_NAME"
+    if "$SKIP_PROMPTS" || _confirm "Rolling update can lead to downtime (bug in kops). Do you really want to continue?"; then
+        echo "starting rolling update of $CLUSTER_CODE at aws"
+        eval "$cmd" "$@"
+        echo "sleeping 5 seconds"
+        sleep 5
+        eval "$CMD" --yes "$@"
+        echo "Finished rolling update of $CLUSTER_CODE at aws"
+    else
+        echo "Not updating cluster"
+    fi
+}
+
+function update_at_aws {
+    echo "starting to update $CLUSTER_CODE at aws"
+    kops update cluster --name "$CLUSTER_NAME"
+    echo "sleeping 5 seconds"
+    sleep 5
+    kops update cluster --name "$CLUSTER_NAME" --yes
+    echo "Finished updating $CLUSTER_CODE at aws"
+}
+
+function view_config {
+    kubectl config view --minify=true
+    kubectl cluster-info
+    kubectl config get-contexts
+}
+
+cmd=${1:-'-h'}
+case $cmd in
+    -h|--help)
+        help
+        exit 0
+        ;;
+    backup|create-at-aws|create-config|delete|export-config|import-config|init|populate|rolling-update-at-aws|update-at-aws|view-config)
+        shift ||:
+        ;;
+
+    *)
+        echo >&2 "Unrecognized subcommand for aladdin cluster: $cmd"
+        exit 1
+        ;;
+esac
+
+# Replace cmd dashes with underscores to convert from command line function to bash function
+${cmd//-/_} "$@"

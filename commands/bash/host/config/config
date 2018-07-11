@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function config() {
+    local subcommand="$1"
+    shift
+    local config_dir="$HOME/.aladdin/config"
+    local config_path="$HOME/.aladdin/config/config.json"
+    if [ ! -f "$config_path" ]; then
+        mkdir -p "$config_dir"
+        echo '{}' > "$config_path"
+    fi
+    case "$subcommand" in
+        get)
+            result="$(jq -r ".$1" "$config_path")"
+            if [[ ! "$result" == null ]]; then
+                echo $result
+            fi
+        ;;
+        set)
+            jq -c --arg key "$1" --arg val "$2" '. + { ($key): $val }' "$config_path" > "tmp.$$.json" && mv "tmp.$$.json" "$config_path"
+        ;;
+        view)
+            cat "$config_path"
+        ;;
+        unset)
+            jq -c "del(.$1)" "$config_path" > "tmp.$$.json" && mv "tmp.$$.json" "$config_path"
+        ;;
+        *)
+            echo "unknown subcommand $subcommand for aladdin config command"
+            exit 1
+        ;;
+    esac
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin config [-h] SUBCOMMAND
+
+		Available Subcommands:
+		  get         Get the value of CONFIG_NAME
+		  set         Set the value of CONFIG_NAME to CONFIG_VALUE
+		  view        See all set configs
+		  unset       Unset value of CONFIG_NAME
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 || "$1" == "-h" ]]; then
+    help
+else
+    config "$@"
+fi

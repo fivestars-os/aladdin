@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function host {
+    cat <<-EOF
+		# Open your /etc/hosts file:
+		# On windows :
+		#  - ipconfig /flushdns
+		#  - cygstart --action=runas vim /cygdrive/c/Windows/System32/drivers/etc/hosts
+		# On mac/linux :
+		# - sudo vim /etc/hosts
+		# and add this:
+		$MINIKUBE_IP minikube
+	EOF
+    kubectl get ingress ingress -o=json 2>/dev/null | jq '.spec.rules[]?.host' --raw-output | grep -v '^$' | xargs -I % echo "$MINIKUBE_IP %"
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin host [-h]
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    host
+elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

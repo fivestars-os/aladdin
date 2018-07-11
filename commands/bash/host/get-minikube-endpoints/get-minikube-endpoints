@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function get_minikube_endpoints() {
+    minikube service list
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin get-minikube-endpoints [-h]
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    get_minikube_endpoints
+elif [[ "$1" == "-h" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

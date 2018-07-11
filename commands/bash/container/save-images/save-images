@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function save_images {
+	rm -rf $HOME/.kube_local/images/$CLUSTER_CODE
+	mkdir -p $HOME/.kube_local/images/$CLUSTER_CODE
+	pushd $HOME/.kube_local/images/$CLUSTER_CODE
+	docker images --format '{{.Repository}}:{{.Tag}}' | grep -v "gcr.io/" | grep -v "<none>" | grep -v aladdin | xargs docker save -o $RANDOM.docker-image
+	popd
+	echo "all images exported"
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin save-images [-h]
+
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    save_images
+elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

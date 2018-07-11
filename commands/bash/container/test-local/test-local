@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+ALADDIN_TEST_GITHUB_URL="git@github.com:fivestars-os/aladdin-test.git"
+ALADDIN_TEST_GITHUB_TAG="v1.0.0"
+TEST_LOCAL_DIR=$(dirname $0)
+
+function test_local {
+    {
+        local tmp_dir=$(mktemp -d)j
+        git clone "$ALADDIN_TEST_GITHUB_URL" "$tmp_dir"
+        pushd "$tmp_dir"
+        git checkout "$ALADDIN_TEST_GITHUB_TAG"
+    } &> /dev/null
+    bats "$TEST_LOCAL_DIR/test-build.bats"
+    bats "$TEST_LOCAL_DIR/test-start.bats"
+    bats "$TEST_LOCAL_DIR/test-restart.bats"
+    bats "$TEST_LOCAL_DIR/test-cmd.bats"
+    bats "$TEST_LOCAL_DIR/test-environment.bats"
+    bats "$TEST_LOCAL_DIR/test-refresh.bats"
+    bats "$TEST_LOCAL_DIR/test-stop.bats"
+    {
+        popd
+        rm -rf "$tmp_dir"
+    } &> /dev/null
+}
+
+function help {
+    cat <<-EOF
+		usage: aladdin test-local [-h]
+          
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 ]]; then
+    if $IS_LOCAL && $IS_TESTING; then
+        test_local
+    else
+        echo >&2 "aladdin test-local should only be called on a local testing minikube cluster"
+    fi
+elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    help
+else
+    echo >&2 "aladdin: error: unrecognized arguments: $1"
+    exit 1
+fi

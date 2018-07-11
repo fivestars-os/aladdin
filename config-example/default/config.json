@@ -1,0 +1,15 @@
+{
+    "aws_profile": "abcdefgh",
+    "values": {
+        "service.publicServiceType": "LoadBalancer",
+        "service.privateServiceType": "ClusterIP",
+        "deploy.imagePullPolicy": "Always"
+    },
+    "allowed_namespaces": [
+        "default", "kube-system"
+    ],
+    "cluster_init": [
+        {"project": "dashboard", "ref": "v1.0.0", "namespace": "kube-system"}
+    ],
+    "dual_dns_prefix_annotation_name": "dns-name"
+}
