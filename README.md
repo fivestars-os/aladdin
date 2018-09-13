@@ -33,7 +33,7 @@ The container component is responsible for
 
 To set up, just clone the Aladdin GitHub repository to get started:
 
-    $ git clone git@github.com/fivestars-os/aladdin.git
+    $ git clone git@github.com:fivestars-os/aladdin.git
     $ cd aladdin
     $ ./scripts/infra_k8s_check.sh
 
