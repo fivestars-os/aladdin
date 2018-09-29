@@ -48,9 +48,9 @@ def deploy(project, git_ref, namespace, dry_run, force, repo, set_override_value
         git_ref = Git.extract_hash(git_ref, git_url)
 
         if not force and cr.check_branch and Git.extract_hash(cr.check_branch, git_url) != git_ref:
-            logging.warning(f'You are deploying hash {git_ref} which does not match branch '
-                            '{cr.check_branch} on cluster {cr.cluster_name} for project '
-                            '{project}... exiting')
+            logging.error(f'You are deploying hash {git_ref} which does not match branch '
+                          f'{cr.check_branch} on cluster {cr.cluster_name} for project '
+                          f'{project}... exiting')
             return
 
         helm.pull_package(project, pr, git_ref, tmpdirname)
