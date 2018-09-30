@@ -88,9 +88,11 @@ function check_or_start_minikube() {
     if ! minikube status | grep Running &> /dev/null; then
         echo "Starting minikube..."
         minikube start --memory 4096 &> /dev/null
-        if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo true || echo false")"; then
+        # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
+        if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
             echo "Installing NFS mounts from host..."
             scripts/install_nfs_mounts.sh
+            echo "NFS mounts installed"
         fi
         echo "Minikube started"
     fi
