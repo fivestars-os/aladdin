@@ -54,7 +54,7 @@ function check_cluster_alias() {
 }
 
 function check_and_handle_init() {
-    # Check if we need to force initialization 
+    # Check if we need to force initialization
     local last_launched_file init_every current_time previous_run
     last_launched_file="$HOME/.infra/last_checked_${NAMESPACE}_${CLUSTER_CODE}"
     init_every=3600
@@ -85,9 +85,13 @@ function check_and_handle_init() {
 
 # Start minikube if we need to
 function check_or_start_minikube() {
-    if ! (  minikube status | grep Running &> /dev/null ); then
-        echo "Starting minikube... (~75 seconds)"
+    if ! minikube status | grep Running &> /dev/null; then
+        echo "Starting minikube..."
         minikube start --memory 4096 &> /dev/null
+        if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo true || echo false")"; then
+            echo "Installing NFS mounts from host..."
+            scripts/install_nfs_mounts.sh
+        fi
         echo "Minikube started"
     fi
 }

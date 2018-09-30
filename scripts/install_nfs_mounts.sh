@@ -8,12 +8,18 @@ sudo systemctl start nfs-client.target
 sudo mkdir -p /Users
 sudo busybox umount /Users 2>/dev/null
 sudo busybox mount -t nfs -o tcp,rw,hard,noacl,async,nolock 192.168.99.1:/Users /Users
-
-# Replace the current Cygwin vboxfs mount for now, since I think pathnorm expects to find things here
-sudo mkdir -p /c/Users
-sudo busybox umount /c/Users 2>/dev/null
-sudo busybox mount -t nfs -o tcp,rw,hard,noacl,async,nolock 192.168.99.1:/Users /c/Users
 EOF
+
+if [[ "$OSTYPE" == "cygwin" ]]; then
+	# Replace the current Cygwin vboxfs mount for now, since I think pathnorm expects to find things here
+    read -r -d '' bootlocal <<-EOF ||:
+	$bootlocal
+
+	sudo mkdir -p /c/Users
+	sudo busybox umount /c/Users 2>/dev/null
+	sudo busybox mount -t nfs -o tcp,rw,hard,noacl,async,nolock 192.168.99.1:/Users /c/Users
+	EOF
+fi
 
 echo -e "\\nInstalling persistent start-up script: /var/lib/boot2docker/bootlocal.sh"
 minikube ssh -- "echo \"${bootlocal}\" | sudo tee /var/lib/boot2docker/bootlocal.sh >/dev/null"
@@ -29,5 +35,7 @@ minikube ssh -- "mount | grep '/Users'"
 echo -e "\\nTesting directories"
 echo "== /Users ================="
 minikube ssh -- "ls -al /Users"
-echo -e "\\n== /c/Users ================="
-minikube ssh -- "ls -al /c/Users"
+if [[ "$OSTYPE" == "cygwin" ]]; then
+    echo -e "\\n== /c/Users ================="
+    minikube ssh -- "ls -al /c/Users"
+fi
