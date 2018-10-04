@@ -2,14 +2,14 @@
 
 case "$OSTYPE" in
     cygwin*)
-		export_dir="/cygdrive/c/Users"
-		mount_dir="/c/Users"
-		;;
+        export_dir="/cygdrive/c/Users"
+        mount_dir="/c/Users"
+        ;;
 
-	*)
-		export_dir="/Users"
-		mount_dir="/Users"
-		;;
+    *)
+        export_dir="/Users"
+        mount_dir="/Users"
+        ;;
 esac
 
 read -r -d '' bootlocal <<EOF ||:
