@@ -23,6 +23,9 @@ def parse_args(sub_parser):
     subparser.add_argument('--force', '-f', action='store_true',
                            help=('Skip git branch verification if check_branch is enabled on the '
                                  'cluster'))
+    subparser.add_argument('--force-helm', action='store_true',
+                           help=('Have helm force resource update through delete/recreate if '
+                                 'needed'))
     subparser.add_argument('--repo', help=('which git repo to pull from, which should be used if '
                                            'it differs from chart name'))
     subparser.add_argument('--set-override-values', default=[], nargs='+',
@@ -31,11 +34,13 @@ def parse_args(sub_parser):
 
 
 def deploy_args(args):
-    deploy(args.project, args.git_ref, args.namespace, args.dry_run, args.force,
+    deploy(args.project, args.git_ref, args.namespace, args.dry_run, args.force, args.force_helm,
            args.repo, args.set_override_values)
 
 
-def deploy(project, git_ref, namespace, dry_run, force, repo, set_override_values):
+def deploy(project, git_ref, namespace, dry_run=None, force=None, force_helm=None, repo=None, set_override_values=None):
+    if set_override_values is None:
+        set_override_values = []
     with tempfile.TemporaryDirectory() as tmpdirname:
         pr = PublishRules()
         helm = Helm()
@@ -71,6 +76,6 @@ def deploy(project, git_ref, namespace, dry_run, force, repo, set_override_value
         if dry_run:
             helm.dry_run(hr, helm_path, cr.cluster_name, namespace, **values)
         else:
-            helm.start(hr, helm_path, cr.cluster_name, namespace, **values)
+            helm.start(hr, helm_path, cr.cluster_name, namespace, force_helm, **values)
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)

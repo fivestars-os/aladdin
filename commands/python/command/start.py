@@ -15,16 +15,19 @@ def parse_args(sub_parser):
                            help='Run the helm as test and don\'t actually run it')
     subparser.add_argument('--with-mount', '-m', action='store_true',
                            help='Mount user\'s host\'s project repo onto container')
+    subparser.add_argument('--force-helm', action='store_true',
+                           help=('Have helm force resource update through delete/recreate if '
+                                 'needed'))
     subparser.add_argument('--set-override-values', default=[], nargs='+',
                            help=('override values in the values file. Syntax: --set key1=value1 '
                                  'key2=value2 ...'))
 
 
 def start_args(args):
-    start(args.namespace, args.dry_run, args.with_mount, args.set_override_values)
+    start(args.namespace, args.dry_run, args.with_mount, args.force_helm, args.set_override_values)
 
 
-def start(namespace, dry_run, with_mount, set_override_values=None):
+def start(namespace, dry_run=False, with_mount=False, force_helm=False, set_override_values=None):
     if set_override_values is None:
         set_override_values = []
     pc = ProjectConf()
@@ -49,6 +52,6 @@ def start(namespace, dry_run, with_mount, set_override_values=None):
     if dry_run:
         helm.dry_run(hr, pc.helm_path, cr.cluster_name, namespace, **values)
     else:
-        helm.start(hr, pc.helm_path, cr.cluster_name, namespace, **values)
+        helm.start(hr, pc.helm_path, cr.cluster_name, namespace, force_helm, **values)
         sync_ingress.sync_ingress(namespace)
         sync_dns.sync_dns(namespace)
