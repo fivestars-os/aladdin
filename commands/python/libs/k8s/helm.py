@@ -117,9 +117,12 @@ class Helm(object):
         command = ['helm', 'rollback', release_name, str(revision)]
         subprocess.run(command, check=True)
 
-    def start(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
+    def start(self, helm_rules, chart_path, cluster_name, namespace, force=False, helm_args=None,
+        **values):
         if helm_args is None:
             helm_args = []
+        if force:
+            helm_args.append("--force")
         return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
 
     def dry_run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):

@@ -11,6 +11,8 @@ optional arguments:
                         [default]
   --dry-run, -d         Run the helm as test and don't actually run it
   --with-mount, -m      Mount user's host's project repo onto container
+  --force-helm          Have helm force resource update through
+                        delete/recreate if needed
   --set-override-values SET_OVERRIDE_VALUES [SET_OVERRIDE_VALUES ...]
                         override values in the values file. Syntax: --set
                         key1=value1 key2=value2 ...
