@@ -54,7 +54,7 @@ function check_cluster_alias() {
 }
 
 function check_and_handle_init() {
-    # Check if we need to force initialization 
+    # Check if we need to force initialization
     local last_launched_file init_every current_time previous_run
     last_launched_file="$HOME/.infra/last_checked_${NAMESPACE}_${CLUSTER_CODE}"
     init_every=3600
@@ -176,12 +176,12 @@ function handle_ostypes() {
         ;;
         win*|bsd*|solaris*) # Windows
             echo "Not sure how to launch docker here. Exiting ..."
-            exit 1
+            return 1
         ;;
         *)
             echo "unknown OS: $OSTYPE"
             echo "Not sure how to launch docker here. Exiting ..."
-            exit 1
+            return 1
         ;;
     esac
 }
