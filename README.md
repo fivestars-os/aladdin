@@ -2,7 +2,7 @@
 
 ## What is Aladdin?
 
-Inspired by the Genie of the Lamp, Aladdin is a command line tool built by Fivestars to simplify kubernetes operations for clusters management and application development. We have done this by combining several command line tools including kops, minikube, docker, kubectl, helm, awscli, and git. 
+Inspired by the Genie of the Lamp, Aladdin is a command line tool built by Fivestars to simplify kubernetes operations for clusters management and application development. We have done this by combining several command line tools including kops, minikube, docker, kubectl, helm, awscli, and git.
 
 Use aladdin to:
 - Create and manage an aws kubernetes cluster
@@ -11,15 +11,15 @@ Use aladdin to:
 - Run operation-type commands against your application (e.g. putting your application into maintenance mode)
 
 ## How does Aladdin work?
-Aladdin has two main components. One component runs on your host machine, and one component runs in a docker container, started by the first component. 
+Aladdin has two main components. One component runs on your host machine, and one component runs in a docker container, started by the first component.
 
 The host component is responsible for:
 - Parsing command line options
 - Running any commands to be executed on the host machine
-- Check and warn about any missing dependencies, or installing the dependency in ~/.aladdin/bin if possible
-- Pulling the aladdin image
+- Checking and warning about any missing dependencies or installing the dependency in `~/.aladdin/bin` if possible
 - Starting minikube
-- Running the aladdin docker container (the container component)
+- Pulling the aladdin image
+- Running the aladdin docker container (the container component) within minikube
 
 The container component is responsible for
 - Running commands to manage your aws kubernetes cluster
@@ -35,23 +35,53 @@ To set up, just clone the Aladdin GitHub repository to get started:
 
     $ git clone git@github.com:fivestars-os/aladdin.git
     $ cd aladdin
-    $ ./scripts/infra_k8s_check.sh
+    $ scripts/infra_k8s_check.sh
 
-The `infra_k8s_check.sh` script checks to see if all of aladdin's dependencies are installed. Depending on the dependency, it will warn if it is missing, or install it in ~/.aladdin/bin if possible. This script is also run every time you run the aladdin.
+The `infra_k8s_check.sh` script checks to see if all of aladdin's dependencies are installed. Depending on the dependency, it will warn if it is missing or install it in `~/.aladdin/bin` if possible. This script is also run every time you run aladdin.
 
 You may want to add aladdin to your path:
 
-    $ eval $(./aladdin.sh env) 
-    
+    $ eval $(./aladdin.sh env)
+
 You may also want to add `~/.aladdin/bin` to your path:
 
     $ export PATH=$PATH:~/.aladdin/bin
 
 You can add these two commands to your profile file if desired.
 
-You will now need to [create your aladdin configuration](./docs/create_aladdin_configuration.md), and link that to aladdin. 
+You will now need to [create your aladdin configuration](./docs/create_aladdin_configuration.md), and link that to aladdin.
 
     $ aladdin config set config_dir /path/to/aladdin/configuration
+
+### NFS mounts
+
+Aladdin uses minikube for local development which is a VirtualBox-based VM. Internally it mounts your `/Users` (or `/cygdrive/c/Users` for Cygwin users) directory to the root of the minikube filesystem. We have discovered that the `vboxsf` mounts are not as performant as NFS mounts and furthermore are not as reliable when it comes to detecting file changes made from the host. To address this, we replace the `vboxsf` mounts within minikube with NFS mounts. However, this requires a bit of manual setup on the host machine before it will take effect.
+
+#### NFS Host Setup
+
+1. Install an NFS service on your host
+    1. **macOS** You should already have it available.
+    1. **Windows** You should install Cygwin and the `unfsd` package
+        * Take care when configuring the `unfsd` package as it can inadvertently remove login capabilities for your active user account.
+        * Be sure to add firewall exceptions for the installed services (/usr/sbin/unfsd & /usr/sbin/rpcbind).
+1. Add entries to your `/etc/hosts` file
+    1. **macOS**
+    ```
+    echo "/Users -alldirs -mapall="$(id -u)":"$(id -g)" $(minikube ip)" | sudo tee -a /etc/exports
+    ```
+    1. **Windows**
+    ```
+    # Ensure you have a line for "minikube" in your /etc/hosts file.
+    cat /etc/hosts
+
+    # If not, add it when you get minikube up and running.
+    echo "$(minikube ip) minikube" >> /etc/hosts
+
+    # Export this /Users directory as an NFS share.
+    echo "/cygdrive/c/Users    minikube(rw,all_squash,anonuid=$(id -u),anongid=$(id -g))" >> /etc/exports
+
+    # Restart the unfsd service through the Windows Service GUI now.
+    ```
 
 ## Creating and managing an aws kubernetes cluster
 This is all encapsulated in the [aladdin cluster command](./docs/cluster_cmd.md)
@@ -109,7 +139,7 @@ We have several aladdin commands used for development and deployment. Note that 
 - For a complete list of aladdin commands, run `aladdin -h`.
 
 ## Optional arguments to aladdin
-- `-h/--help` show help. 
+- `-h/--help` show help.
 - `-c/--cluster` which cluster to connect to, defaults to `minikube`.
 - `-n/--namespace` which namespace to connect to, defaults to `default`.
 - `--init` force initialization logic (i.e. pull latest aladdin image, test aws config, initialize helm, etc...). This is forced every hour for each cluster/namespace combo.
@@ -118,7 +148,7 @@ We have several aladdin commands used for development and deployment. Note that 
 - `--non-terminal` run aladdin container without tty.
 
 ## Running several aladdin commands in the same cluster/namespace combo
-Aladdin supports running several commands in the same cluster/namespace combo without having to "reinitialize" aladdin. To do this, go into `aladdin bash`. Then all the container commands will be aliased to be run without prefixing aladdin. 
+Aladdin supports running several commands in the same cluster/namespace combo without having to "reinitialize" aladdin. To do this, go into `aladdin bash`. Then all the container commands will be aliased to be run without prefixing aladdin.
 Example:
 ```
 $ aladdin bash
@@ -197,14 +227,14 @@ Aladdin supports an ingress per namespace feature. This is off by default. We re
         "ingress_name": "ingress"
     }
 ```
-The "namespace_init" field tells aladdin to install the ingress-nginx project on namespace creation. This will be needed on remote clusters, but not on minikube, since we enable the ingress minikube addon. 
+The "namespace_init" field tells aladdin to install the ingress-nginx project on namespace creation. This will be needed on remote clusters, but not on minikube, since we enable the ingress minikube addon.
 The "ingress_info" field tells aladdin how to sync your ingress. Services installed on a cluster with this feature will want to have their service type set to `NodePort` rather than `LoadBalancer`. This is most easily done by setting it in the values field in your cluster's config.json file, i.e. adding this:
 ```
     "values": {
         "service.publicServiceType": "NodePort",
     }
 ```
-and then referencing `{{ service.publicServiceType }}` in your service yaml file. 
+and then referencing `{{ service.publicServiceType }}` in your service yaml file.
 
 ## Troubleshooting
-[Here](./docs/troubleshooting.md) is a list of common issues and their solutions. 
+[Here](./docs/troubleshooting.md) is a list of common issues and their solutions.
