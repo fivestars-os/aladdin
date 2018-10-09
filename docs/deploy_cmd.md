@@ -18,6 +18,8 @@ optional arguments:
   --dry-run, -d         Run the helm as test and don't actually run it
   --force, -f           Skip git branch verification if check_branch is
                         enabled on the cluster
+  --force-helm          Have helm force resource update through
+                        delete/recreate if needed
   --repo REPO           which git repo to pull from, which should be used if
                         it differs from chart name
   --set-override-values SET_OVERRIDE_VALUES [SET_OVERRIDE_VALUES ...]
