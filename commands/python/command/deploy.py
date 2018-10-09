@@ -38,7 +38,7 @@ def deploy_args(args):
            args.repo, args.set_override_values)
 
 
-def deploy(project, git_ref, namespace, dry_run=None, force=None, force_helm=None, repo=None, set_override_values=None):
+def deploy(project, git_ref, namespace, dry_run=False, force=False, force_helm=False, repo=None, set_override_values=None):
     if set_override_values is None:
         set_override_values = []
     with tempfile.TemporaryDirectory() as tmpdirname:
