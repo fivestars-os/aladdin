@@ -1,7 +1,6 @@
 FROM alpine:latest
 
-RUN apk -Uuv \
-    add \
+RUN apk add --no-cache \
     bash \
     bash-completion \
     bats \
@@ -14,8 +13,7 @@ RUN apk -Uuv \
     openssh-client \
     python3 \
     ncurses \
-    vim \
-	&& rm /var/cache/apk/*
+    vim
 
 WORKDIR /root/aladdin
 COPY ./commands/python/requirements.txt ./commands/python/requirements.txt
