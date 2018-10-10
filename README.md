@@ -64,7 +64,7 @@ Aladdin uses minikube for local development which is a VirtualBox-based VM. Inte
     1. **Windows** You should install Cygwin and the `unfsd` package
         * Take care when configuring the `unfsd` package as it can inadvertently remove login capabilities for your active user account.
         * Be sure to add firewall exceptions for the installed services (/usr/sbin/unfsd & /usr/sbin/rpcbind).
-1. Add entries to your `/etc/hosts` file
+1. Add entries to your `/etc/exports` file
     1. **macOS**
     ```
     echo "/Users -alldirs -mapall="$(id -u)":"$(id -g)" $(minikube ip)" | sudo tee -a /etc/exports
