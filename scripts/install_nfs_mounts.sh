@@ -5,7 +5,10 @@ case "$OSTYPE" in
         export_dir="/cygdrive/c/Users"
         mount_dir="/c/Users"
         ;;
-
+    linux*)
+        export_dir="/home"
+        mount_dir="/home"
+        ;;
     *)
         export_dir="/Users"
         mount_dir="/Users"
