@@ -266,11 +266,11 @@ while [[ $# -gt 0 ]]; do
             NAMESPACE="$2"
             shift # past argument
         ;;
-        -i|--image)
+        --image)
             IMAGE="$2"
             shift # past argument
         ;;
-        --init)
+        -i|--init)
             INIT=true
         ;;
         --dev)
