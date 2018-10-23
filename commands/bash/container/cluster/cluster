@@ -183,7 +183,7 @@ function rolling_update_at_aws {
         eval "$cmd" "$@"
         echo "sleeping 5 seconds"
         sleep 5
-        eval "$CMD" --yes "$@"
+        eval "$cmd" --yes "$@"
         echo "Finished rolling update of $CLUSTER_CODE at aws"
     else
         echo "Not updating cluster"
