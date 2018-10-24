@@ -35,7 +35,7 @@ if __name__ == '__main__':
     subparsers = parser.add_subparsers(help='aladdin subcommands')
     subcommands = [
         build,
-        cluster_init, \
+        cluster_init,
         cmd,
         connect,
         deploy,
@@ -77,10 +77,11 @@ if __name__ == '__main__':
     # Add optional aladdin wide arguments for better help visibility
     parser.add_argument('--cluster', '-c', help='The cluster name you want to interact with')
     parser.add_argument('--namespace', '-n', help='The namespace name you want to interact with')
-    parser.add_argument('--init', action='store_true',
+    parser.add_argument('-i', '--init', action='store_true',
                         help='Force initialization logic')
     parser.add_argument('--dev', action='store_true',
                         help='Mount host\'s aladdin directory onto aladdin container')
+    parser.add_argument('--image', help='Use the specified aladdin image (if building it yourself')
     parser.add_argument('--skip-prompts', action='store_true',
                     help='Skip confirmation prompts during command execution')
     parser.add_argument('--non-terminal', action='store_true',

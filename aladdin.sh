@@ -224,7 +224,7 @@ function enter_docker_container() {
         FLAGS+="t"
     fi
 
-    local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"
+    local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"}"
 
     docker run $FLAGS \
         `# Environment` \
@@ -240,7 +240,7 @@ function enter_docker_container() {
         -e "command=$command" \
         `# Mount host credentials` \
         -v "$(pathnorm ~/.aws):/root/.aws" \
-        -v "$(pathnorm ~/.ssh):/root/.ssh" \
+        -v "$(pathnorm ~/.ssh):/root/_ssh" \
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
@@ -266,7 +266,11 @@ while [[ $# -gt 0 ]]; do
             NAMESPACE="$2"
             shift # past argument
         ;;
-        --init)
+        --image)
+            IMAGE="$2"
+            shift # past argument
+        ;;
+        -i|--init)
             INIT=true
         ;;
         --dev)

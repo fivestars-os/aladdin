@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import sys
 import tempfile
 from arg_tools import add_namespace_argument
 from cluster_rules import cluster_rules
@@ -56,7 +57,7 @@ def deploy(project, git_ref, namespace, dry_run=False, force=False, force_helm=F
             logging.error(f'You are deploying hash {git_ref} which does not match branch '
                           f'{cr.check_branch} on cluster {cr.cluster_name} for project '
                           f'{project}... exiting')
-            return
+            sys.exit(1)
 
         helm.pull_package(project, pr, git_ref, tmpdirname)
 
