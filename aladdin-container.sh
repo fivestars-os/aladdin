@@ -43,7 +43,7 @@ function source_cluster_env() {
         exit 1
     fi
 
-    echo "including environment variables from script ${env_file_path}"
+    echo "Including environment variables from script ${env_file_path}"
     source "$env_file_path"
 }
 
