@@ -85,11 +85,6 @@ function environment_init() {
     echo "CLUSTER_CODE = $CLUSTER_CODE"
     echo "NAMESPACE = $NAMESPACE"
 
-    # Copy our .ssh directory over. This is a special case due to
-    # SSH permision and ownership checks on the ~/.ssh files.
-    rm -rf $HOME/.ssh
-    cp -r $HOME/_ssh $HOME/.ssh
-
     # Kops uses AWS_PROFILE instead of AWS_DEFAULT_PROFILE
     export AWS_PROFILE="$AWS_DEFAULT_PROFILE"
 

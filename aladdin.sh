@@ -240,7 +240,7 @@ function enter_docker_container() {
         -e "command=$command" \
         `# Mount host credentials` \
         -v "$(pathnorm ~/.aws):/root/.aws" \
-        -v "$(pathnorm ~/.ssh):/root/_ssh" \
+        -v "$(pathnorm ~/.ssh):/root/.ssh" \
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
