@@ -109,6 +109,7 @@ function copy_ssh_to_minikube() {
             (
                 minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/.ssh" &
                 minikube ssh -- 'sudo rm -rf /.ssh && sudo cp -r /tmp/.ssh /.ssh && sudo chmod -R 600 /.ssh'
+                kill $!
             ) >/dev/null
         ;;
     esac
