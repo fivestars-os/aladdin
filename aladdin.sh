@@ -98,6 +98,23 @@ function check_or_start_minikube() {
     fi
 }
 
+function copy_ssh_to_minikube() {
+    # Some systems fail when we directly mount the host's ~/.ssh directory into the aladdin container.
+    # This allows us to move the ~/.ssh directory into minikube and later mount that directory (with
+    # the adjusted ownernship and permissions) such that the container can leverage the user's
+    # credentials for ssh operations.
+    case "$OSTYPE" in
+        cygwin*) # Cygwin under windows
+            echo "Copying ~/.ssh into minikube"
+            (
+                minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/.ssh" &
+                minikube ssh -- 'sudo rm -rf /.ssh && sudo cp -r /tmp/.ssh /.ssh && sudo chmod -R 600 /.ssh'
+                kill $!
+            ) >/dev/null
+        ;;
+    esac
+}
+
 function enter_minikube_env() {
     if [[ $OSTYPE = darwin* || $OSTYPE = cygwin* || $OSTYPE = linux* ]]; then
         check_or_start_minikube
@@ -225,6 +242,12 @@ function enter_docker_container() {
     fi
 
     local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"}"
+    local ssh_src
+
+    case "$OSTYPE" in
+        cygwin*) ssh_src="/.ssh" ;;
+        *)       ssh_src="$(pathnorm ~/.ssh)" ;;
+    esac
 
     docker run $FLAGS \
         `# Environment` \
@@ -240,7 +263,7 @@ function enter_docker_container() {
         -e "command=$command" \
         `# Mount host credentials` \
         -v "$(pathnorm ~/.aws):/root/.aws" \
-        -v "$(pathnorm ~/.ssh):/root/.ssh" \
+        -v "${ssh_src}:/root/.ssh" \
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
@@ -297,6 +320,7 @@ get_plugin_dir
 exec_host_plugin "$@"
 check_cluster_alias
 check_and_handle_init
+copy_ssh_to_minikube
 set_cluster_helper_vars
 handle_ostypes
 prepare_docker_subcommands
