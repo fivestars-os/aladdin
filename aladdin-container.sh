@@ -39,7 +39,7 @@ function source_cluster_env() {
 
     # check which env it is and import appropriate environment variables
     if [ ! -f "$env_file_path" ]; then
-        echo "Error: Unable to find environment file ${env_file_name} for specified cluster ${CLUSTER_CODE}"
+        echo "Error: Unable to find environment file ${env_file_path} for specified cluster ${CLUSTER_CODE}"
         exit 1
     fi
 
