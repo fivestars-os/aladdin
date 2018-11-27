@@ -89,7 +89,6 @@ def publish_clean(build_only, build_publish_ecr_only, publish_helm_only, repo, g
     git_account = load_git_configs()['account']
     repo = repo or ProjectConf().name
     git_url = f'git@github.com:{git_account}/{repo}.git'
-    print(git_url)
     ref = git_ref or g.get_full_hash()
     with tempfile.TemporaryDirectory() as tmpdirname:
         try:
