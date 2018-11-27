@@ -1,5 +1,5 @@
 # Aladdin Publish
-Publish is one of aladdin's commands used to publish docker images and helm packages so that they can be used to deploy to non local environments. This command is to be called from within an aladdin-compatible project repo.  
+Publish is one of aladdin's commands used to publish docker images and helm packages so that they can be used to deploy to non local environments. This command is to be called from within an aladdin-compatible project repo.
 This command does the following:
 - Clones a git repo of your project into a temp directory on the aladdin docker and checks out your current hash
 - Executes your build script, as identified by the project's lamp.json file with HASH={current git hash truncated to 10 characters}
@@ -28,6 +28,9 @@ remote options:
                         it differs from chart name
   --git-ref GIT_REF     which commit hash or branch or tag to checkout and
                         publish from
+  --init-submodules     recursively initialize and update all submodules
+                        included in the project
 ```
 - Example: `aladdin publish --build-local`
 - Example: `aladdin publish --repo project --git-ref master --publish-helm-only`
+- Example: `aladdin publish --repo project --init-submodules`
