@@ -11,6 +11,11 @@ class Git(object):
         subprocess.check_call(['git', 'clone', git_repo, dest_path])
 
     @classmethod
+    def update_submodules(cls, git_path):
+        with working_directory(git_path):
+            subprocess.check_call(['git', 'submodule', 'update', '--init'])
+
+    @classmethod
     def checkout(cls, git_path, ref):
         with working_directory(git_path):
             subprocess.check_call(['git', 'checkout', ref])

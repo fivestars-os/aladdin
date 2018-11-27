@@ -39,6 +39,8 @@ def parse_args(sub_parser):
     remote_options_group.add_argument('--git-ref',
                                       help=('which commit hash or branch or tag to checkout and '
                                             'publish from'))
+    remote_options_group.add_argument('--submodule', action='store_true',
+                                      help=('recursively update all submodules included in the project'))
 
     clean_options_groups.add_argument_group(remote_options_group)
 
@@ -50,7 +52,7 @@ def publish_args(args):
         publish(args.build_only, args.build_publish_ecr_only, args.publish_helm_only)
     else:
         publish_clean(args.build_only, args.build_publish_ecr_only, args.publish_helm_only,
-                      args.repo, args.git_ref)
+                      args.repo, args.git_ref, args.submodule)
 
 
 def publish(build_only, build_publish_ecr_only, publish_helm_only):
@@ -82,11 +84,12 @@ def publish(build_only, build_publish_ecr_only, publish_helm_only):
     logging.info(f'Ran publish on {pc.name} with git hash: {tags[0]}')
 
 
-def publish_clean(build_only, build_publish_ecr_only, publish_helm_only, repo, git_ref):
+def publish_clean(build_only, build_publish_ecr_only, publish_helm_only, repo, git_ref, submodule):
     g = Git()
     git_account = load_git_configs()['account']
     repo = repo or ProjectConf().name
     git_url = f'git@github.com:{git_account}/{repo}.git'
+    print(git_url)
     ref = git_ref or g.get_full_hash()
     with tempfile.TemporaryDirectory() as tmpdirname:
         try:
@@ -94,6 +97,13 @@ def publish_clean(build_only, build_publish_ecr_only, publish_helm_only, repo, g
         except subprocess.CalledProcessError:
             logging.warn(f'Could not clone repo {git_url}. Does it exist?')
             return
+        if submodule:
+            try:
+                g.update_submodules(tmpdirname)
+            except subprocess.CalledProcessError:
+                logging.warn(f'Could not update submodules. Make sure you use ssh urls in '
+                              'the .gitmodules folder and double check your credentials.')
+                return
         try:
             g.checkout(tmpdirname, ref)
         except subprocess.CalledProcessError:
