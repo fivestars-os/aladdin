@@ -96,6 +96,12 @@ def publish_clean(build_only, build_publish_ecr_only, publish_helm_only, repo, g
         except subprocess.CalledProcessError:
             logging.warn(f'Could not clone repo {git_url}. Does it exist?')
             return
+        try:
+            g.checkout(tmpdirname, ref)
+        except subprocess.CalledProcessError:
+            logging.warn(f'Could not checkout to ref {ref} in repo {git_url}. Have you pushed it '
+                         'to remote?')
+            return
         if init_submodules:
             try:
                 g.init_submodules(tmpdirname)
@@ -103,11 +109,5 @@ def publish_clean(build_only, build_publish_ecr_only, publish_helm_only, repo, g
                 logging.warn(f'Could not initialize submodules. Make sure you use ssh urls in '
                               'the .gitmodules folder and double check your credentials.')
                 return
-        try:
-            g.checkout(tmpdirname, ref)
-        except subprocess.CalledProcessError:
-            logging.warn(f'Could not checkout to ref {ref} in repo {git_url}. Have you pushed it '
-                         'to remote?')
-            return
         with working_directory(tmpdirname):
             publish(build_only, build_publish_ecr_only, publish_helm_only)
