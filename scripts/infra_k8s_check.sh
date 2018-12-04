@@ -18,7 +18,7 @@ VERSION_MINIKUBE="0.30.0"
 #- from : https://github.com/docker/docker/releases
 VERSION_DOCKER="17.12.1-ce"
 #- from : https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md#downloads-for-v154
-VERSION_KUBECTL="1.11.3"  
+VERSION_KUBECTL="1.11.5"
 #- from : https://github.com/kubernetes/helm/releases
 VERSION_HELM="2.11.0"
 FULL_VERSION_VIRTUALBOX="5.2.4r119785"
@@ -571,7 +571,7 @@ function main(){
             alpine)
               check_and_warn "openssl               " openssl
               check_and_warn "wget                " wget
-              #check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
+              check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
               check_and_install "docker ($VERSION_DOCKER)" docker
               check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
@@ -588,7 +588,7 @@ function main(){
             ubuntu)
               #check_and_install "openssl               " openssl
               check_and_warn "wget                " wget
-              #check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
+              check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
               check_and_install "docker ($VERSION_DOCKER)" docker
               check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
