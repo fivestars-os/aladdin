@@ -13,7 +13,7 @@ class Git(object):
     @classmethod
     def init_submodules(cls, git_path):
         with working_directory(git_path):
-            subprocess.check_call(['git', 'submodule', 'update', '--init'])
+            subprocess.check_call(['git', 'submodule', 'update', '--init', '--recursive'])
 
     @classmethod
     def checkout(cls, git_path, ref):
