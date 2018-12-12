@@ -174,7 +174,7 @@ function pathnorm(){
 function confirm_production() {
     if $IS_TERMINAL ; then  # if this is an interactive shell and not jenkins or piped input, then verify
         echo "Script is running in a terminal. Let us make user aware that this is production";
-        echo -ne '\e[31mYou are on production. Please type "production" to continue: \033[0m'; read -r
+        echo -ne '\033[;31mYou are on production. Please type "production" to continue: \033[0m'; read -r
         if [[ ! $REPLY = "production" ]]; then
             echo 'Exiting since you did not type production'
             exit 0
