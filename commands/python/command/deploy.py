@@ -61,10 +61,12 @@ def deploy(project, git_ref, namespace, dry_run=False, force=False, force_helm=F
 
         helm.pull_package(project, pr, git_ref, tmpdirname)
 
+        # We need to use --set-string in case the git ref is all digits
+        helm_args = ['--set-string', f'deploy.imageTag={git_ref}']
+
         # Values precedence is command < cluster rules < --set-override-values
         # Deploy command values
         values = {
-            'deploy.imageTag': git_ref,
             'service.certificateArn': cr.get_certificate_arn(),
             'deploy.ecr': pr.docker_registry,
         }
@@ -75,8 +77,9 @@ def deploy(project, git_ref, namespace, dry_run=False, force=False, force_helm=F
         values.update(value_overrides)
 
         if dry_run:
-            helm.dry_run(hr, helm_path, cr.cluster_name, namespace, **values)
+            helm.dry_run(hr, helm_path, cr.cluster_name, namespace, helm_args=helm_args, **values)
         else:
-            helm.start(hr, helm_path, cr.cluster_name, namespace, force_helm, **values)
+            helm.start(hr, helm_path, cr.cluster_name, namespace, force_helm, helm_args=helm_args,
+                **values)
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)
