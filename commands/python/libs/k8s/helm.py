@@ -143,7 +143,7 @@ class Helm(object):
             command.append('--values={}'.format(path))
 
         for set_name, set_val in values.items():
-            command.extend(['--set-string', '{}={}'.format(set_name, set_val)])
+            command.extend(['--set', '{}={}'.format(set_name, set_val)])
 
         if helm_args:
             command.extend(helm_args)
