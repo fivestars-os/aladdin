@@ -55,17 +55,15 @@ def get_ns_from_hostedzone(boto_session, dns_id):
 
     dns_name = hosted_info['HostedZone']['Name'].strip('.')
 
-    response = route53.list_resource_record_sets(
-        HostedZoneId=dns_id,
-        StartRecordName=dns_name,
-        StartRecordType='NS',
+    paginator = route53.get_paginator('list_resource_record_sets')
+
+    response_iterator = paginator.paginate(
+        HostedZoneId=dns_id
     )
 
-    if response['IsTruncated']:
-        raise Exception('Does not handle truncated hostedzone')
-
-    rrs_list = [rrs for rrs in response['ResourceRecordSets'] if
-                rrs['Name'] == '%s.' % dns_name and rrs['Type'] == 'NS']
+    rrs_list = [rrs for rrs in response_iterator if
+                rrs['ResourceRecordSets']['Name'] == '%s.' % dns_name and
+                rrs['ResourceRecordSets']['Type'] == 'NS']
 
     if len(rrs_list) == 0:
         raise Exception('Main NS in hosted zone not found')
@@ -82,17 +80,15 @@ def check_ns_values(boto_session, main_hosted_id, sub_dns, ns_values):
     log = logging.getLogger(__name__)
     route53 = boto_session.client('route53')
 
-    response = route53.list_resource_record_sets(
-        HostedZoneId=main_hosted_id,
-        StartRecordName=sub_dns,
-        StartRecordType='NS',
+    paginator = route53.get_paginator('list_resource_record_sets')
+
+    response_iterator = paginator.paginate(
+        HostedZoneId=main_hosted_id
     )
 
-    if response['IsTruncated']:
-        raise Exception('Does not handle truncated hostedzone')
-
-    rrs_list = [rrs for rrs in response['ResourceRecordSets'] if
-                rrs['Name'] == '%s.' % sub_dns and rrs['Type'] == 'NS']
+    rrs_list = [rrs for rrs in response_iterator if
+                rrs['ResourceRecordSets']['Name'] == '%s.' % sub_dns and
+                rrs['ResourceRecordSets']['Type'] == 'NS']
 
     values = None
     if rrs_list:
@@ -124,14 +120,18 @@ def check_ns_values(boto_session, main_hosted_id, sub_dns, ns_values):
 def extract_cname_mapping(boto_session, dns_id):
     route53 = boto_session.client('route53')
 
-    response = route53.list_resource_record_sets(HostedZoneId=dns_id)
-    if response['IsTruncated']:
-        raise Exception('Does not handle truncated hostedzone')
+    paginator = route53.get_paginator('list_resource_record_sets')
+
+    response_iterator = paginator.paginate(
+        HostedZoneId=dns_id
+    )
 
     res = {}
-    for rrs in response['ResourceRecordSets']:
-        name, type, records = rrs['Name'], rrs['Type'], rrs['ResourceRecords']
-        if type != 'CNAME':
+    for rrs in response_iterator:
+        name = rrs['ResourceRecordSets']['Name']
+        tpe = rrs['ResourceRecordSets']['Type']
+        records = rrs['ResourceRecordSets']['ResourceRecords']
+        if tpe != 'CNAME':
             continue
         # CNAME have only one value
         res[name.strip('.')] = records[0]['Value']
