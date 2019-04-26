@@ -16,4 +16,4 @@ optional arguments:
 - Example: `aladdin cmd aladdin-demo status`
 
 ## Commands pod architecture
-Information on how the commands pod should be set up to integrate correctly can be found [here](https://github.com/fivestars/aladdin-demo/blob/master/docs/commands_containers.md)
+Information on how the commands pod should be set up to integrate correctly can be found [here](https://github.com/fivestars-os/aladdin-demo/blob/master/docs/commands_containers.md)
