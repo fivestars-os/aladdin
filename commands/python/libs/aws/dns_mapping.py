@@ -55,15 +55,9 @@ def get_ns_from_hostedzone(boto_session, dns_id):
 
     dns_name = hosted_info['HostedZone']['Name'].strip('.')
 
-    paginator = route53.get_paginator('list_resource_record_sets')
-
-    response_iterator = paginator.paginate(
-        HostedZoneId=dns_id
-    )
-
-    rrs_list = [rrs for rrs in response_iterator if
-                rrs['ResourceRecordSets']['Name'] == '%s.' % dns_name and
-                rrs['ResourceRecordSets']['Type'] == 'NS']
+    response = get_all_resource_record_sets(route53, dns_id)
+    rrs_list = [rrs for rrs in response if
+                rrs['Name'] == '%s.' % dns_name and rrs['Type'] == 'NS']
 
     if len(rrs_list) == 0:
         raise Exception('Main NS in hosted zone not found')
@@ -80,15 +74,10 @@ def check_ns_values(boto_session, main_hosted_id, sub_dns, ns_values):
     log = logging.getLogger(__name__)
     route53 = boto_session.client('route53')
 
-    paginator = route53.get_paginator('list_resource_record_sets')
+    response = get_all_resource_record_sets(route53, main_hosted_id)
 
-    response_iterator = paginator.paginate(
-        HostedZoneId=main_hosted_id
-    )
-
-    rrs_list = [rrs for rrs in response_iterator if
-                rrs['ResourceRecordSets']['Name'] == '%s.' % sub_dns and
-                rrs['ResourceRecordSets']['Type'] == 'NS']
+    rrs_list = [rrs for rrs in response if
+                rrs['Name'] == '%s.' % sub_dns and rrs['Type'] == 'NS']
 
     values = None
     if rrs_list:
@@ -120,18 +109,12 @@ def check_ns_values(boto_session, main_hosted_id, sub_dns, ns_values):
 def extract_cname_mapping(boto_session, dns_id):
     route53 = boto_session.client('route53')
 
-    paginator = route53.get_paginator('list_resource_record_sets')
-
-    response_iterator = paginator.paginate(
-        HostedZoneId=dns_id
-    )
+    response = get_all_resource_record_sets(route53, dns_id)
 
     res = {}
-    for rrs in response_iterator:
-        name = rrs['ResourceRecordSets']['Name']
-        tpe = rrs['ResourceRecordSets']['Type']
-        records = rrs['ResourceRecordSets']['ResourceRecords']
-        if tpe != 'CNAME':
+    for rrs in response:
+        name, type, records = rrs['Name'], rrs['Type'], rrs['ResourceRecords']
+        if type != 'CNAME':
             continue
         # CNAME have only one value
         res[name.strip('.')] = records[0]['Value']
@@ -182,3 +165,14 @@ def fill_dns_dict(boto_session, dns_id, key_vals):
         )
 
     return len(records)
+
+
+def get_all_resource_record_sets(route53, hosted_zone_id):
+    paginator = route53.get_paginator('list_resource_record_sets')
+    resource_record_sets = paginator.paginate(HostedZoneId=hosted_zone_id)
+
+    all_rrs = []
+    for rrs in resource_record_sets:
+        all_rrs.extend(rrs['ResourceRecordSets'])
+
+    return all_rrs
