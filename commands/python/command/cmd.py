@@ -26,11 +26,24 @@ def cmd(app_name, command_args, namespace=None):
     k = Kubernetes(namespace=namespace)
     pod_name = k.get_pod_name("%s-commands" % app_name)
     logging.info("Command output below...")
+
+    if not uses_new_cmd(k, pod_name, app_name):
+        try:
+            # See if the commands container uses python3
+            executable = k.kub_exec(pod_name, "%s-commands" % app_name, 'which', 'python3',
+                                    return_output=True).decode(sys.stdout.encoding).strip()
+        except subprocess.CalledProcessError:
+            # If not, we assume it uses python
+            executable = 'python'
+        k.kub_exec(pod_name, "%s-commands" % app_name, executable, 'command.py', *command_args)
+    else:
+        k.kub_exec(pod_name, "%s-commands" % app_name, 'aladdin-command', *command_args)
+
+
+def uses_new_cmd(k, pod_name, app_name):
     try:
-        # See if the commands container uses python3
-        executable = k.kub_exec(pod_name, "%s-commands" % app_name, 'which', 'python3',
-                                return_output=True).decode(sys.stdout.encoding).strip()
+        k.kub_exec(pod_name, "%s-commands" % app_name, 'which', 'aladdin-command',
+                   return_output=True).decode(sys.stdout.encoding).strip()
     except subprocess.CalledProcessError:
-        # If not, we assume it uses python
-        executable = 'python'
-    k.kub_exec(pod_name, "%s-commands" % app_name, executable, 'command.py', *command_args)
+        return False
+    return True
