@@ -4,10 +4,9 @@
 Helpers function to get/create certificates the way we want
 """
 
+import itertools
 import logging
 import re
-import sys
-import time
 
 from libs.aws.dns_mapping import create_hostedzone, fill_dns_dict, get_hostedzone
 
@@ -17,12 +16,9 @@ def search_certificate_arn(boto_session, dns_name):
     log = logging.getLogger(__name__)
     acm = boto_session.client('acm')
 
-    raw_res = acm.list_certificates(CertificateStatuses=['ISSUED'])
+    raw_res = _list_all_certificates(acm, CertificateStatuses=['ISSUED'])
 
-    if 'NextToken' in raw_res:
-        raise LookupError("Current code don't handle next token")
-
-    list_cert = [c for c in raw_res['CertificateSummaryList'] if c['DomainName'] == dns_name]
+    list_cert = [c for c in raw_res if c['DomainName'] == dns_name]
 
     if len(list_cert) == 1:
         arn_res = list_cert[0]['CertificateArn']
@@ -30,12 +26,9 @@ def search_certificate_arn(boto_session, dns_name):
         return arn_res
 
     if len(list_cert) == 0:
-        raw_res = acm.list_certificates(CertificateStatuses=['PENDING_VALIDATION'])
+        raw_res = _list_all_certificates(acm, CertificateStatuses=['PENDING_VALIDATION'])
 
-        if 'NextToken' in raw_res:
-            raise LookupError("Current code don't handle next token")
-
-        list_cert = [c for c in raw_res['CertificateSummaryList'] if c['DomainName'] == dns_name]
+        list_cert = [c for c in raw_res if c['DomainName'] == dns_name]
 
     if len(list_cert) == 0:
         return None
@@ -114,3 +107,13 @@ def _validate_certificate_with_retry(boto_session, dns_name, arn, max_retries=20
                      '/dns_and_certificate.md.')
     else:
         fill_dns_dict(boto_session, dns_id, cname_record)
+
+
+def _list_all_certificates(client, **pagination_options):
+    paginator = client.get_paginator('list_certificates')
+    all_results = [
+        page['CertificateSummaryList']
+        for page in paginator.paginate(**pagination_options)
+    ]
+
+    return list(itertools.chain.from_iterable(all_results))
