@@ -55,16 +55,8 @@ def get_ns_from_hostedzone(boto_session, dns_id):
 
     dns_name = hosted_info['HostedZone']['Name'].strip('.')
 
-    response = route53.list_resource_record_sets(
-        HostedZoneId=dns_id,
-        StartRecordName=dns_name,
-        StartRecordType='NS',
-    )
-
-    if response['IsTruncated']:
-        raise Exception('Does not handle truncated hostedzone')
-
-    rrs_list = [rrs for rrs in response['ResourceRecordSets'] if
+    response = get_all_resource_record_sets(route53, dns_id)
+    rrs_list = [rrs for rrs in response if
                 rrs['Name'] == '%s.' % dns_name and rrs['Type'] == 'NS']
 
     if len(rrs_list) == 0:
@@ -82,16 +74,9 @@ def check_ns_values(boto_session, main_hosted_id, sub_dns, ns_values):
     log = logging.getLogger(__name__)
     route53 = boto_session.client('route53')
 
-    response = route53.list_resource_record_sets(
-        HostedZoneId=main_hosted_id,
-        StartRecordName=sub_dns,
-        StartRecordType='NS',
-    )
+    response = get_all_resource_record_sets(route53, main_hosted_id)
 
-    if response['IsTruncated']:
-        raise Exception('Does not handle truncated hostedzone')
-
-    rrs_list = [rrs for rrs in response['ResourceRecordSets'] if
+    rrs_list = [rrs for rrs in response if
                 rrs['Name'] == '%s.' % sub_dns and rrs['Type'] == 'NS']
 
     values = None
@@ -124,12 +109,10 @@ def check_ns_values(boto_session, main_hosted_id, sub_dns, ns_values):
 def extract_cname_mapping(boto_session, dns_id):
     route53 = boto_session.client('route53')
 
-    response = route53.list_resource_record_sets(HostedZoneId=dns_id)
-    if response['IsTruncated']:
-        raise Exception('Does not handle truncated hostedzone')
+    response = get_all_resource_record_sets(route53, dns_id)
 
     res = {}
-    for rrs in response['ResourceRecordSets']:
+    for rrs in response:
         name, type, records = rrs['Name'], rrs['Type'], rrs['ResourceRecords']
         if type != 'CNAME':
             continue
@@ -182,3 +165,14 @@ def fill_dns_dict(boto_session, dns_id, key_vals):
         )
 
     return len(records)
+
+
+def get_all_resource_record_sets(route53, hosted_zone_id):
+    paginator = route53.get_paginator('list_resource_record_sets')
+    resource_record_sets = paginator.paginate(HostedZoneId=hosted_zone_id)
+
+    all_rrs = []
+    for rrs in resource_record_sets:
+        all_rrs.extend(rrs['ResourceRecordSets'])
+
+    return all_rrs
