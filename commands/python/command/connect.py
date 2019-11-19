@@ -29,7 +29,7 @@ def connect(app_name, namespace=None):
     idx = 0
     pod_container_pairs = []
     for pod in pods:
-        for container in pod.status.container_statuses:
+        for container in pod.status.container_statuses or []:
             print('{idx}: pod {pod_name}; container {container_name}'
                   .format(idx=idx, pod_name=pod.metadata.name, container_name=container.name))
             pod_container_pairs.append((pod.metadata.name, container.name))
