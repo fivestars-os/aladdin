@@ -20,9 +20,9 @@ COPY ./commands/python/requirements.txt ./commands/python/requirements.txt
 RUN pip3 install --no-cache-dir -r ./commands/python/requirements.txt
 
 # update all needed tool versions here
-ARG KUBE_VERSION=1.11.5
-ARG KOPS_VERSION=1.11.0-beta.1
-ARG HELM_VERSION=2.11.0
+ARG KUBE_VERSION=1.15.6
+ARG KOPS_VERSION=1.15.0
+ARG HELM_VERSION=2.16.1
 
 RUN	curl -L -o /bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/amd64/kubectl \
 	&& chmod 755 /bin/kubectl

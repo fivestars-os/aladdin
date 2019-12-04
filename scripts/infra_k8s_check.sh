@@ -14,14 +14,14 @@ set -eu -o pipefail
 
 
 #- from : https://github.com/kubernetes/minikube/releases
-VERSION_MINIKUBE="0.30.0"
-#- from : https://github.com/docker/docker/releases
-VERSION_DOCKER="17.12.1-ce"
-#- from : https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md#downloads-for-v154
-VERSION_KUBECTL="1.11.5"
+VERSION_MINIKUBE="1.5.2"
+#- from : https://github.com/docker/docker-ce/releases
+VERSION_DOCKER="18.09.9"
+#- from : https://github.com/kubernetes/kubernetes/releases
+VERSION_KUBECTL="1.15.6"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="2.11.0"
-FULL_VERSION_VIRTUALBOX="5.2.4r119785"
+VERSION_HELM="2.16.1"
+FULL_VERSION_VIRTUALBOX="6.0.14r133895"
 
 VERSION_VIRTUALBOX="$(echo "$FULL_VERSION_VIRTUALBOX" | cut -dr -f1)"
 VERSION_R_VIRTUALBOX="$(echo "$FULL_VERSION_VIRTUALBOX" | cut -dr -f2-)"
@@ -309,13 +309,20 @@ function install_wget_ubuntu(){ eval $install_cmd wget >/dev/null 2>/dev/null ; 
 
 
 function check_minikube(){ version "$ALADDIN_BIN/minikube version" "$VERSION_MINIKUBE" ; }
+function set_minikube_config(){
+    eval "$1 config set kubernetes-version v$VERSION_KUBECTL"
+    eval "$1 config set vm-driver virtualbox"
+    eval "$1 config set memory 4096"
+}
 function install_minikube_win(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-windows-amd64.exe"
     install_url_exe "minikube.exe" "$url"
+    set_minikube_config "minikube.exe"
 }
 function install_minikube_mac(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-darwin-amd64"
     install_url_cmd "minikube" "$url"
+    set_minikube_config "minikube"
 }
 function install_minikube_alpine(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-linux-amd64"
@@ -325,6 +332,7 @@ function install_minikube_alpine(){
 function install_minikube_ubuntu(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-linux-amd64"
     install_url_cmd "minikube" "$url"
+    set_minikube_config "minikube"
 }
 
 
