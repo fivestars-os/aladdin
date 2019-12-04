@@ -87,7 +87,7 @@ function check_and_handle_init() {
 function check_or_start_minikube() {
     if ! minikube status | grep Running &> /dev/null; then
         echo "Starting minikube... (this will take a moment)"
-        minikube start --kubernetes-version v1.11.5 --memory 4096 &> /dev/null
+        minikube start &> /dev/null
         # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
         if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
             echo "Installing NFS mounts from host..."
