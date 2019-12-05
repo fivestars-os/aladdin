@@ -118,6 +118,35 @@ function environment_init() {
 
 }
 
+function add_and_set_authentication_users() {
+    if $AUTHENTICATION_ENABLED; then
+        jq -r '.|keys[]' <<< "$AUTHENTICATION_ROLES" | while read name ; do
+            role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $AUTHENTICATION_ROLES)"
+            _add_authentication_user_to_kubeconfig "$name" "$role_arn"
+        done
+        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE"
+    fi
+}
+
+function _add_authentication_user_to_kubeconfig() {
+    name="$1"
+    role_arn="$2"
+cat <<EOT >> $HOME/.kube/config
+- name: $1
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      args:
+      - token
+      - -i
+      - $CLUSTER_NAME
+      - -r
+      - $role_arn
+      command: aws-iam-authenticator
+EOT
+}
+
 source_cluster_env
 environment_init
+add_and_set_authentication_users
 exec_command_or_plugin "$@"

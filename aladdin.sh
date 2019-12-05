@@ -125,7 +125,14 @@ function enter_minikube_env() {
 function _extract_cluster_config_value() {
     local value
     value="$1"
-    jq -r ".$value" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json"
+    output=$(jq -r ".$value" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json")
+    if [[ "$output" == null ]]; then
+        output=$(jq -r ".$value" "$ALADDIN_CONFIG_DIR/default/config.json")
+    fi
+    if [[ "$output" == null ]]; then
+        output=$(jq -r ".$value" "$ALADDIN_CONFIG_DIR/config.json")
+    fi
+    echo "$output"
 }
 
 function set_cluster_helper_vars() {
@@ -142,6 +149,16 @@ function set_cluster_helper_vars() {
     IS_TESTING="$(_extract_cluster_config_value is_testing)"
     if [[ "$IS_TESTING" == null ]]; then
         IS_TESTING=false
+    fi
+
+    AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
+    if [[ "$AUTHENTICATION_ENABLED" == null ]]; then
+        AUTHENTICATION_ENABLED=false
+    else
+        AUTHENTICATION_ROLES="$(_extract_cluster_config_value authentication_roles)"
+        AUTHENTICATION_ALADDIN_ROLE="$(_extract_cluster_config_value authentication_aladdin_role)"
+        AUTHENTICATION_DEFAULT_ROLE="$(_extract_cluster_config_value authentication_default_role)"
+        AUTHENTICATION_ALLOWED_CHANGE_ROLES="$(_extract_cluster_config_value authentication_allowed_change_roles)"
     fi
 }
 
@@ -260,6 +277,11 @@ function enter_docker_container() {
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
+        -e "AUTHENTICATION_ENABLED=$AUTHENTICATION_ENABLED" \
+        -e "AUTHENTICATION_ROLES=$AUTHENTICATION_ROLES" \
+        -e "AUTHENTICATION_DEFAULT_ROLE=$AUTHENTICATION_DEFAULT_ROLE" \
+        -e "AUTHENTICATION_ALADDIN_ROLE=$AUTHENTICATION_ALADDIN_ROLE" \
+        -e "AUTHENTICATION_ALLOWED_CHANGE_ROLES=$AUTHENTICATION_ALLOWED_CHANGE_ROLES" \
         -e "command=$command" \
         `# Mount host credentials` \
         -v "$(pathnorm ~/.aws):/root/.aws" \
