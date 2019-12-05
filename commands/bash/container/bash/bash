@@ -8,6 +8,11 @@ function run_bash {
         export PS1="$CLUSTER_CODE:$NAMESPACE> "
     fi
     echo Launching bash shell. Press CTRL+D to exit.
+    # If authentication is enabled, switch to the AUTHENTICATION_DEFAULT_ROLE level
+    if "$AUTHENTICATION_ENABLED"; then
+        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
+            --namespace="$NAMESPACE" --user "$AUTHENTICATION_DEFAULT_ROLE"
+    fi
     bash --init-file "$SCRIPT_DIR/bash_profile.bash" "$@"
 }
 
