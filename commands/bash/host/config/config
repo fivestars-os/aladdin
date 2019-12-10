@@ -33,7 +33,7 @@ function config() {
     esac
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin config [-h] SUBCOMMAND
 
@@ -49,7 +49,7 @@ function help {
 }
 
 if [[ $# -eq 0 || "$1" == "-h" ]]; then
-    help
+    usage
 else
     config "$@"
 fi

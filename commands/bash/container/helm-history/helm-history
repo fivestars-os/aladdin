@@ -5,7 +5,7 @@ function helm_history {
     helm history $1-$NAMESPACE
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin helm-history [-h] project
 
@@ -18,7 +18,7 @@ function help {
 }
 
 if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     helm_history "$1"
 fi

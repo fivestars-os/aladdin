@@ -17,7 +17,7 @@ function test_remote {
     bats "$TEST_REMOTE_DIR/test-cluster-delete.bats"
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin test-remote [-h]
           
@@ -33,7 +33,7 @@ if [[ $# -eq 0 ]]; then
         echo >&2 "aladdin test-remote should only be called on a non local testing remote cluster"
     fi
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1

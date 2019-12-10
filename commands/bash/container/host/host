@@ -15,7 +15,7 @@ function host {
     kubectl get ingress ingress -o=json 2>/dev/null | jq '.spec.rules[]?.host' --raw-output | grep -v '^$' | xargs -I % echo "$MINIKUBE_IP %"
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin host [-h]
 
@@ -27,7 +27,7 @@ function help {
 if [[ $# -eq 0 ]]; then
     host
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1

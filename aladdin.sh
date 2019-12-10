@@ -142,34 +142,28 @@ function _extract_cluster_config_value() {
     # Try extracting config from cluster config.json, default config.json, then aladdin config.json
     local value
     value="$1"
-    output=$(jq -r ".$value" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json")
-    if [[ "$output" == null ]]; then
-        output=$(jq -r ".$value" "$ALADDIN_CONFIG_DIR/default/config.json")
-    fi
-    if [[ "$output" == null ]]; then
-        output=$(jq -r ".$value" "$ALADDIN_CONFIG_DIR/config.json")
-    fi
-    echo "$output"
+    jq -enr "first(inputs | .\"$value\" // empty)" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json" \
+        "$ALADDIN_CONFIG_DIR/default/config.json" "$ALADDIN_CONFIG_DIR/config.json" || true
 }
 
 function set_cluster_helper_vars() {
     IS_LOCAL="$(_extract_cluster_config_value is_local)"
-    if [[ "$IS_LOCAL" == null ]]; then
+    if [[ -z "$IS_LOCAL" ]]; then
         IS_LOCAL=false
     fi
 
     IS_PROD="$(_extract_cluster_config_value is_prod)"
-    if [[ "$IS_PROD" == null ]]; then
+    if [[ -z "$IS_PROD" ]]; then
         IS_PROD=false
     fi
 
     IS_TESTING="$(_extract_cluster_config_value is_testing)"
-    if [[ "$IS_TESTING" == null ]]; then
+    if [[ -z "$IS_TESTING" ]]; then
         IS_TESTING=false
     fi
 
     AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
-    if [[ "$AUTHENTICATION_ENABLED" == null ]]; then
+    if [[ -z "$AUTHENTICATION_ENABLED" ]]; then
         AUTHENTICATION_ENABLED=false
     else
         AUTHENTICATION_ROLES="$(_extract_cluster_config_value authentication_roles)"

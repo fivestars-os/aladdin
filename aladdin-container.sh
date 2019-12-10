@@ -132,7 +132,7 @@ function add_and_set_authentication_users() {
 function _add_authentication_user_to_kubeconfig() {
     name="$1"
     role_arn="$2"
-cat <<EOT >> $HOME/.kube/config
+    cat <<EOT >> $HOME/.kube/config
 - name: $name
   user:
     exec:

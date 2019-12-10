@@ -16,7 +16,7 @@ function run_bash {
     bash --init-file "$SCRIPT_DIR/bash_profile.bash" "$@"
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin bash [-h]
 
@@ -28,7 +28,7 @@ function help {
 if [[ $# -eq 0 ]]; then
     run_bash
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1
