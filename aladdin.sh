@@ -142,8 +142,9 @@ function _extract_cluster_config_value() {
     # Try extracting config from cluster config.json, default config.json, then aladdin config.json
     local value
     value="$1"
-    jq -enr "first(inputs | .\"$value\" // empty)" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json" \
-        "$ALADDIN_CONFIG_DIR/default/config.json" "$ALADDIN_CONFIG_DIR/config.json" || true
+    jq -nr --arg value "$value" 'first(inputs | .[$value] // empty)' \
+        "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json" "$ALADDIN_CONFIG_DIR/default/config.json" \
+        "$ALADDIN_CONFIG_DIR/config.json"
 }
 
 function set_cluster_helper_vars() {
