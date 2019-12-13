@@ -16,7 +16,7 @@ set -eu -o pipefail
 #- from : https://github.com/kubernetes/minikube/releases
 VERSION_MINIKUBE="1.5.2"
 #- from : https://github.com/docker/docker-ce/releases
-VERSION_DOCKER="18.09.9"
+VERSION_DOCKER="18.09.7"
 #- from : https://github.com/kubernetes/kubernetes/releases
 VERSION_KUBECTL="1.15.6"
 #- from : https://github.com/kubernetes/helm/releases
@@ -336,7 +336,16 @@ function install_minikube_ubuntu(){
 }
 
 
-function check_docker(){ version "$ALADDIN_BIN/docker --version" "$VERSION_DOCKER" ; }
+function check_docker(){
+    case "$OSTYPE" in
+        cygwin)
+            has_prog docker;
+            ;;
+        *)
+            version "$ALADDIN_BIN/docker --version" "$VERSION_DOCKER" ;
+            ;;
+    esac
+}
 function install_docker_win(){
     typeset url="https://download.docker.com/win/static/stable/x86_64/docker-${VERSION_DOCKER}.zip"
     install_url_zip "docker.exe" "docker/docker.exe" "$url"
@@ -547,7 +556,7 @@ function main(){
 
                 check_and_warn "wget               " wget
                 check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
-                check_and_install "docker ($VERSION_DOCKER)" docker
+                check_and_warn "docker ($WINDOWS_VERSION_DOCKER)" docker
                 check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
                 check_and_install "helm ($VERSION_HELM)       " helm
                 check_and_warn "virtualbox         " virtualbox
