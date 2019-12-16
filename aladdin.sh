@@ -271,14 +271,14 @@ function enter_docker_container() {
         -v /usr/bin/docker:/usr/bin/docker \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v /usr/lib64/libdevmapper.so.1.02:/usr/lib/libdevmapper.so.1.02 \
-        `#Specific command` \
+        `# Specific command` \
         ${DEV_CMD:-} ${MINIKUBE_CMD:-} ${ALADDIN_PLUGIN_CMD:-} \
         "$aladdin_image" \
-        `#Finally, launch the command` \
+        `# Finally, launch the command` \
         /root/aladdin/aladdin-container.sh "$@"
 }
 
-command="-h"
+command="-h" # default command is help
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -c|--cluster)

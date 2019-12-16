@@ -8,7 +8,7 @@ import logging
 
 def parse_args(sub_parser):
     subparser = sub_parser.add_parser('environment',
-                                      help='Maniuplate configMap/environments of projects',
+                                      help='Manipulate configMap/environments of projects',
                                       formatter_class=RawTextHelpFormatter,
                                       epilog=('Example usage:\n'
                                               'aladdin -c CLUSTER -n NAMESPACE environment '
