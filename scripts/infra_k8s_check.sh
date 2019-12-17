@@ -308,21 +308,15 @@ function install_wget_mac(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 function install_wget_ubuntu(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 
 
-function check_minikube(){ version "$ALADDIN_BIN/minikube version" "$VERSION_MINIKUBE" ; }
-function set_minikube_config(){
-    eval "$1 config set kubernetes-version v$VERSION_KUBECTL"
-    eval "$1 config set vm-driver virtualbox"
-    eval "$1 config set memory 4096"
-}
+function check_minikube(){ version "$ALADDIN_BIN/minikube version" "$VERSION_MINIKUBE" ;}
+
 function install_minikube_win(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-windows-amd64.exe"
     install_url_exe "minikube.exe" "$url"
-    set_minikube_config "minikube.exe"
 }
 function install_minikube_mac(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-darwin-amd64"
     install_url_cmd "minikube" "$url"
-    set_minikube_config "minikube"
 }
 function install_minikube_alpine(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-linux-amd64"
@@ -332,7 +326,6 @@ function install_minikube_alpine(){
 function install_minikube_ubuntu(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-linux-amd64"
     install_url_cmd "minikube" "$url"
-    set_minikube_config "minikube"
 }
 
 

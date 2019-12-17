@@ -14,6 +14,7 @@ CLUSTER_CODE=minikube
 NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
+KUBERNETES_VERSION="1.15.6"
 
 # Set key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" ; pwd)"
@@ -83,10 +84,17 @@ function check_and_handle_init() {
     fi
 }
 
+function set_minikube_config(){
+    minikube config set kubernetes-version v$KUBERNETES_VERSION &> /dev/null
+    minikube config set vm-driver virtualbox &> /dev/null
+    minikube config set memory 4096 &> /dev/null
+}
+
 # Start minikube if we need to
 function check_or_start_minikube() {
     if ! minikube status | grep Running &> /dev/null; then
         echo "Starting minikube... (this will take a moment)"
+        set_minikube_config
         minikube start &> /dev/null
         # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
         if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
@@ -95,6 +103,14 @@ function check_or_start_minikube() {
             echo "NFS mounts installed"
         fi
         echo "Minikube started"
+    else
+        if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" &> /dev/null; then
+            echo "Minikube detected on the incorrect version, stopping and restarting"
+            minikube stop &> /dev/null
+            minikube delete &> /dev/null
+            set_minikube_config
+            check_or_start_minikube
+        fi
     fi
 }
 
