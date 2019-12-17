@@ -31,8 +31,10 @@ from command import \
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(prog='aladdin', description='Managing kubernetes projects')
-    subparsers = parser.add_subparsers(help='aladdin subcommands')
+    parser = argparse.ArgumentParser(prog='aladdin',
+                                     description='Managing kubernetes projects',
+                                     epilog="If no arguments are specified, the help text is displayed")
+    subparsers = parser.add_subparsers(help='Brief description of argument')
     subcommands = [
         build,
         cluster_init,

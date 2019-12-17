@@ -14,14 +14,14 @@ set -eu -o pipefail
 
 
 #- from : https://github.com/kubernetes/minikube/releases
-VERSION_MINIKUBE="0.30.0"
-#- from : https://github.com/docker/docker/releases
-VERSION_DOCKER="17.12.1-ce"
-#- from : https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG.md#downloads-for-v154
-VERSION_KUBECTL="1.11.5"
+VERSION_MINIKUBE="1.5.2"
+#- from : https://github.com/docker/docker-ce/releases
+VERSION_DOCKER="18.09.7"
+#- from : https://github.com/kubernetes/kubernetes/releases
+VERSION_KUBECTL="1.15.6"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="2.11.0"
-FULL_VERSION_VIRTUALBOX="5.2.4r119785"
+VERSION_HELM="2.16.1"
+FULL_VERSION_VIRTUALBOX="6.0.14r133895"
 
 VERSION_VIRTUALBOX="$(echo "$FULL_VERSION_VIRTUALBOX" | cut -dr -f1)"
 VERSION_R_VIRTUALBOX="$(echo "$FULL_VERSION_VIRTUALBOX" | cut -dr -f2-)"
@@ -308,7 +308,8 @@ function install_wget_mac(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 function install_wget_ubuntu(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 
 
-function check_minikube(){ version "$ALADDIN_BIN/minikube version" "$VERSION_MINIKUBE" ; }
+function check_minikube(){ version "$ALADDIN_BIN/minikube version" "$VERSION_MINIKUBE" ;}
+
 function install_minikube_win(){
     typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-windows-amd64.exe"
     install_url_exe "minikube.exe" "$url"
@@ -328,7 +329,16 @@ function install_minikube_ubuntu(){
 }
 
 
-function check_docker(){ version "$ALADDIN_BIN/docker --version" "$VERSION_DOCKER" ; }
+function check_docker(){
+    case "$OSTYPE" in
+        cygwin)
+            has_prog docker;
+            ;;
+        *)
+            version "$ALADDIN_BIN/docker --version" "$VERSION_DOCKER" ;
+            ;;
+    esac
+}
 function install_docker_win(){
     typeset url="https://download.docker.com/win/static/stable/x86_64/docker-${VERSION_DOCKER}.zip"
     install_url_zip "docker.exe" "docker/docker.exe" "$url"
@@ -539,7 +549,7 @@ function main(){
 
                 check_and_warn "wget               " wget
                 check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
-                check_and_install "docker ($VERSION_DOCKER)" docker
+                check_and_warn "docker ($WINDOWS_VERSION_DOCKER)" docker
                 check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
                 check_and_install "helm ($VERSION_HELM)       " helm
                 check_and_warn "virtualbox         " virtualbox

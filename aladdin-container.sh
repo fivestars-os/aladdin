@@ -48,7 +48,7 @@ function source_cluster_env() {
 }
 
 function exec_command_or_plugin() {
-    # Exectute a container command in order python command > bash command > container plugin
+    # Execute a container command in order python command > bash command > container plugin
     local plugin_path command_path
 
     python_command_path="$ALADDIN_DIR/commands/python/command/${command//-/_}.py"

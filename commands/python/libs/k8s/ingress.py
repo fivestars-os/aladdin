@@ -26,26 +26,26 @@ def _create_ingress_service_tuples(services, dual_dns_prefix_annotation_name):
 
 
 def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress_info):
-    ingress = client.V1beta1Ingress()
+    ingress = client.ExtensionsV1beta1Ingress()
     # init metadata
     ingress.metadata = client.V1ObjectMeta()
     ingress.metadata.name = ingress_info['ingress_name']
     # init spec
-    ingress.spec = client.V1beta1IngressSpec()
+    ingress.spec = client.ExtensionsV1beta1IngressSpec()
     ingress.spec.rules = []
     service_tuples = _create_ingress_service_tuples(services, dual_dns_prefix_annotation_name)
     for dns_prefix, port, service in service_tuples:
-        ingress_rule = client.V1beta1IngressRule()
+        ingress_rule = client.ExtensionsV1beta1IngressRule()
         ingress_rule.host = "%s.%s" % (dns_prefix, dns_suffix)
-        backend = client.V1beta1IngressBackend(
+        backend = client.ExtensionsV1beta1IngressBackend(
             service_name=service.metadata.name, service_port=port)
-        ingress_path = [client.V1beta1HTTPIngressPath(path="/", backend=backend)]
-        ingress_rule.http = client.V1beta1HTTPIngressRuleValue(ingress_path)
+        ingress_path = [client.ExtensionsV1beta1HTTPIngressPath(path="/", backend=backend)]
+        ingress_rule.http = client.ExtensionsV1beta1HTTPIngressRuleValue(ingress_path)
 
         ingress.spec.rules.append(ingress_rule)
 
     if not ingress.spec.rules:
-        ingress_dummy_backend = client.V1beta1IngressBackend(
+        ingress_dummy_backend = client.ExtensionsV1beta1IngressBackend(
             service_name=ingress_info['ingress_controller_service_name'], service_port=80)
         ingress.spec.backend = ingress_dummy_backend
 
