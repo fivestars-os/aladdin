@@ -15,14 +15,14 @@ case "$OSTYPE" in
         ;;
 esac
 
-minikube_ip=$(minikube ip)
+host_ip="192.168.99.1"
 read -r -d '' bootlocal <<EOF ||:
 #!/bin/sh
 
 sudo systemctl start nfs-client.target
 sudo mkdir -p ${mount_dir}
-sudo busybox umount ${mount_dir} 2>/dev/null
-sudo busybox mount -t nfs -o tcp,rw,hard,noacl,async,nolock ${minikube_ip}:${export_dir} ${mount_dir}
+sudo umount ${mount_dir} 2>/dev/null
+sudo mount -t nfs -o tcp,rw,hard,noacl,async,nolock ${host_ip}:${export_dir} ${mount_dir}
 EOF
 
 echo -e "\\nInstalling persistent start-up script: /var/lib/boot2docker/bootlocal.sh"
