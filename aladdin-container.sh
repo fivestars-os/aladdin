@@ -108,7 +108,7 @@ function environment_init() {
 
         if $INIT; then
             kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
-            helm init --upgrade --wait || true
+            _helm_init
             _replace_aws_secret || true
             $PY_MAIN namespace-init --force
         fi
@@ -116,6 +116,16 @@ function environment_init() {
 
     echo "END ENVIRONMENT CONFIGURATION==============================================="
 
+}
+
+function _helm_init() {
+    if $RBAC_ENABLED; then
+        kubectl -n kube-system create serviceaccount tiller || true
+        kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || true
+        helm init --service-account=tiller --upgrade --wait || true
+    else
+        helm init --upgrade --wait || true
+    fi
 }
 
 function add_and_set_authentication_users() {

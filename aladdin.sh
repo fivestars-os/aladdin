@@ -163,6 +163,11 @@ function set_cluster_helper_vars() {
         IS_TESTING=false
     fi
 
+    RBAC_ENABLED="$(_extract_cluster_config_value rbac_enabled)"
+    if [[ -z "$RBAC_ENABLED" ]]; then
+        RBAC_ENABLED=false
+    fi
+
     AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
     if [[ -z "$AUTHENTICATION_ENABLED" ]]; then
         AUTHENTICATION_ENABLED=false
@@ -289,6 +294,7 @@ function enter_docker_container() {
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
+        -e "RBAC_ENABLED=$RBAC_ENABLED" \
         -e "AUTHENTICATION_ENABLED=$AUTHENTICATION_ENABLED" \
         -e "AUTHENTICATION_ROLES=$AUTHENTICATION_ROLES" \
         -e "AUTHENTICATION_DEFAULT_ROLE=$AUTHENTICATION_DEFAULT_ROLE" \
