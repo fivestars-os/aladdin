@@ -106,6 +106,8 @@ function environment_init() {
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
         kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
 
+        add_and_set_authentication_users
+
         if $INIT; then
             kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
             _helm_init
@@ -159,5 +161,4 @@ EOT
 
 source_cluster_env
 environment_init
-add_and_set_authentication_users
 exec_command_or_plugin "$@"
