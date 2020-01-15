@@ -110,7 +110,7 @@ function environment_init() {
 
         if $INIT; then
             kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
-            _helm_init
+            _initialize_helm
             _replace_aws_secret || true
             $PY_MAIN namespace-init --force
         fi
@@ -120,7 +120,7 @@ function environment_init() {
 
 }
 
-function _helm_init() {
+function _initialize_helm() {
     if $RBAC_ENABLED; then
         kubectl -n kube-system create serviceaccount tiller || true
         kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || true
