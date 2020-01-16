@@ -142,7 +142,7 @@ function _extract_cluster_config_value() {
     # Try extracting config from cluster config.json, default config.json, then aladdin config.json
     local value
     value="$1"
-    jq -nr --arg value "$value" 'first(inputs | .[$value] // empty)' \
+    jq -nr --arg value "$value" 'first(inputs | (if .[$value] == null then empty else .[$value] end))' \
         "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json" "$ALADDIN_CONFIG_DIR/default/config.json" \
         "$ALADDIN_CONFIG_DIR/config.json"
 }
@@ -161,6 +161,11 @@ function set_cluster_helper_vars() {
     IS_TESTING="$(_extract_cluster_config_value is_testing)"
     if [[ -z "$IS_TESTING" ]]; then
         IS_TESTING=false
+    fi
+
+    RBAC_ENABLED="$(_extract_cluster_config_value rbac_enabled)"
+    if [[ -z "$RBAC_ENABLED" ]]; then
+        RBAC_ENABLED=false
     fi
 
     AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
@@ -289,6 +294,7 @@ function enter_docker_container() {
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
+        -e "RBAC_ENABLED=$RBAC_ENABLED" \
         -e "AUTHENTICATION_ENABLED=$AUTHENTICATION_ENABLED" \
         -e "AUTHENTICATION_ROLES=$AUTHENTICATION_ROLES" \
         -e "AUTHENTICATION_DEFAULT_ROLE=$AUTHENTICATION_DEFAULT_ROLE" \

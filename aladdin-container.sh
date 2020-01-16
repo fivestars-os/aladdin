@@ -106,9 +106,11 @@ function environment_init() {
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
         kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
 
+        add_and_set_authentication_users
+
         if $INIT; then
             kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
-            helm init --upgrade --wait || true
+            _initialize_helm
             _replace_aws_secret || true
             $PY_MAIN namespace-init --force
         fi
@@ -116,6 +118,16 @@ function environment_init() {
 
     echo "END ENVIRONMENT CONFIGURATION==============================================="
 
+}
+
+function _initialize_helm() {
+    if $RBAC_ENABLED; then
+        kubectl -n kube-system create serviceaccount tiller || true
+        kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || true
+        helm init --service-account=tiller --upgrade --wait || true
+    else
+        helm init --upgrade --wait || true
+    fi
 }
 
 function add_and_set_authentication_users() {
@@ -149,5 +161,4 @@ EOT
 
 source_cluster_env
 environment_init
-add_and_set_authentication_users
 exec_command_or_plugin "$@"
