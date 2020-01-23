@@ -3,8 +3,7 @@ set -eu -o pipefail
 
 function get_dashboard_url {
     if [[ $CLUSTER_CODE == "minikube" ]]; then
-        base=$(kubectl cluster-info | grep "Kubernetes master" | cut -d '/' -f3)
-        echo $(echo $base | cut -d ':' -f1):30000
+        echo "Please run \"minikube dashboard\" which will launch the minikube dashboard in a browser"
     else
         user="admin"
         passwd=$(kops get secrets kube --type secret -oplaintext | tr -d ' ')
