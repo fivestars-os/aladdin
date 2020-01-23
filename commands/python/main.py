@@ -83,7 +83,7 @@ if __name__ == '__main__':
                         help='Force initialization logic')
     parser.add_argument('--dev', action='store_true',
                         help='Mount host\'s aladdin directory onto aladdin container')
-    parser.add_argument('--image', help='Use the specified aladdin image (if building it yourself')
+    parser.add_argument('--image', help='Use the specified aladdin image (if building it yourself)')
     parser.add_argument('--skip-prompts', action='store_true',
                     help='Skip confirmation prompts during command execution')
     parser.add_argument('--non-terminal', action='store_true',
