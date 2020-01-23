@@ -76,7 +76,7 @@ function check_and_handle_init() {
             eval "$repo_login_command"
         fi
         local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"
-        docker pull "$aladdin_image"
+        #docker pull "$aladdin_image"
         echo "$current_time" > "$last_launched_file"
     else
         "$SCRIPT_DIR"/infra_k8s_check.sh
@@ -86,7 +86,9 @@ function check_and_handle_init() {
 
 function set_minikube_config(){
     minikube config set kubernetes-version v$KUBERNETES_VERSION &> /dev/null
-    minikube config set vm-driver virtualbox &> /dev/null
+    if test $(minikube config get vm-driver) != none; then 
+        minikube config set vm-driver virtualbox &> /dev/null
+    fi
     minikube config set memory 4096 &> /dev/null
 }
 
@@ -99,8 +101,8 @@ function check_or_start_minikube() {
         # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
         if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
             echo "Installing NFS mounts from host..."
-            "$SCRIPT_DIR"/install_nfs_mounts.sh
-            echo "NFS mounts installed"
+            #"$SCRIPT_DIR"/install_nfs_mounts.sh
+            echo "NFS mounts NOT installed"
         fi
         echo "Minikube started"
     else
@@ -308,9 +310,7 @@ function enter_docker_container() {
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
         `# Mount minikube parts` \
-        -v /usr/bin/docker:/usr/bin/docker \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -v /usr/lib64/libdevmapper.so.1.02:/usr/lib/libdevmapper.so.1.02 \
         `# Specific command` \
         ${DEV_CMD:-} ${MINIKUBE_CMD:-} ${ALADDIN_PLUGIN_CMD:-} \
         "$aladdin_image" \
