@@ -2,6 +2,9 @@
     "bash": {
         "help": "Launch bash in the context of aladdin"
     },
+    "change-permissions": {
+        "help": "Change your permission level if authentication is enabled"
+    },
     "clean": {
         "help": "Remove stopped containers and unused docker images"
     },

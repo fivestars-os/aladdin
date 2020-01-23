@@ -139,25 +139,43 @@ function enter_minikube_env() {
 }
 
 function _extract_cluster_config_value() {
+    # Try extracting config from cluster config.json, default config.json, then aladdin config.json
     local value
     value="$1"
-    jq -r ".$value" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json"
+    jq -nr --arg value "$value" 'first(inputs | (if .[$value] == null then empty else .[$value] end))' \
+        "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json" "$ALADDIN_CONFIG_DIR/default/config.json" \
+        "$ALADDIN_CONFIG_DIR/config.json"
 }
 
 function set_cluster_helper_vars() {
     IS_LOCAL="$(_extract_cluster_config_value is_local)"
-    if [[ "$IS_LOCAL" == null ]]; then
+    if [[ -z "$IS_LOCAL" ]]; then
         IS_LOCAL=false
     fi
 
     IS_PROD="$(_extract_cluster_config_value is_prod)"
-    if [[ "$IS_PROD" == null ]]; then
+    if [[ -z "$IS_PROD" ]]; then
         IS_PROD=false
     fi
 
     IS_TESTING="$(_extract_cluster_config_value is_testing)"
-    if [[ "$IS_TESTING" == null ]]; then
+    if [[ -z "$IS_TESTING" ]]; then
         IS_TESTING=false
+    fi
+
+    RBAC_ENABLED="$(_extract_cluster_config_value rbac_enabled)"
+    if [[ -z "$RBAC_ENABLED" ]]; then
+        RBAC_ENABLED=false
+    fi
+
+    AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
+    if [[ -z "$AUTHENTICATION_ENABLED" ]]; then
+        AUTHENTICATION_ENABLED=false
+    else
+        AUTHENTICATION_ROLES="$(_extract_cluster_config_value authentication_roles)"
+        AUTHENTICATION_ALADDIN_ROLE="$(_extract_cluster_config_value authentication_aladdin_role)"
+        AUTHENTICATION_DEFAULT_ROLE="$(_extract_cluster_config_value authentication_default_role)"
+        AUTHENTICATION_ALLOWED_CHANGE_ROLES="$(_extract_cluster_config_value authentication_allowed_change_roles)"
     fi
 }
 
@@ -276,6 +294,12 @@ function enter_docker_container() {
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
+        -e "RBAC_ENABLED=$RBAC_ENABLED" \
+        -e "AUTHENTICATION_ENABLED=$AUTHENTICATION_ENABLED" \
+        -e "AUTHENTICATION_ROLES=$AUTHENTICATION_ROLES" \
+        -e "AUTHENTICATION_DEFAULT_ROLE=$AUTHENTICATION_DEFAULT_ROLE" \
+        -e "AUTHENTICATION_ALADDIN_ROLE=$AUTHENTICATION_ALADDIN_ROLE" \
+        -e "AUTHENTICATION_ALLOWED_CHANGE_ROLES=$AUTHENTICATION_ALLOWED_CHANGE_ROLES" \
         -e "command=$command" \
         `# Mount host credentials` \
         -v "$(pathnorm ~/.aws):/root/.aws" \

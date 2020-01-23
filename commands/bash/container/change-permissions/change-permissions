@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -eu -o pipefail
+
+function change_permissions {
+    # If authentication is enabled, allow the user to switch permission levels if it is one of the
+    # $AUTHENTICATION_ALLOWED_CHANGE_ROLES
+    if ! "$AUTHENTICATION_ENABLED"; then
+        echo >&2 "aladdin: error: authentication is not enabled currently. update your aladdin-config to enable"
+        exit 1
+    fi
+    if [[ "$(jq -r --arg role $1 '. | index($role)' <<< $AUTHENTICATION_ALLOWED_CHANGE_ROLES)" == null ]]; then
+        echo >&2 "aladdin: error: this permission does not exist, or you are not allowed to change to it"
+        exit 1
+    fi
+    kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
+        --namespace="$NAMESPACE" --user "$1"
+}
+
+function usage {
+    cat <<-EOF
+		usage: aladdin change-permissions [-h] permission
+
+		positional arguments:
+		  permission            the permission you want to elevate to
+          
+		optional arguments:
+		  -h, --help            show this help message and exit
+	EOF
+}
+
+if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
+    usage
+else
+    change_permissions "$1"
+fi

@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM golang:1.13.5-alpine3.10
 
 RUN apk add --no-cache \
     bash \
@@ -32,6 +32,8 @@ RUN	curl -L -o /bin/kops https://github.com/kubernetes/kops/releases/download/$K
 
 RUN	curl -L -o- https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar -zxvf - && cp linux-amd64/helm \
 	/bin/helm && chmod 755 /bin/helm && helm init --client-only
+
+RUN go get -u -v sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator
 
 ENV PATH="/root/.local/bin:/root:${PATH}"
 COPY . /root/aladdin

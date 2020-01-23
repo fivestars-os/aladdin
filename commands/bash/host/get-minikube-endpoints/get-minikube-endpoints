@@ -5,7 +5,7 @@ function get_minikube_endpoints() {
     minikube service list
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin get-minikube-endpoints [-h]
 
@@ -17,7 +17,7 @@ function help {
 if [[ $# -eq 0 ]]; then
     get_minikube_endpoints
 elif [[ "$1" == "-h" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1

@@ -106,9 +106,11 @@ function environment_init() {
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
         kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
 
+        add_and_set_authentication_users
+
         if $INIT; then
             kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
-            helm init --upgrade --wait || true
+            _initialize_helm
             _replace_aws_secret || true
             $PY_MAIN namespace-init --force
         fi
@@ -116,6 +118,45 @@ function environment_init() {
 
     echo "END ENVIRONMENT CONFIGURATION==============================================="
 
+}
+
+function _initialize_helm() {
+    if $RBAC_ENABLED; then
+        kubectl -n kube-system create serviceaccount tiller || true
+        kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || true
+        helm init --service-account=tiller --upgrade --wait || true
+    else
+        helm init --upgrade --wait || true
+    fi
+}
+
+function add_and_set_authentication_users() {
+    # If authentication is enabled, add the appropriate users to our kubeconfig
+    if $AUTHENTICATION_ENABLED; then
+        jq -r '.|keys[]' <<< "$AUTHENTICATION_ROLES" | while read name ; do
+            role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $AUTHENTICATION_ROLES)"
+            _add_authentication_user_to_kubeconfig "$name" "$role_arn"
+        done
+        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE"
+    fi
+}
+
+function _add_authentication_user_to_kubeconfig() {
+    name="$1"
+    role_arn="$2"
+    cat <<EOT >> $HOME/.kube/config
+- name: $name
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      args:
+      - token
+      - -i
+      - $CLUSTER_NAME
+      - -r
+      - $role_arn
+      command: aws-iam-authenticator
+EOT
 }
 
 source_cluster_env

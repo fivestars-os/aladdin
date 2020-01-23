@@ -27,7 +27,7 @@ function clean {
     unset _size_before _size_after _exited _untagged
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin clean [-h]
 
@@ -39,7 +39,7 @@ function help {
 if [[ $# -eq 0 ]]; then
     clean
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1

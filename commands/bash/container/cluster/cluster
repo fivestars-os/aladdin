@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin [-h] [--cluster CLUSTER] [--namespace NAMESPACE] [--admin]
 		               [--init] [--dev] cluster
@@ -208,7 +208,7 @@ function view_config {
 cmd=${1:-'-h'}
 case $cmd in
     -h|--help)
-        help
+        usage
         exit 0
         ;;
     backup|create-at-aws|create-config|delete|export-config|import-config|init|populate|rolling-update-at-aws|update-at-aws|view-config)

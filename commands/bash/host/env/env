@@ -7,7 +7,7 @@ function env() {
     echo "# eval \$($ALADDIN_DIR/aladdin.sh env)"
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin env [-h]
 
@@ -19,7 +19,7 @@ function help {
 if [[ $# -eq 0 ]]; then
     env
 elif [[ "$1" == "-h" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1

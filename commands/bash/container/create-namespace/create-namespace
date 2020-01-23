@@ -5,7 +5,7 @@ function create_namespace {
     kubectl create namespace $1
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin create-namespace [-h] namespace
 
@@ -18,7 +18,7 @@ function help {
 }
 
 if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     create_namespace "$1"
 fi

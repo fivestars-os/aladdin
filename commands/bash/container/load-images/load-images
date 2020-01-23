@@ -8,7 +8,7 @@ function load_images {
 	echo "all images imported"
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin load-images [-h]
 
@@ -20,7 +20,7 @@ function help {
 if [[ $# -eq 0 ]]; then
     load_images
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1

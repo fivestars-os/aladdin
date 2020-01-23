@@ -25,7 +25,7 @@ function test_local {
     } &> /dev/null
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin test-local [-h]
           
@@ -41,7 +41,7 @@ if [[ $# -eq 0 ]]; then
         echo >&2 "aladdin test-local should only be called on a local testing minikube cluster"
     fi
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1

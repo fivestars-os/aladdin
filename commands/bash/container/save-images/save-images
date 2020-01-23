@@ -10,7 +10,7 @@ function save_images {
 	echo "all images exported"
 }
 
-function help {
+function usage {
     cat <<-EOF
 		usage: aladdin save-images [-h]
 
@@ -22,7 +22,7 @@ function help {
 if [[ $# -eq 0 ]]; then
     save_images
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    help
+    usage
 else
     echo >&2 "aladdin: error: unrecognized arguments: $1"
     exit 1
