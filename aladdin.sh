@@ -76,6 +76,7 @@ function check_and_handle_init() {
     if "$INIT"; then
         "$SCRIPT_DIR"/infra_k8s_check.sh --force
         enter_minikube_env
+        copy_ssh_to_minikube
         minikube addons enable ingress > /dev/null
         readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_FILE")"
         if [[ "$repo_login_command" != "null" ]]; then
@@ -135,15 +136,17 @@ function check_or_start_minikube() {
 
         echo "Starting minikube... (this will take a moment)"
         set_minikube_config
-
         _start_minikube
 
-        # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
-        if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
-            if test $(minikube config get vm-driver) != "none"; then
-                echo "Installing NFS mounts from host..."
-                "$SCRIPT_DIR"/install_nfs_mounts.sh
-                echo "NFS mounts installed"
+        if test -n "$(aladdin config get nfs)"; then
+            if test "$(minikube config get vm-driver)" != "none"; then
+                # Determine if we've installed our bootlocal.sh script to replace
+                # the default mounts with nfs mounts.
+                if ! minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh"; then
+                    echo "Installing NFS mounts from host..."
+                    "$SCRIPT_DIR"/install_nfs_mounts.sh
+                    echo "NFS mounts installed"
+                fi
             fi
         fi
         echo "Minikube started"
@@ -167,12 +170,14 @@ function copy_ssh_to_minikube() {
         cygwin*) # Cygwin under windows
             echo "Copying ~/.ssh into minikube"
             (
-                minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/.ssh" &
-                minikube ssh -- 'sudo rm -rf /.ssh && sudo cp -r /tmp/.ssh /.ssh && sudo chmod -R 600 /.ssh'
+                tmp_ssh_dir=".ssh.$(tr </dev/urandom -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)" ||:
+                minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/$tmp_ssh_dir" &
+                minikube ssh -- "sudo rm -rf /.ssh && sudo cp -r /tmp/$tmp_ssh_dir /.ssh && sudo chmod -R 600 /.ssh"
                 kill $!
             ) >/dev/null
         ;;
     esac
+    :
 }
 
 function enter_minikube_env() {
@@ -246,9 +251,8 @@ function handle_ostypes() {
         cygwin*) # Cygwin under windows
             function pathnorm(){
                 # Normalize the path, the path should exists
-                typeset path="$1"
-                typeset abspath="$(cd "$path" ; pwd)"
-                cygpath --mixed "$abspath" | sed 's%^C:/%/c/%g'
+                typeset abspath="$(cd "$1" ; pwd)"
+                echo "${abspath#/cygdrive}"
             }
         ;;
         win*|bsd*|solaris*) # Windows
@@ -374,7 +378,6 @@ get_plugin_dir
 exec_host_plugin "$@"
 check_cluster_alias
 check_and_handle_init
-copy_ssh_to_minikube
 set_cluster_helper_vars
 handle_ostypes
 prepare_docker_subcommands
