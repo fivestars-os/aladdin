@@ -2,12 +2,11 @@
 set -eu -o pipefail
 
 function get_dashboard_url {
-    base=$(kubectl cluster-info | grep "Kubernetes master" | cut -d '/' -f3)
-    if [[ $CLUSTER_CODE = "minikube" ]]; then
-        echo $(echo $base | cut -d ':' -f1):30000
+    if [[ $CLUSTER_CODE == "minikube" ]]; then
+        echo "Please run \"minikube dashboard\" which will launch the minikube dashboard in a browser"
     else
-        user=$(kubectl config view --minify=true | grep username | tr -d ' ' | cut -d : -f2)
-        passwd=$(kubectl config view --minify=true | grep password | tr -d ' ' | cut -d : -f2)
+        user="admin"
+        passwd=$(kops get secrets kube --type secret -oplaintext | tr -d ' ')
         base=$(kubectl cluster-info | grep "Kubernetes master" | cut -d '/' -f3)/api/v1/namespaces/kube-system/services/kubernetes-dashboard/proxy/#!/workload?namespace=$NAMESPACE
         echo https://$user:$passwd@$base
     fi
