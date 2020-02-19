@@ -142,7 +142,7 @@ function check_ok(){ printf "${FG_GREEN}OK${RESET_COLOR}\n"; }
 function check_installing(){ printf "installing ... " ; }
 function check_done(){ printf "${FG_GREEN}done${RESET_COLOR}\n"; }
 function check_error(){ printf "${FG_RED_BOLD}FAILED%s${RESET_COLOR}\n" "${1:-}"; exit 1 ; }
-function check_warn() { printf "${FG_YELLOW_BOLD}Please install %s${RESET_COLOR}\n" "$1"; exit 1 ; }
+function check_warn() { printf "${FG_YELLOW_BOLD}Please install %s${RESET_COLOR}\n" "$1"; return 1 ; }
 
 ##################
 # Check functions (returning "true" or "false")
@@ -534,6 +534,7 @@ function install_jq_ubuntu(){ eval $install_cmd jq ; }
 function install_pip_ubuntu(){ eval $install_cmd python-pip ; }
 
 function check_pip(){ has_prog pip; }
+function check_socat(){ has_prog socat ; }
 
 function main(){
     if $NEED_INSTALL ; then
@@ -608,6 +609,8 @@ function main(){
               check_and_warn "python-pip         " pip
               check_and_warn "python3            " python3
               check_and_warn "aws-cli            " awscli
+
+              check_and_warn "socat (optional; needed if minikube.vm_driver = none)" socat || :
 
               # Only validate the script install at the end
               echo "$SCRIPT_HASH" > "$ALREADY_INSTALLED_FILE"

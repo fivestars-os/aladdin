@@ -24,6 +24,10 @@ ALADDIN_PLUGIN_DIR=
 ALADDIN_BIN="$HOME/.aladdin/bin"
 PATH="$ALADDIN_BIN":"$PATH"
 
+# Minikube defaults
+DEFAULT_MINIKUBE_VM_DRIVER="virtualbox"
+DEFAULT_MINIKUBE_MEMORY=4096
+
 function get_config_path() {
     if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
         echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
@@ -76,7 +80,7 @@ function check_and_handle_init() {
             eval "$repo_login_command"
         fi
         local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"
-        #docker pull "$aladdin_image"
+        docker pull "$aladdin_image"
         echo "$current_time" > "$last_launched_file"
     else
         "$SCRIPT_DIR"/infra_k8s_check.sh
@@ -85,11 +89,12 @@ function check_and_handle_init() {
 }
 
 function set_minikube_config(){
+    local vm_driver=$(jq --arg DEFAULT "$DEFAULT_MINIKUBE_VM_DRIVER" -r '.minikube.vm_driver//$DEFAULT' "$ALADDIN_CONFIG_FILE")
+    local memory=$(jq --arg DEFAULT "$DEFAULT_MINIKUBE_MEMORY" -r '.minikube.memory//$DEFAULT' "$ALADDIN_CONFIG_FILE")
+
     minikube config set kubernetes-version v$KUBERNETES_VERSION &> /dev/null
-    if test $(minikube config get vm-driver) != none; then 
-        minikube config set vm-driver virtualbox &> /dev/null
-    fi
-    minikube config set memory 4096 &> /dev/null
+    minikube config set vm-driver "$vm_driver" &> /dev/null
+    minikube config set memory "$memory" &> /dev/null
 }
 
 # Start minikube if we need to
@@ -97,7 +102,17 @@ function check_or_start_minikube() {
     if ! minikube status | grep Running &> /dev/null; then
         echo "Starting minikube... (this will take a moment)"
         set_minikube_config
-        minikube start &> /dev/null
+
+        if test $(minikube config get vm-driver) != "none"; then
+            minikube start &> /dev/null
+        else
+            # If we're running on native docker on a linux host, minikube start must happen as root
+            # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
+            # to switch users to $SUDO_USER (the user that called sudo) before writing out
+            # configuration.
+            sudo -E CHANGE_MINIKUBE_NONE_USER=true $(which minikube) start
+        fi
+
         # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
         if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
             echo "Installing NFS mounts from host..."
