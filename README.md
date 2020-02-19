@@ -59,7 +59,7 @@ Currently, two parameters are configurable:
 ```
 aladdin config set minikube.memory 8192
 ```
- * vm\_driver: By default, we use the 'virtualbox' virtualization backend.  Currently, we support only this and the `none` backend, which runs containers directly on the underlying OS without virtualization (only supported on
+ * vm\_driver: By default, we use the `virtualbox` virtualization backend.  Currently, we support only this and the `none` backend, which runs containers directly on the underlying OS without virtualization (only supported on
    linux).  If your host is running linux, and you wish to use the 'none' backend (and avoid running in a VM), you may run,
 ```
 aladdin config set minikube.vm_driver none
