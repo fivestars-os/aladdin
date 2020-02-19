@@ -97,21 +97,38 @@ function set_minikube_config(){
     minikube config set memory "$memory" &> /dev/null
 }
 
-# Start minikube if we need to
-function check_or_start_minikube() {
-    if ! minikube status | grep Running &> /dev/null; then
-        echo "Starting minikube... (this will take a moment)"
-        set_minikube_config
+function _start_minikube() {
+    local minikube_cmd="minikube start"
 
-        if test $(minikube config get vm-driver) != "none"; then
-            minikube start &> /dev/null
-        else
+    if test "$OSTYPE" = "linux-gnu"; then
+        if test $(minikube config get vm-driver) = "none"; then
             # If we're running on native docker on a linux host, minikube start must happen as root
             # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
             # to switch users to $SUDO_USER (the user that called sudo) before writing out
             # configuration.
-            sudo -E CHANGE_MINIKUBE_NONE_USER=true $(which minikube) start
+            minikube_cmd="sudo -E CHANGE_MINIKUBE_NONE_USER=true '$(which minikube)' start"
+
+        else
+            # On linux, /home gets mounted on /hosthome in the minikube vm, so as not to
+            # override /home/docker.  We still want the user's home directory to be in the
+            # same path both in and outside the minikube vm though, so symlink it into place.
+            minikube_cmd="$minikube_cmd &&\
+                          minikube ssh \"sudo mkdir '$HOME' && \
+                                         sudo mount --bind '${HOME/\/home//hosthome}' '$HOME'\""
         fi
+    fi
+
+    bash -c "$minikube_cmd"
+}
+
+# Start minikube if we need to
+function check_or_start_minikube() {
+    if ! minikube status | grep Running &> /dev/null; then
+
+        echo "Starting minikube... (this will take a moment)"
+        set_minikube_config
+
+        _start_minikube
 
         # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
         if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
