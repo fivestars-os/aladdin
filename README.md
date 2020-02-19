@@ -53,6 +53,20 @@ You will now need to [create your aladdin configuration](./docs/create_aladdin_c
 
     $ aladdin config set config_dir /path/to/aladdin/configuration
 
+### VM Configuration
+Currently, two parameters are configurable:
+1. memory: By default, we create a minikube vm with 4096MB (4GB) of memory.  To change the size of the vm we create to e.g. 8GB, you may run:
+```
+aladdin config set minikube.memory 8192
+```
+1. vm\_driver: By default, we use the 'virtualbox' virtualization backend.  Currently, we support only this and the `none` backend, which runs containers directly on the underlying OS without virtualization (only supported on
+   linux).  If your host is running linux, and you wish to use the 'none' backend (and avoid running in a VM), you may run,
+```
+aladdin config set minikube.vm_driver none
+```
+
+Note that these commands only take effect when the minikube cluster is first set up --- in order for them to take effect, you will need to first delete your existing minikube cluster (if present) and then (re-)run `aladdin --init`.
+
 ### NFS mounts
 
 Aladdin uses minikube for local development which is a VirtualBox-based VM. Internally it mounts your `/Users` (or `/cygdrive/c/Users` for Cygwin users) directory to the root of the minikube filesystem. We have discovered that the `vboxsf` mounts are not as performant as NFS mounts and furthermore are not as reliable when it comes to detecting file changes made from the host. To address this, we replace the `vboxsf` mounts within minikube with NFS mounts. However, this requires a bit of manual setup on the host machine before it will take effect.
