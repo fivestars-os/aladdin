@@ -138,8 +138,8 @@ function check_or_start_minikube() {
 
         # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
         if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
-            echo "Installing NFS mounts from host..."
             if test $(minikube config get vm-driver) != "none"; then
+                echo "Installing NFS mounts from host..."
                 "$SCRIPT_DIR"/install_nfs_mounts.sh
                 echo "NFS mounts installed"
             fi
