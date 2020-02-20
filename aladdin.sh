@@ -89,12 +89,18 @@ function check_and_handle_init() {
 }
 
 function set_minikube_config(){
-    local vm_driver=$(jq --arg DEFAULT "$DEFAULT_MINIKUBE_VM_DRIVER" -r '.minikube.vm_driver//$DEFAULT' "$ALADDIN_CONFIG_FILE")
-    local memory=$(jq --arg DEFAULT "$DEFAULT_MINIKUBE_MEMORY" -r '.minikube.memory//$DEFAULT' "$ALADDIN_CONFIG_FILE")
-
     minikube config set kubernetes-version v$KUBERNETES_VERSION &> /dev/null
-    minikube config set vm-driver "$vm_driver" &> /dev/null
-    minikube config set memory "$memory" &> /dev/null
+
+    for key in vm_driver memory disk_size cpus; do
+        local minikube_key=$(tr _ - <<< "$key")  # e.g., vm-driver
+        local default_var="DEFAULT_MINIKUBE_$(tr a-z A-Z <<< "$key")"  # e.g., DEFAULT_MINIKUBE_VM_DRIVER
+
+        local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
+
+        if test -n "$value"; then
+            minikube config set "$minikube_key" "$value"
+        fi
+    done
 }
 
 function _start_minikube() {
@@ -128,7 +134,7 @@ function check_or_start_minikube() {
         echo "Starting minikube... (this will take a moment)"
         set_minikube_config
 
-        _start_minikube &>/dev/null
+        _start_minikube
 
         # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
         if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then

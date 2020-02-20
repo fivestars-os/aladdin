@@ -12,19 +12,22 @@ function config() {
     fi
     case "$subcommand" in
         get)
-            result="$(jq -r ".$1" "$config_path")"
+            default="${2:-}"
+            result="$(jq -r --arg key "$1" 'getpath($key | split("."))' "$config_path")"
             if [[ ! "$result" == null ]]; then
                 echo $result
+            elif test -n "$default"; then
+                echo $default
             fi
         ;;
         set)
-            jq -c --arg key "$1" --arg val "$2" '. + { ($key): $val }' "$config_path" > "tmp.$$.json" && mv "tmp.$$.json" "$config_path"
+            jq --arg key "$1" --arg val "$2" 'setpath($key | split("."); $val)' "$config_path" > "tmp.$$.json" && mv "tmp.$$.json" "$config_path"
         ;;
         view)
             cat "$config_path"
         ;;
         unset)
-            jq -c "del(.$1)" "$config_path" > "tmp.$$.json" && mv "tmp.$$.json" "$config_path"
+            jq --arg key "$1" 'delpaths([$key | split(".")])' "$config_path" > "tmp.$$.json" && mv "tmp.$$.json" "$config_path"
         ;;
         *)
             echo "unknown subcommand $subcommand for aladdin config command"
