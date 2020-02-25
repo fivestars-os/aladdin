@@ -98,7 +98,7 @@ function set_minikube_config(){
         local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
 
         if test -n "$value"; then
-            minikube config set "$minikube_key" "$value"
+            minikube config set "$minikube_key" "$value" &> /dev/null
         fi
     done
 }
