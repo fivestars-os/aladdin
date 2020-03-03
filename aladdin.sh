@@ -24,6 +24,10 @@ ALADDIN_PLUGIN_DIR=
 ALADDIN_BIN="$HOME/.aladdin/bin"
 PATH="$ALADDIN_BIN":"$PATH"
 
+# Minikube defaults
+DEFAULT_MINIKUBE_VM_DRIVER="virtualbox"
+DEFAULT_MINIKUBE_MEMORY=4096
+
 function get_config_path() {
     if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
         echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
@@ -86,21 +90,59 @@ function check_and_handle_init() {
 
 function set_minikube_config(){
     minikube config set kubernetes-version v$KUBERNETES_VERSION &> /dev/null
-    minikube config set vm-driver virtualbox &> /dev/null
-    minikube config set memory 4096 &> /dev/null
+
+    for key in vm_driver memory disk_size cpus; do
+        local minikube_key=$(tr _ - <<< "$key")  # e.g., vm-driver
+        local default_var="DEFAULT_MINIKUBE_$(tr a-z A-Z <<< "$key")"  # e.g., DEFAULT_MINIKUBE_VM_DRIVER
+
+        local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
+
+        if test -n "$value"; then
+            minikube config set "$minikube_key" "$value" &> /dev/null
+        fi
+    done
+}
+
+function _start_minikube() {
+    local minikube_cmd="minikube start"
+
+    if test "$OSTYPE" = "linux-gnu"; then
+        if test $(minikube config get vm-driver) = "none"; then
+            # If we're running on native docker on a linux host, minikube start must happen as root
+            # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
+            # to switch users to $SUDO_USER (the user that called sudo) before writing out
+            # configuration.
+            minikube_cmd="sudo -E CHANGE_MINIKUBE_NONE_USER=true '$(which minikube)' start"
+
+        else
+            # On linux, /home gets mounted on /hosthome in the minikube vm, so as not to
+            # override /home/docker.  We still want the user's home directory to be in the
+            # same path both in and outside the minikube vm though, so symlink it into place.
+            minikube_cmd="$minikube_cmd &&\
+                          minikube ssh \"sudo mkdir '$HOME' && \
+                                         sudo mount --bind '${HOME/\/home//hosthome}' '$HOME'\""
+        fi
+    fi
+
+    bash -c "$minikube_cmd"
 }
 
 # Start minikube if we need to
 function check_or_start_minikube() {
     if ! minikube status | grep Running &> /dev/null; then
+
         echo "Starting minikube... (this will take a moment)"
         set_minikube_config
-        minikube start &> /dev/null
+
+        _start_minikube
+
         # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
         if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
-            echo "Installing NFS mounts from host..."
-            "$SCRIPT_DIR"/install_nfs_mounts.sh
-            echo "NFS mounts installed"
+            if test $(minikube config get vm-driver) != "none"; then
+                echo "Installing NFS mounts from host..."
+                "$SCRIPT_DIR"/install_nfs_mounts.sh
+                echo "NFS mounts installed"
+            fi
         fi
         echo "Minikube started"
     else
@@ -308,9 +350,7 @@ function enter_docker_container() {
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
         `# Mount minikube parts` \
-        -v /usr/bin/docker:/usr/bin/docker \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -v /usr/lib64/libdevmapper.so.1.02:/usr/lib/libdevmapper.so.1.02 \
         `# Specific command` \
         ${DEV_CMD:-} ${MINIKUBE_CMD:-} ${ALADDIN_PLUGIN_CMD:-} \
         "$aladdin_image" \
