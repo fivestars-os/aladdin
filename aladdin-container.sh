@@ -89,7 +89,9 @@ function environment_init() {
     export AWS_PROFILE="$AWS_DEFAULT_PROFILE"
 
     # Sanity check the user's aws configuration if init is set
-    $INIT && test_aws_config
+    if "$INIT" && ! "$IS_LOCAL"; then
+        test_aws_config
+    fi
 
     # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
     if "$IS_LOCAL" || ( kops export kubecfg --name $CLUSTER_NAME &> /dev/null && \
