@@ -92,8 +92,8 @@ function environment_init() {
     _handle_aws_config
 
     # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
-    if "$IS_LOCAL" || ( kops export kubecfg --name $CLUSTER_NAME &> /dev/null && \
-        kops validate cluster --name $CLUSTER_NAME ) &> /dev/null; then
+    if "$IS_LOCAL" || ( kops export kubecfg --name $CLUSTER_NAME > /dev/null && \
+        kops validate cluster --name $CLUSTER_NAME ) > /dev/null; then
 
         if "$IS_LOCAL"; then
             mkdir -p $HOME/.kube/

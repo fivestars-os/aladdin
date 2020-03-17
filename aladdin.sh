@@ -76,7 +76,7 @@ function check_and_handle_init() {
     if "$INIT"; then
         "$SCRIPT_DIR"/infra_k8s_check.sh --force
         enter_minikube_env
-        minikube addons enable ingress &> /dev/null
+        minikube addons enable ingress > /dev/null
         readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_FILE")"
         if [[ "$repo_login_command" != "null" ]]; then
             eval "$repo_login_command"
@@ -91,7 +91,7 @@ function check_and_handle_init() {
 }
 
 function set_minikube_config(){
-    minikube config set kubernetes-version v$KUBERNETES_VERSION &> /dev/null
+    minikube config set kubernetes-version v$KUBERNETES_VERSION > /dev/null
 
     for key in vm_driver memory disk_size cpus; do
         local minikube_key=$(tr _ - <<< "$key")  # e.g., vm-driver
@@ -100,7 +100,7 @@ function set_minikube_config(){
         local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
 
         if test -n "$value"; then
-            minikube config set "$minikube_key" "$value" &> /dev/null
+            minikube config set "$minikube_key" "$value" > /dev/null
         fi
     done
 }
@@ -131,7 +131,7 @@ function _start_minikube() {
 
 # Start minikube if we need to
 function check_or_start_minikube() {
-    if ! minikube status | grep Running &> /dev/null; then
+    if ! minikube status | grep Running > /dev/null; then
 
         echo "Starting minikube... (this will take a moment)"
         set_minikube_config
@@ -148,10 +148,10 @@ function check_or_start_minikube() {
         fi
         echo "Minikube started"
     else
-        if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" &> /dev/null; then
+        if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" > /dev/null; then
             echo "Minikube detected on the incorrect version, stopping and restarting"
-            minikube stop &> /dev/null
-            minikube delete &> /dev/null
+            minikube stop > /dev/null
+            minikube delete > /dev/null
             set_minikube_config
             check_or_start_minikube
         fi

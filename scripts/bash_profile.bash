@@ -9,7 +9,7 @@ echo "Don't forget to checkout scripts/bash_profile.bash in aladdin"
 function change_to_aladdin_permission() {
     echo "Temporarily changing your permissions to run aladdin command..."
     kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
-        --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE" &> /dev/null
+        --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE" > /dev/null
 }
 
 function get_current_user() {
@@ -21,7 +21,7 @@ function restore_permission() {
     old_user="$1"
     echo "Reverting your permissions back to $old_user"
     kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
-        --namespace="$NAMESPACE" --user "$old_user" &> /dev/null
+        --namespace="$NAMESPACE" --user "$old_user" > /dev/null
 }
 
 function with_aladdin_perms_wrapper() {
