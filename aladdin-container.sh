@@ -192,10 +192,8 @@ function _handle_aws_config() {
         # are specifying --profile to a separate present entry, which is expected in the bastion case
         local aws_default_profile_temp="$AWS_DEFAULT_PROFILE"
         unset AWS_DEFAULT_PROFILE
-        # Test aws config for bastion account if INIT and not IS_LOCAL
-        if "$INIT" && ! "$IS_LOCAL"; then
-            _test_aws_config "$BASTION_ACCOUNT_PROFILE"
-        fi
+        # Test aws config for bastion account
+        "$INIT" && _test_aws_config "$BASTION_ACCOUNT_PROFILE"
         # Alias the add assume role config command
         add_assume_role_config="$ALADDIN_DIR/commands/bash/container/add-aws-assume-role-config/add-aws-assume-role-config"
         # Need to add aws configuration based on publish configuration.
