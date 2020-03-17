@@ -25,12 +25,12 @@ function _test_aws_config() {
     echo "Testing aws configuration..."
     local profile=$1
     # See if we the current aws profile configured
-    if ! aws configure list --profile "$profile" &>/dev/null; then
+    if ! aws configure list --profile "$profile" >/dev/null; then
         echo "Could not find aws profile: $profile; please check your ~/.aws/config and ~/.aws/credentials files"
         exit 1
     fi
     # Do a test aws cli call for the current aws profile
-    if ! aws iam list-users --profile "$profile" &>/dev/null; then
+    if ! aws iam list-users --profile "$profile" >/dev/null; then
         echo "Your aws $profile credentials or config may be malformed; please check your ~/.aws/config and ~/.aws/credentials files"
         exit 1
     fi
