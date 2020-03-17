@@ -28,7 +28,7 @@ PATH="$ALADDIN_BIN":"$PATH"
 DEFAULT_MINIKUBE_VM_DRIVER="virtualbox"
 DEFAULT_MINIKUBE_MEMORY=4096
 
-source "$SCRIPT_DIR/shared.sh"
+source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
 
 function get_config_path() {
     if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then

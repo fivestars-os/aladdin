@@ -17,7 +17,7 @@ export SCRIPT_DIR
 export ALADDIN_CONFIG_DIR
 export PY_MAIN
 
-source "$SCRIPT_DIR/shared.sh"
+source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
 
 # Test user's aws configuration
 function _test_aws_config() {
@@ -30,7 +30,7 @@ function _test_aws_config() {
         exit 1
     fi
     # Do a test aws cli call for the current aws profile
-    if ! aws s3 ls --profile "$profile" &>/dev/null; then
+    if ! aws iam list-users --profile "$profile" &>/dev/null; then
         echo "Your aws $profile credentials or config may be malformed; please check your ~/.aws/config and ~/.aws/credentials files"
         exit 1
     fi
