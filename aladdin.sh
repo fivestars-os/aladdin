@@ -28,6 +28,8 @@ PATH="$ALADDIN_BIN":"$PATH"
 DEFAULT_MINIKUBE_VM_DRIVER="virtualbox"
 DEFAULT_MINIKUBE_MEMORY=4096
 
+source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
+
 function get_config_path() {
     if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
         echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
@@ -74,7 +76,7 @@ function check_and_handle_init() {
     if "$INIT"; then
         "$SCRIPT_DIR"/infra_k8s_check.sh --force
         enter_minikube_env
-        minikube addons enable ingress &> /dev/null
+        minikube addons enable ingress > /dev/null
         readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_FILE")"
         if [[ "$repo_login_command" != "null" ]]; then
             eval "$repo_login_command"
@@ -89,7 +91,7 @@ function check_and_handle_init() {
 }
 
 function set_minikube_config(){
-    minikube config set kubernetes-version v$KUBERNETES_VERSION &> /dev/null
+    minikube config set kubernetes-version v$KUBERNETES_VERSION > /dev/null
 
     for key in vm_driver memory disk_size cpus; do
         local minikube_key=$(tr _ - <<< "$key")  # e.g., vm-driver
@@ -98,7 +100,7 @@ function set_minikube_config(){
         local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
 
         if test -n "$value"; then
-            minikube config set "$minikube_key" "$value" &> /dev/null
+            minikube config set "$minikube_key" "$value" > /dev/null
         fi
     done
 }
@@ -129,7 +131,7 @@ function _start_minikube() {
 
 # Start minikube if we need to
 function check_or_start_minikube() {
-    if ! minikube status | grep Running &> /dev/null; then
+    if ! minikube status | grep Running > /dev/null; then
 
         echo "Starting minikube... (this will take a moment)"
         set_minikube_config
@@ -146,10 +148,10 @@ function check_or_start_minikube() {
         fi
         echo "Minikube started"
     else
-        if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" &> /dev/null; then
+        if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" > /dev/null; then
             echo "Minikube detected on the incorrect version, stopping and restarting"
-            minikube stop &> /dev/null
-            minikube delete &> /dev/null
+            minikube stop > /dev/null
+            minikube delete > /dev/null
             set_minikube_config
             check_or_start_minikube
         fi
@@ -180,15 +182,6 @@ function enter_minikube_env() {
     fi
 }
 
-function _extract_cluster_config_value() {
-    # Try extracting config from cluster config.json, default config.json, then aladdin config.json
-    local value
-    value="$1"
-    jq -nr --arg value "$value" 'first(inputs | (if .[$value] == null then empty else .[$value] end))' \
-        "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json" "$ALADDIN_CONFIG_DIR/default/config.json" \
-        "$ALADDIN_CONFIG_DIR/config.json"
-}
-
 function set_cluster_helper_vars() {
     IS_LOCAL="$(_extract_cluster_config_value is_local)"
     if [[ -z "$IS_LOCAL" ]]; then
@@ -203,21 +196,6 @@ function set_cluster_helper_vars() {
     IS_TESTING="$(_extract_cluster_config_value is_testing)"
     if [[ -z "$IS_TESTING" ]]; then
         IS_TESTING=false
-    fi
-
-    RBAC_ENABLED="$(_extract_cluster_config_value rbac_enabled)"
-    if [[ -z "$RBAC_ENABLED" ]]; then
-        RBAC_ENABLED=false
-    fi
-
-    AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
-    if [[ -z "$AUTHENTICATION_ENABLED" ]]; then
-        AUTHENTICATION_ENABLED=false
-    else
-        AUTHENTICATION_ROLES="$(_extract_cluster_config_value authentication_roles)"
-        AUTHENTICATION_ALADDIN_ROLE="$(_extract_cluster_config_value authentication_aladdin_role)"
-        AUTHENTICATION_DEFAULT_ROLE="$(_extract_cluster_config_value authentication_default_role)"
-        AUTHENTICATION_ALLOWED_CHANGE_ROLES="$(_extract_cluster_config_value authentication_allowed_change_roles)"
     fi
 }
 
@@ -336,15 +314,11 @@ function enter_docker_container() {
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
-        -e "RBAC_ENABLED=$RBAC_ENABLED" \
-        -e "AUTHENTICATION_ENABLED=$AUTHENTICATION_ENABLED" \
-        -e "AUTHENTICATION_ROLES=$AUTHENTICATION_ROLES" \
-        -e "AUTHENTICATION_DEFAULT_ROLE=$AUTHENTICATION_DEFAULT_ROLE" \
-        -e "AUTHENTICATION_ALADDIN_ROLE=$AUTHENTICATION_ALADDIN_ROLE" \
-        -e "AUTHENTICATION_ALLOWED_CHANGE_ROLES=$AUTHENTICATION_ALLOWED_CHANGE_ROLES" \
         -e "command=$command" \
         `# Mount host credentials` \
-        -v "$(pathnorm ~/.aws):/root/.aws" \
+        `# Mount destination for aws creds will not be /root/.aws because we will possibly make` \
+        `# changes there that we don't want propagated on the host's ~/.aws` \
+        -v "$(pathnorm ~/.aws):/root/tmp/.aws" \
         -v "${ssh_src}:/root/.ssh" \
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \

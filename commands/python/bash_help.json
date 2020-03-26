@@ -1,4 +1,7 @@
 {
+    "add-aws-assume-role-config": {
+        "help": "Update your aws configuration to have credentials for an assumed role under a given profile"
+    },
     "bash": {
         "help": "Launch bash in the context of aladdin"
     },
