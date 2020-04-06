@@ -14,7 +14,7 @@ set -eu -o pipefail
 
 
 #- from : https://github.com/kubernetes/minikube/releases
-VERSION_MINIKUBE="1.5.2"
+VERSION_MINIKUBE="1.9.2"
 #- from : https://github.com/docker/docker-ce/releases
 VERSION_DOCKER="18.09.7"
 #- from : https://github.com/kubernetes/kubernetes/releases
