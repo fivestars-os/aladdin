@@ -98,7 +98,7 @@ function environment_init() {
         if "$IS_LOCAL"; then
             mkdir -p $HOME/.kube/
             cp $HOME/.kube_local/config $HOME/.kube/config
-            sed 's/: .*[\\\/]\([a-z]*\.[a-z]*\)$/: \/root\/.minikube\/\1/g' $HOME/.kube_local/config > $HOME/.kube/config
+            sed 's#: ?.*\.minikube#: /root/.minikube#' $HOME/.kube_local/config > $HOME/.kube/config
         else
             cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
         fi
