@@ -100,7 +100,7 @@ function environment_init() {
             cp $HOME/.kube_local/config $HOME/.kube/config
             # Replace e.g. /Users/ptr/.minikube with /root/.minikube in the minikube conf dir path
             # (since that's where it will be mounted within the aladdin container)
-            sed 's#: ?.*\.minikube#: /root/.minikube#' $HOME/.kube_local/config > $HOME/.kube/config
+            sed 's|: \?.*\.minikube|: /root/.minikube| ; /: \/root\/.minikube/ s|\\|/|g' $HOME/.kube_local/config > $HOME/.kube/config
         else
             cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
         fi
