@@ -55,7 +55,7 @@ function get_plugin_dir() {
 
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
-    cluster_alias=$(jq -r ".cluster_aliases.$CLUSTER_CODE" "$ALADDIN_CONFIG_FILE")
+    cluster_alias=$(jq -r ".cluster_aliases[\"$CLUSTER_CODE\"]" "$ALADDIN_CONFIG_FILE")
     if [[ $cluster_alias != null ]]; then
         export CLUSTER_CODE=$cluster_alias
     fi
@@ -302,8 +302,10 @@ function enter_docker_container() {
         *)       ssh_src="$(pathnorm ~/.ssh)" ;;
     esac
 
-    local docker_sock_mount="/var/run/docker.sock:/var/run/docker.sock"
+    # How to mount docker parts
+    mounts="$mounts -v /var/run/docker.sock:/var/run/docker.sock"
     if $USING_HOST_DOCKER ; then
+        # Special case mounting host docker on linux/win?
         case "$OSTYPE" in
             *) true ;;
         esac
@@ -315,7 +317,6 @@ function enter_docker_container() {
         -e "INIT=$INIT" \
         -e "CLUSTER_CODE=$CLUSTER_CODE" \
         -e "NAMESPACE=$NAMESPACE" \
-        -e "MINIKUBE_IP=$(minikube ip)" \
         -e "IS_LOCAL=$IS_LOCAL" \
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
@@ -329,8 +330,6 @@ function enter_docker_container() {
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
-        `# Mount minikube parts` \
-        -v "$docker_sock_mount" \
         `# Specific command` \
         $mounts ${ALADDIN_PLUGIN_CMD:-} \
         "$aladdin_image" \
