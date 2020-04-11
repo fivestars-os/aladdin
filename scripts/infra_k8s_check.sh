@@ -54,7 +54,7 @@ RESET_COLOR="$(tput sgr0 2>/dev/null || printf "\e[0m")"
 # Check things are installed
 ############################
 # Do not show the check again if it has already been installed
-ALREADY_INSTALLED_FILE="$HOME/.infra/installed"
+ALREADY_INSTALLED_FILE="$HOME/.aladdin/infra/installed"
 
 ALADDIN_BIN="$HOME/.aladdin/bin"
 

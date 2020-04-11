@@ -57,8 +57,8 @@ class ProjectConf(object):
 
     @property
     def mount_path(self):
-        # Under aladdin, we are using /minikube_root , but under minikube it's /
-        return re.sub(r'^/minikube_root', '', self.path)
+        # Under aladdin, we are using /aladdin_root , but under minikube it's /
+        return re.sub(r'^/aladdin_root', '', self.path)
 
     @property
     def build_command(self):

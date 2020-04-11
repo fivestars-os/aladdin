@@ -76,6 +76,16 @@ function exec_command_or_plugin() {
 
 function _replace_aws_secret() {
     local creds username password server
+    local force="${1:-}"
+    if ! $force && kubectl get secret aws > /dev/null; then
+        local init_every=3600*10
+        local secret_ts=$(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp)
+        local current_time="$(date +'%s')"
+        local previous_run="$(date -d $secret_ts +%s)"
+        if [[ "$current_time" -gt "$((${previous_run:-0}+init_every))" || "$previous_run" -gt "$current_time" ]]; then
+            return 0
+        fi
+    fi
     creds=$(aws ecr get-login)
     username=$(echo $creds | cut -d ' ' -f4)
     password=$(echo $creds | cut -d ' ' -f6)
@@ -111,9 +121,12 @@ function environment_init() {
         _handle_authentication_config
 
         if $INIT; then
-            kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
             _initialize_helm
-            _replace_aws_secret || true
+        fi
+        _replace_aws_secret $INIT || true
+        local init_every=3600
+        if $INIT || _get_last_launched "${CLUSTER_NAME}_${NAMESPACE}" init_every; then
+            kubectl create namespace $NAMESPACE || true
             $PY_MAIN namespace-init --force
         fi
     fi
@@ -213,11 +226,9 @@ function _handle_aws_config() {
         "$add_assume_role_config" "$aws_role" "$aws_profile" "$aws_mfa_enabled" 3600 # 1 hour
         # We reset AWS_DEFAULT_PROFILE here because that entry will be present in aws config files now
         export AWS_DEFAULT_PROFILE="$aws_default_profile_temp"
-    else
+    elif "$INIT" && ! "$IS_LOCAL"; then
         # Test aws config for current cluster's aws account if INIT and not IS_LOCAL
-        if "$INIT" && ! "$IS_LOCAL"; then
-            _test_aws_config "$AWS_DEFAULT_PROFILE"
-        fi
+        _test_aws_config "$AWS_DEFAULT_PROFILE"
     fi
     # Kops uses AWS_PROFILE instead of AWS_DEFAULT_PROFILE
     export AWS_PROFILE="$AWS_DEFAULT_PROFILE"

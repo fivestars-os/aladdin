@@ -2,6 +2,7 @@
 set -eu -o pipefail
 
 function host {
+	local minikube_ip=$(minikube ip)
     cat <<-EOF
 		# Open your /etc/hosts file:
 		# On windows :
@@ -10,9 +11,9 @@ function host {
 		# On mac/linux :
 		# - sudo vim /etc/hosts
 		# and add this:
-		$MINIKUBE_IP minikube
+		$minikube_ip minikube
 	EOF
-    kubectl get ingress ingress -o=json 2>/dev/null | jq '.spec.rules[]?.host' --raw-output | grep -v '^$' | xargs -I % echo "$MINIKUBE_IP %"
+    kubectl get ingress ingress -o=json 2>/dev/null | jq '.spec.rules[]?.host' --raw-output | grep -v '^$' | xargs -I % echo "$minikube_ip %"
 }
 
 function usage {
