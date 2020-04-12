@@ -82,7 +82,7 @@ function _replace_aws_secret() {
         local secret_ts=$(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp)
         local current_time="$(date +'%s')"
         local previous_run="$(date -d $secret_ts +%s)"
-        if [[ "$current_time" -gt "$((${previous_run:-0}+init_every))" || "$previous_run" -gt "$current_time" ]]; then
+        if [[ "$current_time" -lt "$((${previous_run:-0}+init_every))" || "$previous_run" -gt "$current_time" ]]; then
             return 0
         fi
     fi
