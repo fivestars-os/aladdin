@@ -288,8 +288,10 @@ function synchronize_datetime()
 {
   # When minikube wakes up from sleep, date or time could be out of sync.
   # Take date + time from host and set it on minikube.
-  echo "Synchronizing date and time on minikube with the host"
-  ssh -i ~/.minikube/machines/minikube/id_rsa docker@$(minikube ip) "docker run --rm --privileged --pid=host alpine nsenter -t 1 -m -u -n -i date -u $(date -u +%m%d%H%M%Y)"
+  if test "$(minikube config get vm-driver)" != "none"; then
+    echo "Synchronizing date and time on minikube with the host"
+    minikube ssh "sudo date -s @$(date +%s)"
+  fi
 }
 
 function enter_docker_container() {
