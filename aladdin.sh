@@ -284,6 +284,14 @@ function prepare_docker_subcommands() {
     fi
 }
 
+function synchronize_datetime()
+{
+  # When minikube wakes up from sleep, date or time could be out of sync.
+  # Take date + time from host and set it on minikube.
+  echo "Synchronizing date and time on minikube with the host"
+  ssh -i ~/.minikube/machines/minikube/id_rsa docker@$(minikube ip) "docker run --rm --privileged --pid=host alpine nsenter -t 1 -m -u -n -i date -u $(date -u +%m%d%H%M%Y)"
+}
+
 function enter_docker_container() {
     if "$IS_PROD" && ! "$SKIP_PROMPTS"; then
         confirm_production
@@ -378,4 +386,5 @@ copy_ssh_to_minikube
 set_cluster_helper_vars
 handle_ostypes
 prepare_docker_subcommands
+synchronize_datetime
 enter_docker_container "$@"
