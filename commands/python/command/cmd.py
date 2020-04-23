@@ -35,7 +35,7 @@ def cmd(app_name, command_args, namespace=None):
     logging.info("Command output below...")
 
     try:
-        # In commands-base:2.0.0, we moved the commands.py script to /usr/local/bin/aladdin_cmd
+        # In commands-base:2.0.0, we moved the commands.py script to /usr/local/bin/aladdin_cmd_v2
         # and made it executable. It's expected that the implementer will provide a she-bang line to
         # indicate which interpreter to use (or none at all if they are using a compiled executable)
         k.kub_exec(
@@ -43,7 +43,7 @@ def cmd(app_name, command_args, namespace=None):
             f"{app_name}-commands",
             "/bin/bash",
             "-c",
-            "test -x /usr/local/bin/aladdin_cmd",
+            "test -x /usr/local/bin/aladdin_cmd_v2",
         )
     except subprocess.CalledProcessError:
         # commands-base:1.0.0 behavior
@@ -65,4 +65,4 @@ def cmd(app_name, command_args, namespace=None):
         k.kub_exec(pod_name, f"{app_name}-commands", executable, "command.py", *command_args)
     else:
         # commands-base:2.0.0 behavior
-        k.kub_exec(pod_name, f"{app_name}-commands", "/usr/local/bin/aladdin_cmd", *command_args)
+        k.kub_exec(pod_name, f"{app_name}-commands", "/usr/local/bin/aladdin_cmd_v2", *command_args)
