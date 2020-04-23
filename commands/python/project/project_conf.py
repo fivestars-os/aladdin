@@ -26,11 +26,10 @@ class ProjectConf(object):
     CONFIG_NAME = 'lamp.json'
 
     CONTENT_EXAMPLE = {
-        "name": "<project_name>",
-        "build_docker": ["./commands/build.bash"],
-        "helm_chart": ["./builds/<project_name>"],
-        "docker_images": ["img1", "img2", "img3"],
-        "commands": {"cmd": {"version": 2}},
+        'name': '<project_name>',
+        'build_docker': ['./commands/build.bash'],
+        'helm_chart': ['./builds/<project_name>'],
+        'docker_images': ['img1', 'img2', 'img3']
     }
 
     @classmethod
@@ -79,11 +78,7 @@ class ProjectConf(object):
 
     @property
     def helm_path(self):
-        return abspath(os.path.join(self.path, self.lamp_content["helm_chart"]))
-
-    @property
-    def commands_config(self):
-        return search("commands", self.lamp_content)
+        return abspath(os.path.join(self.path, self.lamp_content['helm_chart']))
 
     def get_docker_images(self):
         images = search('docker_images', self.lamp_content)
