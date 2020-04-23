@@ -31,7 +31,7 @@ def cmd_args(args):
 
 def cmd(app_name, command_args, namespace=None):
     k = Kubernetes(namespace=namespace)
-    pod_name = k.get_pod_name("%s-commands" % app_name)
+    pod_name = k.get_pod_name(f"{app_name}-commands")
     logging.info("Command output below...")
 
     try:
@@ -40,7 +40,7 @@ def cmd(app_name, command_args, namespace=None):
         # indicate which interpreter to use (or none at all if they are using a compiled executable)
         k.kub_exec(
             pod_name,
-            "%s-commands" % app_name,
+            f"{app_name}-commands",
             "/bin/bash",
             "-c",
             "test -x /usr/local/bin/aladdin_cmd",
@@ -54,9 +54,7 @@ def cmd(app_name, command_args, namespace=None):
         try:
             # See if the commands container uses python3
             executable = (
-                k.kub_exec(
-                    pod_name, "%s-commands" % app_name, "which", "python3", return_output=True
-                )
+                k.kub_exec(pod_name, f"{app_name}-commands", "which", "python3", return_output=True)
                 .decode(sys.stdout.encoding)
                 .strip()
             )
@@ -64,7 +62,7 @@ def cmd(app_name, command_args, namespace=None):
             # If not, we assume it uses python
             executable = "python"
 
-        k.kub_exec(pod_name, "%s-commands" % app_name, executable, "command.py", *command_args)
+        k.kub_exec(pod_name, f"{app_name}-commands", executable, "command.py", *command_args)
     else:
         # commands-base:2.0.0 behavior
-        k.kub_exec(pod_name, "%s-commands" % app_name, "/usr/local/bin/aladdin_cmd", *command_args)
+        k.kub_exec(pod_name, f"{app_name}-commands", "/usr/local/bin/aladdin_cmd", *command_args)
