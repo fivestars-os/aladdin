@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import argparse
+
 from project.project_conf import ProjectConf
 
 
@@ -6,7 +8,7 @@ def parse_args(sub_parser):
     subparser = sub_parser.add_parser(
         "build", help="Build a project's docker images for local development"
     )
-    subparser.add_argument("build_args", nargs="*")
+    subparser.add_argument("build_args", nargs=argparse.REMAINDER)
     subparser.set_defaults(func=build_args)
 
 
