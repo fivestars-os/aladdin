@@ -65,8 +65,8 @@ class Kubernetes(object):
             cmd_list = self._kub_cmd('exec', flags, pod_name, '--', *command)
 
         if return_output:
-            DEVNULL = open(os.devnull, 'w')
-            return subprocess.check_output(cmd_list, stderr=DEVNULL)
+            with open(os.devnull, "w") as devnull:
+                return subprocess.check_output(cmd_list, stderr=devnull)
         subprocess.check_call(cmd_list)
 
     def tail_logs(self, deployment_name=None, pod_name=None, container_name=None, color='pod'):
