@@ -77,11 +77,11 @@ function exec_command_or_plugin() {
 function _replace_aws_secret() {
     local creds username password server
     local force="${1:-}"
-    if ! $force && kubectl get secret aws > /dev/null; then
+    local aws_secret_ts=$(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp)
+    if ! $force && ! test -z $aws_secret_ts; then
         local init_every=3600*10
-        local secret_ts=$(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp)
         local current_time="$(date +'%s')"
-        local previous_run="$(date -d $secret_ts +%s)"
+        local previous_run="$(date -d $aws_secret_ts +%s)"
         if [[ "$current_time" -lt "$((${previous_run:-0}+init_every))" || "$previous_run" -gt "$current_time" ]]; then
             return 0
         fi
