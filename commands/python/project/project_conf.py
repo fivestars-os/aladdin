@@ -63,13 +63,14 @@ class ProjectConf(object):
     @property
     def build_command(self):
         cmd = search('build_docker', self.lamp_content)
-        if isinstance(cmd, str):
-            return [cmd]
-        return cmd
+        return [cmd] if isinstance(cmd, str) else cmd
 
-    def build_docker(self, env=None):
+    def build_docker(self, env=None, build_args=None):
         env = env or {}
-        command = self.build_command
+        build_args = build_args or []
+
+        command = self.build_command[:]
+        command.extend(build_args)
 
         run_env = os.environ.copy()
         run_env.update(env)
