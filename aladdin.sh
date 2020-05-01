@@ -63,9 +63,10 @@ function check_cluster_alias() {
 
 function check_and_handle_init() {
     # Check if we need to force initialization
-    local installed_file="$HOME/.aladdin/infra/installed"
-    if $INIT || ! test -f "$installed_file"; then
+    if ! test -f "$HOME/.aladdin/infra/installed"; then
         INIT=true
+    fi
+    if $INIT; then
         "$SCRIPT_DIR"/infra_k8s_check.sh --force
         readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_FILE")"
         if [[ "$repo_login_command" != "null" ]]; then
