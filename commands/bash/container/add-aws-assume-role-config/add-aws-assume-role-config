@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
 
+source "$SCRIPT_DIR/shared.sh"
+
+function _get_session_name() {
+    echo "$(aws --profile $BASTION_ACCOUNT_PROFILE sts get-caller-identity \
+        --query 'Arn' --output text | cut -d '/' -f2)"
+}
+
+
 function add_aws_assume_role_config {
     # This command edits your aws config and credentials file to add aws_access_key_id,
     # aws_access_key_secret, aws_session_token, and region for role $1, under profile $2. We will
@@ -17,8 +25,8 @@ function add_aws_assume_role_config {
     local mfa_enabled="$3"
     local duration="$4"
 
-    session_name="$(aws --profile $BASTION_ACCOUNT_PROFILE sts get-caller-identity \
-        --query 'Arn' --output text | cut -d '/' -f2)"
+    local params_hash=$(make_hash "${BASTION_ACCOUNT_PROFILE}_${role}_${profile_name}")
+    local cached_credentials=$(get_or_set_cache $params_hash)
 
     if "$mfa_enabled"; then
 
@@ -30,13 +38,15 @@ function add_aws_assume_role_config {
 
         payload="$(aws --profile $BASTION_ACCOUNT_PROFILE sts assume-role  \
             --role-arn $role --duration-seconds $duration --serial-number $mfa_serial \
-            --token $token --role-session-name $session_name)"
-    else
-
+            --token $token --role-session-name $(_get_session_name))"
+    elif $INIT || test -z "$cached_credentials"; then
         payload="$(aws --profile $BASTION_ACCOUNT_PROFILE sts assume-role  \
-            --role-arn $role --duration-seconds "$duration" --role-session-name "$session_name")"
+            --role-arn $role --duration-seconds "$duration" --role-session-name $(_get_session_name))"
+        get_or_set_cache $params_hash $(time_plus_offset $duration) "$payload"
+    else
+        echo "Using cached credentials"
+        payload="$cached_credentials"
     fi
-
     aws configure --profile "$profile_name" set aws_access_key_id "$(jq -r .Credentials.AccessKeyId <<< $payload)"
     aws configure --profile "$profile_name" set aws_secret_access_key "$(jq -r .Credentials.SecretAccessKey <<< $payload)"
     aws configure --profile "$profile_name" set aws_session_token "$(jq -r .Credentials.SessionToken <<< $payload)"

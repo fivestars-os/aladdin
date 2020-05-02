@@ -75,23 +75,27 @@ function exec_command_or_plugin() {
 }
 
 function _replace_aws_secret() {
-    local creds username password server
-    local force="${1:-}"
-    local aws_secret_ts=$(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp)
-    if ! $force && ! test -z $aws_secret_ts; then
-        local init_every=3600*10
-        local current_time="$(date +'%s')"
-        local previous_run="$(date -d $aws_secret_ts +%s)"
-        if [[ "$current_time" -lt "$((${previous_run:-0}+init_every))" || "$previous_run" -gt "$current_time" ]]; then
-            return 0
-        fi
+    if ! $INIT && ! test -z "$(get_or_set_cache $(make_hash "aws_secret_${CLUSTER_NAME}"))"; then
+        return 0
     fi
+    local creds username password server
     creds=$(aws ecr get-login)
     username=$(echo $creds | cut -d ' ' -f4)
     password=$(echo $creds | cut -d ' ' -f6)
     server=$(echo $creds | cut -d ' ' -f9)
     kubectl delete secret aws || true
     kubectl create secret docker-registry aws --docker-username="$username" --docker-password="$password" --docker-server="$server" --docker-email="can be anything"
+    local aws_secret_ts="$(date -d $(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp) +%s)"
+    get_or_set_cache $(make_hash "aws_secret_${CLUSTER_NAME}") $(time_plus_offset $((${aws_secret_ts}+3600*10)))
+}
+
+function _namespace_init() {
+    if ! $INIT && ! test -z "$(get_or_set_cache $(make_hash "${CLUSTER_NAME}_${NAMESPACE}"))"; then
+        return 0
+    fi
+    kubectl create namespace $NAMESPACE || true
+    $PY_MAIN namespace-init --force
+    get_or_set_cache $(make_hash "${CLUSTER_NAME}_${NAMESPACE}") $(time_plus_offset 3600)
 }
 
 function environment_init() {
@@ -101,36 +105,33 @@ function environment_init() {
 
     _handle_aws_config
 
+    if "$IS_LOCAL"; then
+        mkdir -p $HOME/.kube/
+        cp $HOME/.kube_local/config $HOME/.kube/config
+        # Replace e.g. /Users/ptr/.minikube with /root/.minikube in the minikube conf dir path
+        # (since that's where it will be mounted within the aladdin container)
+        sed 's|: \?.*\.minikube|: /root/.minikube| ; /: \/root\/.minikube/ s|\\|/|g' $HOME/.kube_local/config > $HOME/.kube/config
+    elif $INIT || test -z "$(get_or_set_cache $(make_hash "kops_$CLUSTER_NAME"))"; then
+        kops export kubecfg --name $CLUSTER_NAME > /dev/null
+        kops validate cluster --name $CLUSTER_NAME > /dev/null
+        get_or_set_cache $(make_hash "kops_$CLUSTER_NAME") $(time_plus_offset 3600*24)
+    else
+        echo "Using cached cluster config"
+        mkdir -p $HOME/.kube/
+        cp $HOME/.kube_local/$CLUSTER_NAME.config $HOME/.kube/config
+    fi
     # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
-    if "$IS_LOCAL" || ( kops export kubecfg --name $CLUSTER_NAME > /dev/null && \
-        kops validate cluster --name $CLUSTER_NAME ) > /dev/null; then
-
-        if "$IS_LOCAL"; then
-            mkdir -p $HOME/.kube/
-            cp $HOME/.kube_local/config $HOME/.kube/config
-            # Replace e.g. /Users/ptr/.minikube with /root/.minikube in the minikube conf dir path
-            # (since that's where it will be mounted within the aladdin container)
-            sed 's|: \?.*\.minikube|: /root/.minikube| ; /: \/root\/.minikube/ s|\\|/|g' $HOME/.kube_local/config > $HOME/.kube/config
-        else
-            cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
-        fi
-
+    if "$IS_LOCAL" || ! test -z "$(get_or_set_cache $(make_hash "kops_$CLUSTER_NAME"))"; then
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
         kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
 
         _handle_authentication_config
 
-        if $INIT; then
-            _initialize_helm
-        fi
-        _replace_aws_secret $INIT || true
-        local init_every=3600
-        if $INIT || _get_last_launched "${CLUSTER_NAME}_${NAMESPACE}" init_every; then
-            kubectl create namespace $NAMESPACE || true
-            $PY_MAIN namespace-init --force
-        fi
+        "$INIT" && _initialize_helm
+        _replace_aws_secret || true
+        _namespace_init
     fi
-
+    exit 1
     echo "END ENVIRONMENT CONFIGURATION==============================================="
 
 }
@@ -218,12 +219,21 @@ function _handle_aws_config() {
         publish_profile="$(jq -r '.aws_profile' <<< $publish_config)"
         publish_role="$(jq -r '.aws_role_to_assume' <<< $publish_config)"
         publish_mfa_enabled="$(jq -r '.aws_role_mfa_required' <<< $publish_config)"
-        "$add_assume_role_config" "$publish_role" "$publish_profile" "$publish_mfa_enabled" 3600 # 1 hour
         # Need to add aws configuration for current cluster's aws account
-        aws_profile="$(_extract_cluster_config_value bastion_account_profile_to_assume)"
-        aws_role="$(_extract_cluster_config_value bastion_account_role_to_assume)"
-        aws_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled)"
-        "$add_assume_role_config" "$aws_role" "$aws_profile" "$aws_mfa_enabled" 3600 # 1 hour
+        bastion_profile="$(_extract_cluster_config_value bastion_account_profile_to_assume)"
+        bastion_role="$(_extract_cluster_config_value bastion_account_role_to_assume)"
+        bastion_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled)"
+        if [[ $bastion_role != $publish_role ]]; then
+            if [[ $publish_profile == $bastion_profile ]]; then
+                # the user has set different aws roles for their cluster/publish configs
+                # but using the same profile name for both, continuing would override the publish credentials
+                echo "Bastion account misconfigured!"
+                echo "Cluster role and Publish role are different, but their profile is the same"
+                exit 1
+            fi
+            "$add_assume_role_config" "$publish_role" "$publish_profile" "$publish_mfa_enabled" 3600 # 1 hour
+        fi
+        "$add_assume_role_config" "$bastion_role" "$bastion_profile" "$bastion_mfa_enabled" 3600 # 1 hour
         # We reset AWS_DEFAULT_PROFILE here because that entry will be present in aws config files now
         export AWS_DEFAULT_PROFILE="$aws_default_profile_temp"
     elif "$INIT" && ! "$IS_LOCAL"; then

@@ -36,20 +36,52 @@ function _extract_cluster_config_value() {
     fi
 }
 
-function _get_last_launched() {
-    local last_launched_file="$HOME/.aladdin/infra/last_launch.json"
+function time_plus_offset() {
+    local offset="$1"
     local current_time="$(date +'%s')"
-    local key="$1"
-    local expiration="$2"
+    echo "$((${current_time}+offset))"
+}
 
-    if [[ ! -f "$last_launched_file" ]]; then
-        echo "{}" > "$last_launched_file"
-    fi
-    local previous_run="$(jq -r --arg key "${key}" '.[$key] // 0' $last_launched_file)"
-    if [[ "$current_time" -gt "$((${previous_run:-0}+init_every))" || "$previous_run" -gt "$current_time" ]]; then
-        local contents="$(jq --arg key "${key}" --argjson value "${current_time}" '.[$key] = $value' $last_launched_file)"
-        echo "${contents}" > $last_launched_file
-        return 0
-    fi
+function which_exists(){
+    for cmd in "$@" ; do
+        if which $cmd &>/dev/null ; then
+            echo "$cmd"
+            return 0
+        fi
+    done
     return 1
+}
+
+function get_or_set_cache(){
+    local cache_file="$HOME/.aladdin/infra/cache.json"
+    local key="$1"
+    local expiration="${2:-}"
+    local data="${3:-}"
+    local contents
+
+    if [[ ! -f "$cache_file" ]]; then
+        echo "{}" > "$cache_file"
+    fi
+
+    if test -z "$expiration"; then
+        expiration=$(jq -r --arg key "${key}" '.[$key]["expiration"] // 0' $cache_file)
+    elif test -z "$data"; then
+        data=true
+    fi
+
+    if [[ "$(date +'%s')" -gt "$expiration" ]]; then
+        contents="$(jq --arg key "${key}" '.[$key] = {}' $cache_file)"
+        echo "${contents}" > $cache_file
+    elif ! test -z "$data"; then
+        contents="$(jq --arg key "${key}" --argjson expiration "${expiration}" --argjson data "${data}" '.[$key] = {"expiration":$expiration,"data":$data}' $cache_file)"
+        echo "${contents}" > $cache_file
+    else
+        echo "$(jq -r --arg key "${key}" '.[$key]["data"] // ""' $cache_file)"
+    fi
+    return 0
+}
+
+function make_hash(){
+    local hash_cmd="$(which_exists md5sum md5)"
+    echo -n "${1}" | $hash_cmd | awk '{print $1}'
 }

@@ -42,6 +42,7 @@ function get_config_path() {
         exit 1
     fi
     ALADDIN_CONFIG_FILE="$ALADDIN_CONFIG_DIR/config.json"
+    ALADDIN_IMAGE="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"}"
 }
 
 function get_plugin_dir() {
@@ -72,10 +73,13 @@ function check_and_handle_init() {
         if [[ "$repo_login_command" != "null" ]]; then
             eval "$repo_login_command"
         fi
-        local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"
-        docker pull "$aladdin_image"
     else
         "$SCRIPT_DIR"/infra_k8s_check.sh
+    fi
+    # pull every 24 hours unless INIT is forced, or the image changes
+    if $INIT || test -z "$(get_or_set_cache $(make_hash "${ALADDIN_IMAGE}"))"; then
+        docker pull "$ALADDIN_IMAGE"
+        get_or_set_cache $(make_hash "${ALADDIN_IMAGE}") $(time_plus_offset 3600*24)
     fi
 
     # Use host docker if available
@@ -293,7 +297,6 @@ function enter_docker_container() {
         FLAGS+="t"
     fi
 
-    local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"}"
     local ssh_src
 
     case "$OSTYPE" in
@@ -331,7 +334,7 @@ function enter_docker_container() {
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
         `# Specific command` \
         $mounts ${ALADDIN_PLUGIN_CMD:-} \
-        "$aladdin_image" \
+        "$ALADDIN_IMAGE" \
         `# Finally, launch the command` \
         /root/aladdin/aladdin-container.sh "$@"
 }
