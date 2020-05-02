@@ -132,7 +132,6 @@ function environment_init() {
         _replace_aws_secret || true
         _namespace_init
     fi
-    exit 1
     echo "END ENVIRONMENT CONFIGURATION==============================================="
 
 }
