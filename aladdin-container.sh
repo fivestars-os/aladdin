@@ -85,6 +85,7 @@ function _replace_aws_secret() {
     server=$(echo $creds | cut -d ' ' -f9)
     kubectl delete secret aws || true
     kubectl create secret docker-registry aws --docker-username="$username" --docker-password="$password" --docker-server="$server" --docker-email="can be anything"
+    # token valid for 12 hours, cache for 10 hrs https://docs.aws.amazon.com/cli/latest/reference/ecr/get-login.html
     local aws_secret_ts="$(date -d $(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp) +%s)"
     get_or_set_cache $(make_hash "aws_secret_${CLUSTER_NAME}") $(time_plus_offset $((${aws_secret_ts}+3600*10)))
 }
