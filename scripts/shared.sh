@@ -52,6 +52,10 @@ function which_exists(){
     return 1
 }
 
+function clear_cache(){
+    rm "$HOME/.aladdin/infra/cache.json" &> /dev/null || true
+}
+
 function get_or_set_cache(){
     local cache_file="$HOME/.aladdin/infra/cache.json"
     local key="$1"
@@ -59,10 +63,9 @@ function get_or_set_cache(){
     local data="${3:-}"
     local contents
 
-    if [[ ! -f "$cache_file" ]]; then
+    if ! jq -r . $cache_file &> /dev/null; then
         echo "{}" > "$cache_file"
     fi
-
     if test -z "$expiration"; then
         expiration=$(jq -r --arg key "${key}" '.[$key]["expiration"] // 0' $cache_file)
     elif test -z "$data"; then
