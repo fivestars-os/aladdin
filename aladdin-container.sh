@@ -131,7 +131,6 @@ function environment_init() {
     fi
     # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
     if "$IS_LOCAL" || ! test -z "$(get_or_set_cache "kops_$CLUSTER_NAME")"; then
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME" > /dev/null
         _handle_authentication_config
         kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
 
@@ -174,6 +173,8 @@ function _handle_authentication_config() {
             done
         fi
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE" > /dev/null
+    else
+        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME" > /dev/null
     fi
 }
 
