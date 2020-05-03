@@ -75,7 +75,7 @@ function exec_command_or_plugin() {
 }
 
 function _replace_aws_secret() {
-    if ! $INIT && ! test -z "$(get_or_set_cache $(make_hash "aws_secret_${CLUSTER_NAME}"))"; then
+    if ! test -z "$(get_or_set_cache "aws_secret_${CLUSTER_NAME}")"; then
         return 0
     fi
     local creds username password server
@@ -87,16 +87,16 @@ function _replace_aws_secret() {
     kubectl create secret docker-registry aws --docker-username="$username" --docker-password="$password" --docker-server="$server" --docker-email="can be anything"
     # token valid for 12 hours, cache for 10 hrs https://docs.aws.amazon.com/cli/latest/reference/ecr/get-login.html
     local aws_secret_ts="$(date -d $(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp) +%s)"
-    get_or_set_cache $(make_hash "aws_secret_${CLUSTER_NAME}") $(time_plus_offset $((${aws_secret_ts}+3600*10)))
+    get_or_set_cache "aws_secret_${CLUSTER_NAME}" $(time_plus_offset $((${aws_secret_ts}+3600*10)))
 }
 
 function _namespace_init() {
-    if ! $INIT && ! test -z "$(get_or_set_cache $(make_hash "${CLUSTER_NAME}_${NAMESPACE}"))"; then
+    if ! test -z "$(get_or_set_cache "${CLUSTER_NAME}_${NAMESPACE}")"; then
         return 0
     fi
     kubectl create namespace $NAMESPACE || true
     $PY_MAIN namespace-init --force
-    get_or_set_cache $(make_hash "${CLUSTER_NAME}_${NAMESPACE}") $(time_plus_offset 3600)
+    get_or_set_cache "${CLUSTER_NAME}_${NAMESPACE}" $(time_plus_offset 3600)
 }
 
 function environment_init() {
@@ -112,21 +112,28 @@ function environment_init() {
         # Replace e.g. /Users/ptr/.minikube with /root/.minikube in the minikube conf dir path
         # (since that's where it will be mounted within the aladdin container)
         sed 's|: \?.*\.minikube|: /root/.minikube| ; /: \/root\/.minikube/ s|\\|/|g' $HOME/.kube_local/config > $HOME/.kube/config
-    elif $INIT || test -z "$(get_or_set_cache $(make_hash "kops_$CLUSTER_NAME"))"; then
-        kops export kubecfg --name $CLUSTER_NAME > /dev/null
-        kops validate cluster --name $CLUSTER_NAME > /dev/null
-        get_or_set_cache $(make_hash "kops_$CLUSTER_NAME") $(time_plus_offset 3600*24)
+    elif test -z "$(get_or_set_cache "kops_$CLUSTER_NAME")" || ! test -f "$HOME/.kube_local/$CLUSTER_NAME.config"; then
+        echo "Getting cluster config and verifying cluster using kops"
+        if ( kops export kubecfg --name $CLUSTER_NAME > /dev/null && \
+            kops validate cluster --name $CLUSTER_NAME ) > /dev/null; then
+
+            _handle_authentication_config true
+            cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
+            get_or_set_cache "kops_$CLUSTER_NAME" $(time_plus_offset 3600*24)
+            echo "Cluster verified"
+        else
+            echo "Cluster verification failed"
+        fi
     else
         echo "Using cached cluster config"
         mkdir -p $HOME/.kube/
         cp $HOME/.kube_local/$CLUSTER_NAME.config $HOME/.kube/config
     fi
     # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
-    if "$IS_LOCAL" || ! test -z "$(get_or_set_cache $(make_hash "kops_$CLUSTER_NAME"))"; then
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
-        kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
-
+    if "$IS_LOCAL" || ! test -z "$(get_or_set_cache "kops_$CLUSTER_NAME")"; then
+        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME" > /dev/null
         _handle_authentication_config
+        kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
 
         "$INIT" && _initialize_helm
         _replace_aws_secret || true
@@ -150,19 +157,23 @@ function _initialize_helm() {
 function _handle_authentication_config() {
     # This function adds appropriate users to kubeconfig, and exports necessary AUTHENTICATION variables
     # export AUTHENTICATION_ENABLED for change-permissions and bash command
+    local add_roles_to_kubeconfig="${1:-}"
+    local role_arn roles
     export AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
     if $AUTHENTICATION_ENABLED; then
-        AUTHENTICATION_ROLES="$(_extract_cluster_config_value authentication_roles)"
-        AUTHENTICATION_ALADDIN_ROLE="$(_extract_cluster_config_value authentication_aladdin_role)"
+        roles="$(_extract_cluster_config_value authentication_roles)"
+        export AUTHENTICATION_ALADDIN_ROLE="$(_extract_cluster_config_value authentication_aladdin_role)"
         # export AUTHENTICATION_DEFAULT_ROLE for bash command
         export AUTHENTICATION_DEFAULT_ROLE="$(_extract_cluster_config_value authentication_default_role)"
         # export AUTHENTICATION_ALLOWED_CHANGE_ROLES for change-permissions command
         export AUTHENTICATION_ALLOWED_CHANGE_ROLES="$(_extract_cluster_config_value authentication_allowed_change_roles)"
-        jq -r '.|keys[]' <<< "$AUTHENTICATION_ROLES" | while read name ; do
-            role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $AUTHENTICATION_ROLES)"
-            _add_authentication_user_to_kubeconfig "$name" "$role_arn"
-        done
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE"
+        if [[ ${add_roles_to_kubeconfig} == "true" ]]; then
+            jq -r '.|keys[]' <<< "$roles" | while read name ; do
+                role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $roles)"
+                _add_authentication_user_to_kubeconfig "$name" "$role_arn"
+            done
+        fi
+        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE" > /dev/null
     fi
 }
 

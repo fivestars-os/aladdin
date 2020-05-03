@@ -29,7 +29,7 @@ DEFAULT_MINIKUBE_VM_DRIVER="virtualbox"
 DEFAULT_MINIKUBE_MEMORY=4096
 USING_HOST_DOCKER=false
 
-source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
+source "$SCRIPT_DIR/shared.sh"
 
 function get_config_path() {
     if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
@@ -68,6 +68,7 @@ function check_and_handle_init() {
         INIT=true
     fi
     if $INIT; then
+        clear_cache_file
         "$SCRIPT_DIR"/infra_k8s_check.sh --force
         readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_FILE")"
         if [[ "$repo_login_command" != "null" ]]; then
@@ -76,10 +77,9 @@ function check_and_handle_init() {
     else
         "$SCRIPT_DIR"/infra_k8s_check.sh
     fi
-    # pull every 24 hours unless INIT is forced, or the image changes
-    if $INIT || test -z "$(get_or_set_cache $(make_hash "${ALADDIN_IMAGE}"))"; then
+    if test -z "$(get_or_set_cache "${ALADDIN_IMAGE}")"; then
         docker pull "$ALADDIN_IMAGE"
-        get_or_set_cache $(make_hash "${ALADDIN_IMAGE}") $(time_plus_offset 3600*24)
+        get_or_set_cache "${ALADDIN_IMAGE}" $(time_plus_offset 3600*24)
     fi
 
     # Use host docker if available
