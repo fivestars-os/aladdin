@@ -4,35 +4,37 @@
 set -a
 set -eu -o pipefail
 
+function _extract_from_file() {
+    local key="$1"
+    local config_file="$2"
+    local value
+    if [[ -f $config_file ]]; then
+        value="$(eval "jq -r .${key} $config_file")"
+        if [[ "$value" != "null" ]]; then
+            echo "$value"
+            return 0
+        fi
+    fi
+}
+
 function _extract_cluster_config_value() {
     # Try extracting config from cluster config.json, default config.json, then aladdin config.json
     local key="$1"
-    local value file
-
-    file="$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json"
-    if [[ -f $file ]]; then
-        value="$(eval "jq -r .${key} $file")"
-        if [[ $value != "null" ]]; then
-            echo $value
-            return 0
-        fi
+    local value
+    value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json")
+    if ! test -z "$value"; then
+        echo "$value"
+        return 0
     fi
-    file="$ALADDIN_CONFIG_DIR/default/config.json"
-    if [[ -f $file ]]; then
-        value="$(eval "jq -r .${key} $file")"
-        if [[ $value != "null" ]]; then
-            echo $value
-            return 0
-        fi
+    value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/default/config.json")
+    if ! test -z "$value"; then
+        echo "$value"
+        return 0
     fi
-
-    file="$ALADDIN_CONFIG_DIR/config.json"
-    if [[ -f $file ]]; then
-        value="$(eval "jq -r .${key} $file")"
-        if [[ $value != "null" ]]; then
-            echo $value
-            return 0
-        fi
+    value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/config.json")
+    if ! test -z "$value"; then
+        echo "$value"
+        return 0
     fi
 }
 
@@ -52,7 +54,7 @@ function which_exists(){
     return 1
 }
 
-function clear_cache(){
+function clear_cache_file(){
     rm "$HOME/.aladdin/infra/cache.json" &> /dev/null || true
 }
 

@@ -366,9 +366,6 @@ while [[ $# -gt 0 ]]; do
         --skip-prompts)
             SKIP_PROMPTS=true
         ;;
-        --clear-cache)
-            clear_cache
-        ;;
         *)
             command="$1"
             shift

@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
 
+source "$SCRIPT_DIR/shared.sh"
+
 function clean {
     function get_size {
         df -h / | grep / | head -1 | xargs | cut -d' ' -f3
     }
+
+    clear_cache_file
 
     _size_before="$(get_size)"
     _exited="$(docker ps --filter "status=exited" -q)"
