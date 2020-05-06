@@ -77,7 +77,7 @@ function check_and_handle_init() {
     else
         "$SCRIPT_DIR"/infra_k8s_check.sh
     fi
-    if test -z "$(get_or_set_cache "${ALADDIN_IMAGE}")"; then
+    if test -z $(docker images -q "$ALADDIN_IMAGE") || test -z "$(get_or_set_cache "${ALADDIN_IMAGE}")"; then
         docker pull "$ALADDIN_IMAGE"
         get_or_set_cache "${ALADDIN_IMAGE}" $(time_plus_offset 3600*24)
     fi

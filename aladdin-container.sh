@@ -116,8 +116,7 @@ function environment_init() {
         echo "Getting cluster config and verifying cluster using kops"
         if ( kops export kubecfg --name $CLUSTER_NAME > /dev/null && \
             kops validate cluster --name $CLUSTER_NAME ) > /dev/null; then
-
-            _handle_authentication_config true
+            _add_authentication_users_to_kubeconfig
             cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
             get_or_set_cache "kops_$CLUSTER_NAME" $(time_plus_offset 3600*24)
             echo "Cluster verified"
@@ -154,28 +153,30 @@ function _initialize_helm() {
 }
 
 function _handle_authentication_config() {
-    # This function adds appropriate users to kubeconfig, and exports necessary AUTHENTICATION variables
+    # This function exports necessary AUTHENTICATION variables
+    # This function does not add the authentication users to `.kube/config`, use `_add_authentication_users_to_kubeconfig` for that
     # export AUTHENTICATION_ENABLED for change-permissions and bash command
-    local add_roles_to_kubeconfig="${1:-}"
-    local role_arn roles
     export AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
     if $AUTHENTICATION_ENABLED; then
-        roles="$(_extract_cluster_config_value authentication_roles)"
+        # export AUTHENTICATION_ALADDIN_ROLE for change_to_aladdin_permission helper command
         export AUTHENTICATION_ALADDIN_ROLE="$(_extract_cluster_config_value authentication_aladdin_role)"
         # export AUTHENTICATION_DEFAULT_ROLE for bash command
         export AUTHENTICATION_DEFAULT_ROLE="$(_extract_cluster_config_value authentication_default_role)"
         # export AUTHENTICATION_ALLOWED_CHANGE_ROLES for change-permissions command
         export AUTHENTICATION_ALLOWED_CHANGE_ROLES="$(_extract_cluster_config_value authentication_allowed_change_roles)"
-        if [[ ${add_roles_to_kubeconfig} == "true" ]]; then
-            jq -r '.|keys[]' <<< "$roles" | while read name ; do
-                role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $roles)"
-                _add_authentication_user_to_kubeconfig "$name" "$role_arn"
-            done
-        fi
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE" > /dev/null
     else
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME" > /dev/null
     fi
+}
+
+function _add_authentication_users_to_kubeconfig() {
+    local role_arn
+    local roles="$(_extract_cluster_config_value authentication_roles)"
+    jq -r '.|keys[]' <<< "$roles" | while read name ; do
+        role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $roles)"
+        _add_authentication_user_to_kubeconfig "$name" "$role_arn"
+    done
 }
 
 function _add_authentication_user_to_kubeconfig() {
