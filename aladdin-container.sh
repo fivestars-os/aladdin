@@ -112,27 +112,20 @@ function environment_init() {
         # Replace e.g. /Users/ptr/.minikube with /root/.minikube in the minikube conf dir path
         # (since that's where it will be mounted within the aladdin container)
         sed 's|: \?.*\.minikube|: /root/.minikube| ; /: \/root\/.minikube/ s|\\|/|g' $HOME/.kube_local/config > $HOME/.kube/config
-    elif test -z "$(get_or_set_cache "kops_$CLUSTER_NAME")" || ! test -f "$HOME/.kube_local/$CLUSTER_NAME.config"; then
-        echo "Getting cluster config and verifying cluster using kops"
-        if ( kops export kubecfg --name $CLUSTER_NAME > /dev/null && \
-            kops validate cluster --name $CLUSTER_NAME ) > /dev/null; then
-            _add_authentication_users_to_kubeconfig
-            cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
-            get_or_set_cache "kops_$CLUSTER_NAME" $(time_plus_offset 3600*24)
-            echo "Cluster verified"
-        else
-            echo "Cluster verification failed"
-        fi
+    elif $INIT || ! test -f "$HOME/.kube_local/$CLUSTER_NAME.config"; then
+        echo "Getting cluster config using kops"
+        kops export kubecfg --name $CLUSTER_NAME > /dev/null
+        _add_authentication_users_to_kubeconfig
+        cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
     else
         echo "Using cached cluster config"
         mkdir -p $HOME/.kube/
         cp $HOME/.kube_local/$CLUSTER_NAME.config $HOME/.kube/config
     fi
+    _handle_authentication_config
+    kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
     # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
-    if "$IS_LOCAL" || ! test -z "$(get_or_set_cache "kops_$CLUSTER_NAME")"; then
-        _handle_authentication_config
-        kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
-
+    if "$IS_LOCAL" || ! $CLUSTER_CREATING; then
         "$INIT" && _initialize_helm
         _replace_aws_secret || true
         _namespace_init

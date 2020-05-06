@@ -14,6 +14,7 @@ CLUSTER_CODE=minikube
 NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
+CLUSTER_CREATING=false
 KUBERNETES_VERSION="1.15.6"
 
 # Set key directory paths
@@ -305,6 +306,7 @@ function enter_docker_container() {
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
+        -e "CLUSTER_CREATING=$CLUSTER_CREATING" \
         -e "command=$command" \
         `# Mount host credentials` \
         `# Mount destination for aws creds will not be /root/.aws because we will possibly make` \
@@ -347,6 +349,9 @@ while [[ $# -gt 0 ]]; do
         ;;
         --skip-prompts)
             SKIP_PROMPTS=true
+        ;;
+        --cluster-creating)
+            CLUSTER_CREATING=true
         ;;
         *)
             command="$1"
