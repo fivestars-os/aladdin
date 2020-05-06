@@ -27,7 +27,6 @@ PATH="$ALADDIN_BIN":"$PATH"
 # Minikube defaults
 DEFAULT_MINIKUBE_VM_DRIVER="virtualbox"
 DEFAULT_MINIKUBE_MEMORY=4096
-USING_HOST_DOCKER=false
 
 source "$SCRIPT_DIR/shared.sh"
 
@@ -82,18 +81,7 @@ function check_and_handle_init() {
         get_or_set_cache "${ALADDIN_IMAGE}" $(time_plus_offset 3600*24)
     fi
 
-    # Use host docker if available
-    if docker info > /dev/null 2>/dev/null; then
-        case "$OSTYPE" in
-            darwin*) USING_HOST_DOCKER=true ;;
-        esac
-        if $USING_HOST_DOCKER; then
-            echo "Using host docker engine for aladdin"
-        fi
-    fi
-    if [[ $CLUSTER_CODE == "minikube" || $USING_HOST_DOCKER == "false" ]]; then
-        check_or_start_minikube
-    fi
+    check_or_start_minikube
 }
 
 function set_minikube_config(){
@@ -306,12 +294,6 @@ function enter_docker_container() {
 
     # How to mount docker parts
     mounts="$mounts -v /var/run/docker.sock:/var/run/docker.sock"
-    if $USING_HOST_DOCKER ; then
-        # Special case mounting host docker on linux/win?
-        case "$OSTYPE" in
-            *) true ;;
-        esac
-    fi
 
     docker run $FLAGS \
         `# Environment` \
