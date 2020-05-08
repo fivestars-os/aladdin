@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "build-components"
+version = "0.1.0"
+description = ""
+authors = ["Fivestars <dev@fivestars.com>"]
+include = [
+    "python/*.dockerfile"
+]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+coloredlogs = "^14.0"
+verboselogs = "^1.7"
+PyYAML = "^5.3.1"
+networkx = "^2.4"
+
+[tool.poetry.scripts]
+build-components = "build_components.__main__:main"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
