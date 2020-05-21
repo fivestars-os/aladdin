@@ -75,7 +75,7 @@ function exec_command_or_plugin() {
 }
 
 function _replace_aws_secret() {
-    if ! test -z "$(get_cached "aws_secret_${CLUSTER_NAME}")"; then
+    if test -n "$(get_cached "aws_secret_${CLUSTER_NAME}")"; then
         return 0
     fi
     local creds username password server
@@ -91,7 +91,7 @@ function _replace_aws_secret() {
 }
 
 function _namespace_init() {
-    if ! test -z "$(get_cached "${CLUSTER_NAME}_${NAMESPACE}")"; then
+    if test -n "$(get_cached "${CLUSTER_NAME}_${NAMESPACE}")"; then
         return 0
     fi
     kubectl create namespace $NAMESPACE || true

@@ -22,17 +22,17 @@ function _extract_cluster_config_value() {
     local key="$1"
     local value
     value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json")
-    if ! test -z "$value"; then
+    if test -n "$value"; then
         echo "$value"
         return 0
     fi
     value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/default/config.json")
-    if ! test -z "$value"; then
+    if test -n "$value"; then
         echo "$value"
         return 0
     fi
     value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/config.json")
-    if ! test -z "$value"; then
+    if test -n "$value"; then
         echo "$value"
         return 0
     fi
@@ -92,7 +92,7 @@ function _get_or_set_cache(){
         # if the key is expired, clear the data
         contents="$(jq --arg key "${key}" '.[$key] = {}' $cache_file)"
         echo "${contents}" > $cache_file
-    elif ! test -z "$data"; then
+    elif test -n "$data"; then
         # function called like `_get_or_set_cache "key" "expiration" "some data"`
         contents="$(jq --arg key "${key}" --argjson expiration "${expiration}" --argjson data "${data}" '.[$key] = {"expiration":$expiration,"data":$data}' $cache_file)"
         echo "${contents}" > $cache_file
