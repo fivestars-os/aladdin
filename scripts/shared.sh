@@ -58,7 +58,19 @@ function clear_cache_file(){
     rm -f "$HOME/.aladdin/infra/cache.json"
 }
 
-function get_or_set_cache(){
+function set_cache() {
+    local key="$(make_hash $1)"
+    local expiration="${2:-}"
+    local data="${3:-}"
+    _get_or_set_cache $key $expiration $data
+}
+
+function get_cached() {
+    local key="$(make_hash $1)"
+    _get_or_set_cache $key
+}
+
+function _get_or_set_cache(){
     local cache_file="$HOME/.aladdin/infra/cache.json"
     local key="$(make_hash $1)"
     local expiration="${2:-}"
@@ -69,10 +81,10 @@ function get_or_set_cache(){
         echo "{}" > "$cache_file"
     fi
     if test -z "$expiration"; then
-        # function called like `get_or_set_cache "key"`
+        # function called like `_get_or_set_cache "key"`
         expiration=$(jq -r --arg key "${key}" '.[$key]["expiration"] // 0' $cache_file)
     elif test -z "$data"; then
-        # function called like `get_or_set_cache "key" "expiration"`
+        # function called like `_get_or_set_cache "key" "expiration"`
         data=true
     fi
 
@@ -81,11 +93,11 @@ function get_or_set_cache(){
         contents="$(jq --arg key "${key}" '.[$key] = {}' $cache_file)"
         echo "${contents}" > $cache_file
     elif ! test -z "$data"; then
-        # function called like `get_or_set_cache "key" "expiration" "some data"`
+        # function called like `_get_or_set_cache "key" "expiration" "some data"`
         contents="$(jq --arg key "${key}" --argjson expiration "${expiration}" --argjson data "${data}" '.[$key] = {"expiration":$expiration,"data":$data}' $cache_file)"
         echo "${contents}" > $cache_file
     else
-        # function called like `get_or_set_cache "key"`, echo the existing data
+        # function called like `_get_or_set_cache "key"`, echo the existing data
         echo "$(jq -r --arg key "${key}" '.[$key]["data"] // ""' $cache_file)"
     fi
     return 0

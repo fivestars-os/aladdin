@@ -14,7 +14,7 @@ CLUSTER_CODE=minikube
 NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
-CLUSTER_CREATING=false
+SKIP_INIT=false
 KUBERNETES_VERSION="1.15.6"
 
 # Set key directory paths
@@ -77,9 +77,9 @@ function check_and_handle_init() {
     else
         "$SCRIPT_DIR"/infra_k8s_check.sh
     fi
-    if test -z $(docker images -q "$ALADDIN_IMAGE") || test -z "$(get_or_set_cache "${ALADDIN_IMAGE}")"; then
+    if test -z $(docker images -q "$ALADDIN_IMAGE") || test -z "$(get_cached "${ALADDIN_IMAGE}")"; then
         docker pull "$ALADDIN_IMAGE"
-        get_or_set_cache "${ALADDIN_IMAGE}" $(time_plus_offset 3600*24)
+        set_cache "${ALADDIN_IMAGE}" $(time_plus_offset 3600*24)
     fi
 
     check_or_start_minikube
@@ -306,7 +306,7 @@ function enter_docker_container() {
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
-        -e "CLUSTER_CREATING=$CLUSTER_CREATING" \
+        -e "SKIP_INIT=$SKIP_INIT" \
         -e "command=$command" \
         `# Mount host credentials` \
         `# Mount destination for aws creds will not be /root/.aws because we will possibly make` \
@@ -350,8 +350,8 @@ while [[ $# -gt 0 ]]; do
         --skip-prompts)
             SKIP_PROMPTS=true
         ;;
-        --cluster-creating)
-            CLUSTER_CREATING=true
+        --skip-init)
+            SKIP_INIT=true
         ;;
         *)
             command="$1"

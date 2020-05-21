@@ -168,7 +168,7 @@ We have several aladdin commands used for development and deployment. Note that 
 - `--dev` mount host's aladdin directory onto aladdin container. Useful when developing aladdin.
 - `--skip-prompts` skip any confirmation messages during aladdin execution. Useful when automating commands.
 - `--non-terminal` run aladdin container without tty.
-- `--cluster-creating` skips cluster init commands such as namespace creation and helm init, useful for entering `aladdin bash` when the cluster is just being created
+- `--skip-init` skips cluster init commands such as namespace creation and helm init, useful for entering `aladdin bash` when the cluster has not been created yet
 
 ## Running several aladdin commands in the same cluster/namespace combo
 Aladdin supports running several commands in the same cluster/namespace combo without having to "reinitialize" aladdin. To do this, go into `aladdin bash`. Then all the container commands will be aliased to be run without prefixing aladdin.

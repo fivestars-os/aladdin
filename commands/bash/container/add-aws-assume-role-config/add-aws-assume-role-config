@@ -26,7 +26,7 @@ function add_aws_assume_role_config {
     local duration="$4"
 
     local params="${BASTION_ACCOUNT_PROFILE}_${role}_${profile_name}"
-    local cached_credentials=$(get_or_set_cache $params)
+    local cached_credentials=$(get_cached $params)
 
     if "$mfa_enabled"; then
 
@@ -42,7 +42,7 @@ function add_aws_assume_role_config {
     elif test -z "$cached_credentials"; then
         payload="$(aws --profile $BASTION_ACCOUNT_PROFILE sts assume-role  \
             --role-arn $role --duration-seconds "$duration" --role-session-name $(_get_session_name))"
-        get_or_set_cache $params $(time_plus_offset $duration) "$payload"
+        set_cache $params $(time_plus_offset $duration) "$payload"
     else
         echo "Using cached credentials"
         payload="$cached_credentials"

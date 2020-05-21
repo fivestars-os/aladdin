@@ -75,7 +75,7 @@ function exec_command_or_plugin() {
 }
 
 function _replace_aws_secret() {
-    if ! test -z "$(get_or_set_cache "aws_secret_${CLUSTER_NAME}")"; then
+    if ! test -z "$(get_cached "aws_secret_${CLUSTER_NAME}")"; then
         return 0
     fi
     local creds username password server
@@ -87,16 +87,16 @@ function _replace_aws_secret() {
     kubectl create secret docker-registry aws --docker-username="$username" --docker-password="$password" --docker-server="$server" --docker-email="can be anything"
     # token valid for 12 hours, cache for 10 hrs https://docs.aws.amazon.com/cli/latest/reference/ecr/get-login.html
     local aws_secret_ts="$(date -d $(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp) +%s)"
-    get_or_set_cache "aws_secret_${CLUSTER_NAME}" $(time_plus_offset $((${aws_secret_ts}+3600*10)))
+    set_cache "aws_secret_${CLUSTER_NAME}" $(time_plus_offset $((${aws_secret_ts}+3600*10)))
 }
 
 function _namespace_init() {
-    if ! test -z "$(get_or_set_cache "${CLUSTER_NAME}_${NAMESPACE}")"; then
+    if ! test -z "$(get_cached "${CLUSTER_NAME}_${NAMESPACE}")"; then
         return 0
     fi
     kubectl create namespace $NAMESPACE || true
     $PY_MAIN namespace-init --force
-    get_or_set_cache "${CLUSTER_NAME}_${NAMESPACE}" $(time_plus_offset 3600)
+    set_cache "${CLUSTER_NAME}_${NAMESPACE}" $(time_plus_offset 3600)
 }
 
 function environment_init() {
@@ -125,7 +125,7 @@ function environment_init() {
     _handle_authentication_config
     kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
     # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
-    if "$IS_LOCAL" || ! $CLUSTER_CREATING; then
+    if "$IS_LOCAL" || ! $SKIP_INIT; then
         "$INIT" && _initialize_helm
         _replace_aws_secret || true
         _namespace_init
