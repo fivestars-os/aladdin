@@ -5,12 +5,13 @@ ARG FROM_IMAGE
 FROM $FROM_IMAGE
 
 # Copy component code to the WORKDIR
-COPY . .
+ARG USER_CHOWN
+COPY --chown=$USER_CHOWN . .
 
 # Install the component itself (this installs any poetry scripts as command line commands)
 ARG COMPONENT
 ARG POETRY_INSTALL_COMPONENT
-RUN if $POETRY_INSTALL_COMPONENT; then cd "$COMPONENT" && poetry install; fi
+RUN echo $PATH && if $POETRY_INSTALL_COMPONENT; then cd "$COMPONENT" && poetry install; fi
 
 # Pre-compile optimized bytecode for our component packages
 ARG PYTHON_OPTIMIZE

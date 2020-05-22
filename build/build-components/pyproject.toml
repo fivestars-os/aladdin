@@ -3,9 +3,6 @@ name = "build-components"
 version = "0.1.0"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
-include = [
-    "python/*.dockerfile"
-]
 
 [tool.poetry.dependencies]
 python = "^3.7"

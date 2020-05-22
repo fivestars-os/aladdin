@@ -195,7 +195,7 @@ class BuildInfo(
 
     @property
     def add_poetry(self):
-        return self.hash == "local" and (
+        return (
             self.config.image_add_poetry if self.config.image_add_poetry is not UNDEFINED else True
         )
 
@@ -916,6 +916,7 @@ def add_component_content(
             COMPONENT=component,
             POETRY_INSTALL_COMPONENT="true" if poetry_install_component else "false",
             PYTHON_OPTIMIZE=build_info.python_optimize,
+            USER_CHOWN=build_info.user_info.chown,
         ),
         purpose=f"add-{component}-content",
     )
@@ -990,8 +991,7 @@ def _docker_build(dockerfile: str, tag: str, buildargs: dict = None, purpose: st
     tags = [tag]
     if purpose:
         tag_image, tag_tag = tag.split(":")
-        if tag_tag == "local":
-            tags.append(f"{tag_image}-{purpose}:{tag_tag}")
+        tags.append(f"{tag_image}-{purpose}:{tag_tag}")
 
     cmd = ["docker", "build"]
     for key, value in buildargs.items():
@@ -1031,7 +1031,3 @@ def _check_call(cmd: typing.List[str]):
     ps.wait()
     if ps.returncode:
         raise subprocess.CalledProcessError(ps.returncode, cmd)
-
-
-if __name__ == "__main__":
-    main()
