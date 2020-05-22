@@ -13,73 +13,108 @@ from publish_rules import PublishRules
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser('deploy',
-                                      help='Start the helm chart in non local environments')
+    subparser = sub_parser.add_parser(
+        "deploy", help="Start the helm chart in non local environments"
+    )
     subparser.set_defaults(func=deploy_args)
     add_namespace_argument(subparser)
-    subparser.add_argument('project', help='which project to deploy')
-    subparser.add_argument('git_ref', help='which git hash or tag or branch to deploy')
-    subparser.add_argument('--dry-run', '-d', action='store_true',
-                           help='Run the helm as test and don\'t actually run it')
-    subparser.add_argument('--force', '-f', action='store_true',
-                           help=('Skip git branch verification if check_branch is enabled on the '
-                                 'cluster'))
-    subparser.add_argument('--force-helm', action='store_true',
-                           help=('Have helm force resource update through delete/recreate if '
-                                 'needed'))
-    subparser.add_argument('--repo', help=('which git repo to pull from, which should be used if '
-                                           'it differs from chart name'))
-    subparser.add_argument('--set-override-values', default=[], nargs='+',
-                           help=('override values in the values file. Syntax: --set key1=value1 '
-                                 'key2=value2 ...'))
+    subparser.add_argument("project", help="which project to deploy")
+    subparser.add_argument("git_ref", help="which git hash or tag or branch to deploy")
+    subparser.add_argument(
+        "--dry-run",
+        "-d",
+        action="store_true",
+        help="Run the helm as test and don't actually run it",
+    )
+    subparser.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        help=("Skip git branch verification if check_branch is enabled on the " "cluster"),
+    )
+    subparser.add_argument(
+        "--force-helm",
+        action="store_true",
+        help=("Have helm force resource update through delete/recreate if " "needed"),
+    )
+    subparser.add_argument(
+        "--repo",
+        help=("which git repo to pull from, which should be used if " "it differs from chart name"),
+    )
+    subparser.add_argument(
+        "--set-override-values",
+        default=[],
+        nargs="+",
+        help=("override values in the values file. Syntax: --set key1=value1 " "key2=value2 ..."),
+    )
 
 
 def deploy_args(args):
-    deploy(args.project, args.git_ref, args.namespace, args.dry_run, args.force, args.force_helm,
-           args.repo, args.set_override_values)
+    deploy(
+        args.project,
+        args.git_ref,
+        args.namespace,
+        args.dry_run,
+        args.force,
+        args.force_helm,
+        args.repo,
+        args.set_override_values,
+    )
 
 
-def deploy(project, git_ref, namespace, dry_run=False, force=False, force_helm=False, repo=None, set_override_values=None):
+def deploy(
+    project,
+    git_ref,
+    namespace,
+    dry_run=False,
+    force=False,
+    force_helm=False,
+    repo=None,
+    set_override_values=None,
+):
     if set_override_values is None:
         set_override_values = []
     with tempfile.TemporaryDirectory() as tmpdirname:
         pr = PublishRules()
         helm = Helm()
         cr = cluster_rules(namespace=namespace)
-        helm_path = '{}/{}'.format(tmpdirname, project)
+        helm_path = "{}/{}".format(tmpdirname, project)
         hr = HelmRules(cr, project)
-        git_account = load_git_configs()['account']
+        git_account = load_git_configs()["account"]
         repo = repo or project
-        git_url = f'git@github.com:{git_account}/{repo}.git'
+        git_url = f"git@github.com:{git_account}/{repo}.git"
         git_ref = Git.extract_hash(git_ref, git_url)
 
         if not force and cr.check_branch and Git.extract_hash(cr.check_branch, git_url) != git_ref:
-            logging.error(f'You are deploying hash {git_ref} which does not match branch '
-                          f'{cr.check_branch} on cluster {cr.cluster_name} for project '
-                          f'{project}... exiting')
+            logging.error(
+                f"You are deploying hash {git_ref} which does not match branch "
+                f"{cr.check_branch} on cluster {cr.cluster_name} for project "
+                f"{project}... exiting"
+            )
             sys.exit(1)
 
         helm.pull_package(project, pr, git_ref, tmpdirname)
 
         # We need to use --set-string in case the git ref is all digits
-        helm_args = ['--set-string', f'deploy.imageTag={git_ref}']
+        helm_args = ["--set-string", f"deploy.imageTag={git_ref}"]
 
         # Values precedence is command < cluster rules < --set-override-values
         # Deploy command values
         values = {
-            'service.certificateArn': cr.get_certificate_arn(),
-            'deploy.ecr': pr.docker_registry,
+            "service.certificateArn": cr.get_certificate_arn(),
+            "deploy.ecr": pr.docker_registry,
         }
         # Update with cluster rule values
         values.update(cr.values)
         # Update with --set-override-values
-        value_overrides = {k: v for k, v in (value.split('=') for value in set_override_values)}
+        value_overrides = {k: v for k, v in (value.split("=") for value in set_override_values)}
         values.update(value_overrides)
 
         if dry_run:
             helm.dry_run(hr, helm_path, cr.cluster_name, namespace, helm_args=helm_args, **values)
         else:
-            helm.start(hr, helm_path, cr.cluster_name, namespace, force_helm, helm_args=helm_args,
-                **values)
+            helm.start(
+                hr, helm_path, cr.cluster_name, namespace, force_helm, helm_args=helm_args, **values
+            )
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)

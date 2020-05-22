@@ -7,8 +7,9 @@ import logging
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser('sync-ingress',
-                                      help='Synchronize ingress to put services behind ingress')
+    subparser = sub_parser.add_parser(
+        "sync-ingress", help="Synchronize ingress to put services behind ingress"
+    )
     add_namespace_argument(subparser)
     subparser.set_defaults(func=sync_ingress_args)
 
@@ -20,11 +21,15 @@ def sync_ingress_args(args):
 def sync_ingress(namespace):
     cr = cluster_rules(namespace=namespace)
     ingress_info = cr.ingress_info
-    if ingress_info and ingress_info['use_ingress_per_namespace']:
+    if ingress_info and ingress_info["use_ingress_per_namespace"]:
         k = Kubernetes(namespace=namespace)
         ingress_list = k.get_ingresses()
-        ingress = build_ingress(k.get_services(), cr.service_dns_suffix,
-            cr.dual_dns_prefix_annotation_name, ingress_info)
+        ingress = build_ingress(
+            k.get_services(),
+            cr.service_dns_suffix,
+            cr.dual_dns_prefix_annotation_name,
+            ingress_info,
+        )
         if any(i for i in ingress_list if i.metadata.name == ingress.metadata.name):
             # update existing ingress
             k.update_ingress(ingress.metadata.name, ingress)

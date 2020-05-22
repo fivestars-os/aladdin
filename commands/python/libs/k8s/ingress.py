@@ -29,7 +29,7 @@ def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress
     ingress = client.ExtensionsV1beta1Ingress()
     # init metadata
     ingress.metadata = client.V1ObjectMeta()
-    ingress.metadata.name = ingress_info['ingress_name']
+    ingress.metadata.name = ingress_info["ingress_name"]
     # init spec
     ingress.spec = client.ExtensionsV1beta1IngressSpec()
     ingress.spec.rules = []
@@ -38,7 +38,8 @@ def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress
         ingress_rule = client.ExtensionsV1beta1IngressRule()
         ingress_rule.host = "%s.%s" % (dns_prefix, dns_suffix)
         backend = client.ExtensionsV1beta1IngressBackend(
-            service_name=service.metadata.name, service_port=port)
+            service_name=service.metadata.name, service_port=port
+        )
         ingress_path = [client.ExtensionsV1beta1HTTPIngressPath(path="/", backend=backend)]
         ingress_rule.http = client.ExtensionsV1beta1HTTPIngressRuleValue(ingress_path)
 
@@ -46,7 +47,8 @@ def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress
 
     if not ingress.spec.rules:
         ingress_dummy_backend = client.ExtensionsV1beta1IngressBackend(
-            service_name=ingress_info['ingress_controller_service_name'], service_port=80)
+            service_name=ingress_info["ingress_controller_service_name"], service_port=80
+        )
         ingress.spec.backend = ingress_dummy_backend
 
     return ingress

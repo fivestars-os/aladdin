@@ -43,31 +43,38 @@ class KubernetesUtils(object):
 
         # Map all services of type loadBalancer to their elb hostname
         for service in filter(lambda s: s.spec.type == "LoadBalancer", services):
-            load_balancer_dns = self._get_load_balancer_hostname_with_retry(
-                service.metadata.name)
-            self._update_mapping(service_map, service, load_balancer_dns,
-                dual_dns_prefix_annotation_name)
+            load_balancer_dns = self._get_load_balancer_hostname_with_retry(service.metadata.name)
+            self._update_mapping(
+                service_map, service, load_balancer_dns, dual_dns_prefix_annotation_name
+            )
 
-        # If ingress is turned on, map all services of type nodePort to the ingress controller 
+        # If ingress is turned on, map all services of type nodePort to the ingress controller
         # service elb hostname
-        if ingress_info and ingress_info['use_ingress_per_namespace']:
-            ingress_controller_service_name = ingress_info['ingress_controller_service_name']
+        if ingress_info and ingress_info["use_ingress_per_namespace"]:
+            ingress_controller_service_name = ingress_info["ingress_controller_service_name"]
 
             # Get ingress controller dns
-            ingress_services = [service for service in services
-                                if service.metadata.name == ingress_controller_service_name]
+            ingress_services = [
+                service
+                for service in services
+                if service.metadata.name == ingress_controller_service_name
+            ]
             if len(ingress_services) != 1:
-                raise KubernetesException("Expected exactly 1 service with name {0}. Got {1}."
-                                          .format(ingress_controller_service_name,
-                                           len(ingress_services)))
+                raise KubernetesException(
+                    "Expected exactly 1 service with name {0}. Got {1}.".format(
+                        ingress_controller_service_name, len(ingress_services)
+                    )
+                )
             else:
                 ingress_dns = self._get_load_balancer_hostname_with_retry(
-                    ingress_services[0].metadata.name)
+                    ingress_services[0].metadata.name
+                )
 
             # Map NodePort services to ingress dns
             for service in filter(lambda s: s.spec.type == "NodePort", services):
-                self._update_mapping(service_map, service, ingress_dns,
-                    dual_dns_prefix_annotation_name)
+                self._update_mapping(
+                    service_map, service, ingress_dns, dual_dns_prefix_annotation_name
+                )
 
         return service_map
 
@@ -75,24 +82,37 @@ class KubernetesUtils(object):
         load_balancers = None
         retry_count = 0
         while retry_count < 20:
-            services = [service for service in self.k8s.get_services()
-                        if service_name == service.metadata.name]
+            services = [
+                service
+                for service in self.k8s.get_services()
+                if service_name == service.metadata.name
+            ]
             if len(services) != 1:
-                raise KubernetesException("Expected one service with name {0}, got {1}"
-                                          .format(service_name, len(services)))
+                raise KubernetesException(
+                    "Expected one service with name {0}, got {1}".format(
+                        service_name, len(services)
+                    )
+                )
             load_balancers = services[0].status.load_balancer.ingress
             if load_balancers is not None:
                 break
             time.sleep(1)
             retry_count += 1
         if load_balancers is None:
-            logging.warning("Failed to map dns to {} load balancer because load balancer was not "
-                            "ready.".format(service_name))
-            logging.warning("Please Try again in a few moments by calling `aladdin -c {0} -n {1} "
-                            "sync-dns`.".format(os.getenv('CLUSTER_CODE'), os.getenv('NAMESPACE')))
+            logging.warning(
+                "Failed to map dns to {} load balancer because load balancer was not "
+                "ready.".format(service_name)
+            )
+            logging.warning(
+                "Please Try again in a few moments by calling `aladdin -c {0} -n {1} "
+                "sync-dns`.".format(os.getenv("CLUSTER_CODE"), os.getenv("NAMESPACE"))
+            )
             return
         elif len(load_balancers) != 1:
-            raise KubernetesException("Expected 1 load balancer for {0}. Got {1}."
-                                      .format(service_name, len(load_balancers)))
+            raise KubernetesException(
+                "Expected 1 load balancer for {0}. Got {1}.".format(
+                    service_name, len(load_balancers)
+                )
+            )
         else:
             return load_balancers[0].hostname
