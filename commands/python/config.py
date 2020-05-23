@@ -11,9 +11,9 @@ def load_cluster_config(cluster):
 
 
 def load_namespace_override_config(cluster, namespace):
+    aladdin_config_dir = os.environ["ALADDIN_CONFIG_DIR"]
     return load_config_from_file(
-        f'{os.environ["ALADDIN_CONFIG_DIR"]}/{cluster}/'
-        f"namespace-overrides/{namespace}/config.json"
+        f"{aladdin_config_dir}/{cluster}/namespace-overrides/{namespace}/config.json"
     )
 
 

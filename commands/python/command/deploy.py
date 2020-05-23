@@ -30,22 +30,22 @@ def parse_args(sub_parser):
         "--force",
         "-f",
         action="store_true",
-        help=("Skip git branch verification if check_branch is enabled on the " "cluster"),
+        help="Skip git branch verification if check_branch is enabled on the cluster",
     )
     subparser.add_argument(
         "--force-helm",
         action="store_true",
-        help=("Have helm force resource update through delete/recreate if " "needed"),
+        help="Have helm force resource update through delete/recreate if needed",
     )
     subparser.add_argument(
         "--repo",
-        help=("which git repo to pull from, which should be used if " "it differs from chart name"),
+        help="which git repo to pull from, which should be used if it differs from chart name",
     )
     subparser.add_argument(
         "--set-override-values",
         default=[],
         nargs="+",
-        help=("override values in the values file. Syntax: --set key1=value1 " "key2=value2 ..."),
+        help="override values in the values file. Syntax: --set key1=value1 key2=value2 ...",
     )
 
 
@@ -87,9 +87,9 @@ def deploy(
 
         if not force and cr.check_branch and Git.extract_hash(cr.check_branch, git_url) != git_ref:
             logging.error(
-                f"You are deploying hash {git_ref} which does not match branch "
-                f"{cr.check_branch} on cluster {cr.cluster_name} for project "
-                f"{project}... exiting"
+                f"You are deploying hash {git_ref} which does not match branch"
+                f" {cr.check_branch} on cluster {cr.cluster_name} for project"
+                f" {project}... exiting"
             )
             sys.exit(1)
 

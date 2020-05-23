@@ -13,13 +13,10 @@ def parse_args(sub_parser):
         formatter_class=RawTextHelpFormatter,
         epilog=(
             "Example usage:\n"
-            "aladdin -c CLUSTER -n NAMESPACE environment "
-            "CONFIGMAP get\n"
-            "aladdin -c CLUSTER -n NAMESPACE environment "
-            "CONFIGMAP set --args a=1 b=2 --refresh DEPLOYMENT1 "
-            "DEPLOYMENT2\n"
-            "aladdin -c CLUSTER -n NAMESPACE environment "
-            "CONFIGMAP unset --args a b"
+            "aladdin -c CLUSTER -n NAMESPACE environment CONFIGMAP get\n"
+            "aladdin -c CLUSTER -n NAMESPACE environment CONFIGMAP set"
+            " --args a=1 b=2 --refresh DEPLOYMENT1 DEPLOYMENT2\n"
+            "aladdin -c CLUSTER -n NAMESPACE environment CONFIGMAP unset --args a b"
         ),
     )
     add_namespace_argument(subparser)
@@ -31,9 +28,8 @@ def parse_args(sub_parser):
         "--args",
         nargs="+",
         help=(
-            "which key/value pairs to add to environment "
-            "for set, or which keys to remove from "
-            "environment for unset"
+            "which key/value pairs to add to environment for set,"
+            " or which keys to remove from environment for unset"
         ),
     )
     subparser.add_argument("--refresh", help="which deployments to refresh", nargs="*")

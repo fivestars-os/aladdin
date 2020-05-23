@@ -100,12 +100,12 @@ class KubernetesUtils(object):
             retry_count += 1
         if load_balancers is None:
             logging.warning(
-                "Failed to map dns to {} load balancer because load balancer was not "
-                "ready.".format(service_name)
+                "Failed to map dns to {} load balancer because load balancer was not"
+                " ready.".format(service_name)
             )
             logging.warning(
-                "Please Try again in a few moments by calling `aladdin -c {0} -n {1} "
-                "sync-dns`.".format(os.getenv("CLUSTER_CODE"), os.getenv("NAMESPACE"))
+                "Please Try again in a few moments by calling `aladdin -c {0} -n {1}"
+                " sync-dns`.".format(os.getenv("CLUSTER_CODE"), os.getenv("NAMESPACE"))
             )
             return
         elif len(load_balancers) != 1:

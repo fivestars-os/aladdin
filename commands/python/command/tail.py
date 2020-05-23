@@ -16,10 +16,12 @@ def parse_args(sub_parser):
         nargs="?",
         choices=["pod", "line", "false"],
         help=(
-            "specify how to colorize the logs, defaults to 'pod'. "
-            "Options: pod: Only the pod name is colorized but the logged text "
-            "is using the terminal default color. line: The entire line is "
-            "colorized. false: Do not colorize output at all"
+            "specify how to colorize the logs, defaults to 'pod'."
+            " Options:"
+            " pod: Only the pod name is colorized, but the logged"
+            " text uses the terminal default color."
+            " line: The entire line is colorized."
+            " false: Do not colorize output at all"
         ),
     )
     add_namespace_argument(subparser)
@@ -58,7 +60,7 @@ def tail(container_name, color, deployment_name, pod_name, namespace=None):
                 pod = k.get_pod_by_name(pod_name)
             except IndexError:
                 logging.warning(
-                    "Could not find pod with given name, please choose from the " "available pods"
+                    "Could not find pod with given name, please choose from the available pods"
                 )
                 pod = choose_pod(k)
                 pod_name = pod.metadata.name

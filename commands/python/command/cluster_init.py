@@ -8,15 +8,15 @@ def parse_args(sub_parser):
     subparser = sub_parser.add_parser(
         "cluster-init",
         help=(
-            "Install all projects as defined by cluster_init in "
-            "your cluster's config if not already installed"
+            "Install all projects as defined by cluster_init in"
+            " your cluster's config if not already installed"
         ),
     )
     subparser.add_argument(
         "--force",
         "-f",
         action="store_true",
-        help=("don't check if cluster init projects are already installed " "before installing"),
+        help="don't check if cluster init projects are already installed before installing",
     )
     subparser.set_defaults(func=cluster_init_args)
 

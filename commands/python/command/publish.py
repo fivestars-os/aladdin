@@ -15,13 +15,13 @@ import tempfile
 def parse_args(sub_parser):
 
     subparser = sub_parser.add_parser(
-        "publish", help=("Build the docker and helm package and publish to ecr " "and S3")
+        "publish", help="Build the docker and helm package and publish to ecr and S3"
     )
     exclude_steps_group = subparser.add_mutually_exclusive_group()
     exclude_steps_group.add_argument(
         "--build-only",
         action="store_true",
-        help=("only builds docker images in your minikube env with " "hash and timestamp as tags"),
+        help="only builds docker images in your minikube env with hash and timestamp as tags",
     )
     exclude_steps_group.add_argument(
         "--build-publish-ecr-only",
@@ -32,30 +32,29 @@ def parse_args(sub_parser):
         "--publish-helm-only",
         action="store_true",
         help=(
-            "only publish helm chart to s3. WARNING: make sure you "
-            "build and publish the docker images to ecr before "
-            "deploying"
+            "only publish helm chart to s3. WARNING: make sure you build"
+            " and publish the docker images to ecr before deploying"
         ),
     )
     clean_options_groups = subparser.add_mutually_exclusive_group()
     clean_options_groups.add_argument(
         "--build-local",
         action="store_true",
-        help=("do a local docker build rather than pulling cleanly " "from git"),
+        help="do a local docker build rather than pulling cleanly from git",
     )
 
     remote_options_group = subparser.add_argument_group("remote options")
     remote_options_group.add_argument(
         "--repo",
-        help=("which git repo to pull from, which should be used if " "it differs from chart name"),
+        help="which git repo to pull from, which should be used if it differs from chart name",
     )
     remote_options_group.add_argument(
-        "--git-ref", help=("which commit hash or branch or tag to checkout and " "publish from")
+        "--git-ref", help="which commit hash or branch or tag to checkout and publish from"
     )
     remote_options_group.add_argument(
         "--init-submodules",
         action="store_true",
-        help=("recursively initialize and update all submodules included in the project"),
+        help="recursively initialize and update all submodules included in the project",
     )
 
     clean_options_groups.add_argument_group(remote_options_group)
@@ -124,8 +123,7 @@ def publish_clean(
             g.checkout(tmpdirname, ref)
         except subprocess.CalledProcessError:
             logging.warn(
-                f"Could not checkout to ref {ref} in repo {git_url}. Have you pushed it "
-                "to remote?"
+                f"Could not checkout to ref {ref} in repo {git_url}. Have you pushed it to remote?"
             )
             return
         if init_submodules:
@@ -133,8 +131,8 @@ def publish_clean(
                 g.init_submodules(tmpdirname)
             except subprocess.CalledProcessError:
                 logging.warn(
-                    f"Could not initialize submodules. Make sure you use ssh urls in "
-                    "the .gitmodules folder and double check your credentials."
+                    "Could not initialize submodules. Make sure you use ssh urls in"
+                    " the .gitmodules folder and double check your credentials."
                 )
                 return
         with working_directory(tmpdirname):

@@ -40,9 +40,9 @@ def search_certificate_arn(boto_session, dns_name):
         # Warn that certificate is in pending state, so https will not work until certificate is
         # in issued state and project is redeployed
         log.warning(
-            f"Certificate {arn_res} for your namespace is not in issued state yet, so "
-            "https will not work. Please redeploy your project later with the --init flag "
-            "set to enable https."
+            f"Certificate {arn_res} for your namespace is not in issued state yet, so"
+            " https will not work. Please redeploy your project later with the --init flag"
+            " set to enable https."
         )
         # Return empty string so that load balancer will create, and at least http will work
         return ""
@@ -80,9 +80,9 @@ def new_certificate_arn(boto_session, dns_name):
     # Warn that certificate is in pending state yet, so https will not work until certificate is
     # in issued state and project is redeployed
     log.warning(
-        f"Certificate {arn} for your namespace is not in issued state yet, so "
-        "https will not work.  Please redeploy your project later with the --init flag "
-        "set to enable https."
+        f"Certificate {arn} for your namespace is not in issued state yet, so"
+        " https will not work.  Please redeploy your project later with the --init flag"
+        " set to enable https."
     )
     # Return empty string so that load balancer will create, and at least http will work
     return ""
@@ -113,10 +113,10 @@ def _validate_certificate_with_retry(boto_session, dns_name, arn, max_retries=20
             break
     if retry_count == max_retries:
         log.warning(
-            f"Unable to validate certificate {arn} via DNS at this time. Please try again "
-            "later by rerunning your aladdin command or by manually validating using the "
-            "instructions here: https://github.com/fivestars/aladdin-fs/blob/master/doc"
-            "/dns_and_certificate.md."
+            f"Unable to validate certificate {arn} via DNS at this time. Please try again"
+            " later by rerunning your aladdin command or by manually validating using the"
+            " instructions here:"
+            " https://github.com/fivestars/aladdin-fs/blob/master/doc/dns_and_certificate.md."
         )
     else:
         fill_dns_dict(boto_session, dns_id, cname_record)

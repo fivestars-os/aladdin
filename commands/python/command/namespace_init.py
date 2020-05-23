@@ -9,15 +9,15 @@ def parse_args(sub_parser):
     subparser = sub_parser.add_parser(
         "namespace-init",
         help=(
-            "Install all projects as defined by namespace_init in "
-            "your cluster's config if not already installed"
+            "Install all projects as defined by namespace_init in"
+            " your cluster's config if not already installed"
         ),
     )
     subparser.add_argument(
         "--force",
         "-f",
         action="store_true",
-        help=("don't check if namespace init projects are already installed " "before installing"),
+        help="don't check if namespace init projects are already installed before installing",
     )
     add_namespace_argument(subparser)
     subparser.set_defaults(func=namespace_init_args)
