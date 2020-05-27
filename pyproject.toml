@@ -12,7 +12,6 @@ cached-property = "1.5.1"
 colorlog = "4.1.0"
 jmespath = "0.10.0"
 kubernetes = "11.0.0b2"
-build-components = {path = "build-components"}
 
 [tool.poetry.dev-dependencies]
 

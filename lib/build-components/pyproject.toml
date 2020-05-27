@@ -12,6 +12,7 @@ coloredlogs = "^14.0"
 verboselogs = "^1.7"
 PyYAML = "^5.3.1"
 networkx = "^2.4"
+jinja2 = "^2.11.2"
 
 [tool.poetry.dev-dependencies]
 

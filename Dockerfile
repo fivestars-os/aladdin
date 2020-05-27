@@ -50,21 +50,14 @@ WORKDIR /root/aladdin
 
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
-COPY build-components build-components
 RUN poetry install --no-root
 
+# Install the build-components project
+COPY lib/build-components/pyproject.toml lib/build-components/poetry.lock lib/build-components/
+RUN cd lib/build-components && poetry install --no-root
+COPY lib/build-components lib/build-components
+RUN cd lib/build-components && poetry install
+
+# Install aladdin
 COPY . /root/aladdin
 ENV PATH="/root/.local/bin:/root:${PATH}"
-
-
-
-
-
-
-
-
-
-
-
-RUN curl -fL https://metriton.datawire.io/downloads/linux/edgectl -o /usr/bin/edgectl \
- && chmod 755 /usr/bin/edgectl

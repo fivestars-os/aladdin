@@ -1,0 +1,75 @@
+{% from "macros.j2" import install_poetry, build_component_python_dependencies, add_poetry, aladdinize, add_component_python_dependencies, add_component_content, install_component  %}
+####################################################################################################
+# This is a dynamically generated file created by build-components for building the
+# "{{build_info.tag}}" docker image. This is actually a copy of the file used during
+# the build and is only intended for informational and debugging purposes.
+####################################################################################################
+
+
+####################################################################################################
+####################################################################################################
+# Build multi-stage builder images
+####################################################################################################
+####################################################################################################
+{{ install_poetry("poetry", build_info.builder_image, build_info.poetry_version) -}}
+
+{% for component in build_info.components %}
+{% if build_info.component_is_poetry_project(component) %}
+{{ build_component_python_dependencies(component, build_info.builder_image, build_info.poetry_version, build_info.poetry_no_dev, build_info.python_optimize) -}}
+{% endif %}
+{% endfor %}
+
+
+
+
+
+
+
+####################################################################################################
+####################################################################################################
+# Begin actual image build
+####################################################################################################
+####################################################################################################
+FROM {{build_info.base_image}}
+
+{% if build_info.aladdinize %}
+{{ aladdinize(build_info.user_info, build_info.python_optimize) -}}
+{% endif %}
+
+{% if build_info.dockerfile %}
+####################################################################################################
+# Dockerfile for {{build_info.component}}
+####################################################################################################
+{{ build_info.dockerfile_content }}
+{% endif %}
+
+{% if build_info.components %}
+####################################################################################################
+# Add components
+####################################################################################################
+{% for component in build_info.components %}
+####################################################################################################
+# Add {{component}}
+####################################################################################################
+{% if build_info.component_is_poetry_project(component) %}
+{{ add_component_python_dependencies(component, build_info.user_info) -}}
+{% endif %}
+{{ add_component_content(component, build_info.user_info) -}}
+{% if build_info.aladdinize and build_info.component_is_poetry_project(component) %}
+{{ install_component(component, build_info.poetry_no_dev) -}}
+{% endif %}
+
+{% endfor %}
+{% endif %}
+
+####################################################################################################
+# Finalize image
+####################################################################################################
+# Check that our libraries didn't introduce any conflicts
+RUN pip check
+
+{% if build_info.python_optimize %}
+# Pre-compile python code
+RUN python {{build_info.python_optimize}} -m compileall .
+{% endif %}
+
