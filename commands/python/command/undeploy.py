@@ -7,11 +7,12 @@ from libs.k8s.helm import Helm
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser('undeploy',
-                                      help='Remove the helm chart in non local environments')
+    subparser = sub_parser.add_parser(
+        "undeploy", help="Remove the helm chart in non local environments"
+    )
     subparser.set_defaults(func=undeploy_args)
     add_namespace_argument(subparser)
-    subparser.add_argument('project', help='which project to undeploy')
+    subparser.add_argument("project", help="which project to undeploy")
 
 
 def undeploy_args(args):

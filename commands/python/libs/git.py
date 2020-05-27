@@ -8,17 +8,17 @@ class Git(object):
 
     @classmethod
     def clone(cls, git_repo, dest_path):
-        subprocess.check_call(['git', 'clone', git_repo, dest_path])
+        subprocess.check_call(["git", "clone", git_repo, dest_path])
 
     @classmethod
     def init_submodules(cls, git_path):
         with working_directory(git_path):
-            subprocess.check_call(['git', 'submodule', 'update', '--init', '--recursive'])
+            subprocess.check_call(["git", "submodule", "update", "--init", "--recursive"])
 
     @classmethod
     def checkout(cls, git_path, ref):
         with working_directory(git_path):
-            subprocess.check_call(['git', 'checkout', ref])
+            subprocess.check_call(["git", "checkout", ref])
 
     @classmethod
     def get_hash(cls):
@@ -26,12 +26,12 @@ class Git(object):
 
     @classmethod
     def get_full_hash(cls):
-        cmd = ['git', 'rev-parse', 'HEAD']
-        return subprocess.check_output(cmd).decode('utf-8').rstrip()
+        cmd = ["git", "rev-parse", "HEAD"]
+        return subprocess.check_output(cmd).decode("utf-8").rstrip()
 
     @classmethod
     def _full_hash_to_short_hash(cls, full_hash):
-        return full_hash[:cls.SHORT_HASH_SIZE]
+        return full_hash[: cls.SHORT_HASH_SIZE]
 
     @classmethod
     def extract_hash(cls, value, git_url):
@@ -58,8 +58,11 @@ class Git(object):
         :param url:
         """
         try:
-            output = subprocess.check_output(['git', 'ls-remote', url, ref],
-                                             stderr=subprocess.DEVNULL).decode('utf-8').split()
+            output = (
+                subprocess.check_output(["git", "ls-remote", url, ref], stderr=subprocess.DEVNULL)
+                .decode("utf-8")
+                .split()
+            )
             return output[0] if output else None
         except subprocess.CalledProcessError:
             return None

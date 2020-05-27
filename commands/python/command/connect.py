@@ -4,9 +4,9 @@ from libs.k8s.kubernetes import Kubernetes
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser('connect', help='Connect to a container')
+    subparser = sub_parser.add_parser("connect", help="Connect to a container")
     subparser.set_defaults(func=connect_args)
-    subparser.add_argument('app', default=None, nargs='?', help='which app to connect to')
+    subparser.add_argument("app", default=None, nargs="?", help="which app to connect to")
     add_namespace_argument(subparser)
 
 
@@ -31,8 +31,11 @@ def connect(app_name, namespace=None):
     for pod in pods:
         # container_statuses may be None; don't fail in that case
         for container in pod.status.container_statuses or []:
-            print('{idx}: pod {pod_name}; container {container_name}'
-                  .format(idx=idx, pod_name=pod.metadata.name, container_name=container.name))
+            print(
+                "{idx}: pod {pod_name}; container {container_name}".format(
+                    idx=idx, pod_name=pod.metadata.name, container_name=container.name
+                )
+            )
             pod_container_pairs.append((pod.metadata.name, container.name))
             idx += 1
 
