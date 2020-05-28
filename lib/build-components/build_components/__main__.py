@@ -338,7 +338,11 @@ def build(
     component_graph = validate_component_dependencies(components=components)
 
     # Let's build in topological order
-    components = list(networkx.algorithms.dag.topological_sort(component_graph))
+    components = [
+        component
+        for component in networkx.algorithms.dag.topological_sort(component_graph)
+        if component in components
+    ]
 
     for component in components:
         try:
