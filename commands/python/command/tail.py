@@ -5,21 +5,43 @@ from libs.k8s.kubernetes import Kubernetes
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser('tail', help='Tail logs of multiple pods')
+    subparser = sub_parser.add_parser("tail", help="Tail logs of multiple pods")
     subparser.set_defaults(func=tail_args)
-    subparser.add_argument('--container', default=None, nargs='?',
-                           help='which container to view logs for')
-    subparser.add_argument('--color', default='pod', nargs='?', choices=['pod', 'line', 'false'],
-                           help=('specify how to colorize the logs, defaults to \'pod\'. '
-                                 'Options: pod: Only the pod name is colorized but the logged text '
-                                 'is using the terminal default color. line: The entire line is '
-                                 'colorized. false: Do not colorize output at all'))
+    subparser.add_argument(
+        "--container", default=None, nargs="?", help="which container to view logs for"
+    )
+    subparser.add_argument(
+        "--color",
+        default="pod",
+        nargs="?",
+        choices=["pod", "line", "false"],
+        help=(
+            "specify how to colorize the logs, defaults to 'pod'."
+            " Options:"
+            " pod: Only the pod name is colorized, but the logged"
+            " text uses the terminal default color."
+            " line: The entire line is colorized."
+            " false: Do not colorize output at all"
+        ),
+    )
     add_namespace_argument(subparser)
     pod_group = subparser.add_mutually_exclusive_group()
-    pod_group.add_argument('--deployment', action='store', nargs='?', const='', default=None,
-                           help='deployment name for pods to view logs for')
-    pod_group.add_argument('--pod', action='store', nargs='?', const='', default=None,
-                           help='full name of pod to view logs for')
+    pod_group.add_argument(
+        "--deployment",
+        action="store",
+        nargs="?",
+        const="",
+        default=None,
+        help="deployment name for pods to view logs for",
+    )
+    pod_group.add_argument(
+        "--pod",
+        action="store",
+        nargs="?",
+        const="",
+        default=None,
+        help="full name of pod to view logs for",
+    )
 
 
 def tail_args(args):
@@ -37,8 +59,9 @@ def tail(container_name, color, deployment_name, pod_name, namespace=None):
             try:
                 pod = k.get_pod_by_name(pod_name)
             except IndexError:
-                logging.warning('Could not find pod with given name, please choose from the '
-                                'available pods')
+                logging.warning(
+                    "Could not find pod with given name, please choose from the available pods"
+                )
                 pod = choose_pod(k)
                 pod_name = pod.metadata.name
     else:
@@ -48,8 +71,10 @@ def tail(container_name, color, deployment_name, pod_name, namespace=None):
         else:
             deployment = k.get_deployment(deployment_name)
             if deployment is None:
-                logging.warning('Could not find deployment with given app name, please choose from '
-                                'the available deployments')
+                logging.warning(
+                    "Could not find deployment with given app name, please choose from "
+                    "the available deployments"
+                )
                 deployment = choose_deployment(k)
                 deployment_name = deployment.metadata.name
     if not container_name:
@@ -61,8 +86,12 @@ def tail(container_name, color, deployment_name, pod_name, namespace=None):
             container = containers[idx]
         container_name = container.name
 
-    k.tail_logs(deployment_name=deployment_name, pod_name=pod_name, container_name=container_name,
-                color=color)
+    k.tail_logs(
+        deployment_name=deployment_name,
+        pod_name=pod_name,
+        container_name=container_name,
+        color=color,
+    )
 
 
 def choose_pod(k):

@@ -7,12 +7,13 @@ from libs.k8s.helm import Helm
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser('rollback', help='Go back to a previous deployment')
+    subparser = sub_parser.add_parser("rollback", help="Go back to a previous deployment")
     subparser.set_defaults(func=rollback_args)
     add_namespace_argument(subparser)
-    subparser.add_argument('project', help='which project to undeploy')
-    subparser.add_argument('--num-versions', type=int, default=1,
-                           help='how many versions to rollback, defaults to 1')
+    subparser.add_argument("project", help="which project to undeploy")
+    subparser.add_argument(
+        "--num-versions", type=int, default=1, help="how many versions to rollback, defaults to 1"
+    )
 
 
 def rollback_args(args):
