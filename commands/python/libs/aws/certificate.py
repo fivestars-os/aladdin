@@ -4,6 +4,7 @@
 Helpers function to get/create certificates the way we want
 """
 
+from hashlib import md5
 import itertools
 import logging
 import re
@@ -65,7 +66,7 @@ def new_certificate_arn(boto_session, dns_name):
         ValidationMethod="DNS",
         DomainName=dns_name,
         # SubjectAlternativeNames=[],  # One domain name per certificate simplifies things
-        IdempotencyToken=token,
+        IdempotencyToken=md5(token.encode()).hexdigest(),
         DomainValidationOptions=[
             dict(
                 DomainName=dns_name,
