@@ -229,7 +229,7 @@ function _handle_aws_config() {
         bastion_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled false)"
         # if the roles are the same then there's no need to get credentials for both
         if [[ $bastion_role != $publish_role ]]; then
-            if [[ $bastion_role != $publish_role ]]; then
+            if [[ $bastion_profile == $publish_profile ]]; then
                 # the user has set different aws roles for their cluster/publish configs
                 # but using the same profile name for both, continuing would override the publish credentials
                 >&2 echo "Bastion account misconfigured!"
