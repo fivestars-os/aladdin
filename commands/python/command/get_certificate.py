@@ -4,8 +4,9 @@ from arg_tools import add_namespace_argument
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser('get-certificate',
-                                      help='Get the certificate arn needed for the services elb')
+    subparser = sub_parser.add_parser(
+        "get-certificate", help="Get the certificate arn needed for the services elb"
+    )
     subparser.set_defaults(func=get_certificate_args)
     add_namespace_argument(subparser)
 

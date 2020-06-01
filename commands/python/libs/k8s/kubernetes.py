@@ -19,12 +19,17 @@ class Kubernetes(object):
     kubectl exec calls are the only ones currently not wrapping the python library
     """
 
-    def __init__(self, default_component_label=None, default_project_label=None, namespace=None,
-                 kubeconfig=None):
-        self.default_component_label = default_component_label or 'app'
-        self.default_project_label = default_project_label or 'project'
-        self.namespace = namespace or os.getenv('NAMESPACE', 'default')
-        self.kubeconfig = kubeconfig or os.getenv('KUBECONFIG')
+    def __init__(
+        self,
+        default_component_label=None,
+        default_project_label=None,
+        namespace=None,
+        kubeconfig=None,
+    ):
+        self.default_component_label = default_component_label or "app"
+        self.default_project_label = default_project_label or "project"
+        self.namespace = namespace or os.getenv("NAMESPACE", "default")
+        self.kubeconfig = kubeconfig or os.getenv("KUBECONFIG")
         try:
             config.load_kube_config(self.kubeconfig)
         except IOError:
@@ -39,9 +44,9 @@ class Kubernetes(object):
 
     def _kub_cmd(self, *args):
         # For commands that use kubectl - only exec is left
-        res = ['kubectl', '--namespace=' + self.namespace]
+        res = ["kubectl", "--namespace=" + self.namespace]
         if self.kubeconfig:
-            res.append('--kubeconfig=' + self.kubeconfig)
+            res.append("--kubeconfig=" + self.kubeconfig)
         res.extend(args)
         return res
 
@@ -55,40 +60,40 @@ class Kubernetes(object):
         # Returns kubectl exec -it pod_name -c container_name *command. Use container_name as None
         # if you do not need to specify container_name (for single container pods)
         if terminal:
-            flags = '-it'
+            flags = "-it"
         else:
-            flags = '-i'
+            flags = "-i"
 
         if container_name:
-            cmd_list = self._kub_cmd('exec', flags, pod_name, '-c', container_name, '--', *command)
+            cmd_list = self._kub_cmd("exec", flags, pod_name, "-c", container_name, "--", *command)
         else:
-            cmd_list = self._kub_cmd('exec', flags, pod_name, '--', *command)
+            cmd_list = self._kub_cmd("exec", flags, pod_name, "--", *command)
 
         if return_output:
             with open(os.devnull, "w") as devnull:
                 return subprocess.check_output(cmd_list, stderr=devnull)
         subprocess.check_call(cmd_list)
 
-    def tail_logs(self, deployment_name=None, pod_name=None, container_name=None, color='pod'):
+    def tail_logs(self, deployment_name=None, pod_name=None, container_name=None, color="pod"):
         # Wrapper around kubetail script to tail logs
-        aladdin_dir = os.getenv('ALADDIN_DIR')
+        aladdin_dir = os.getenv("ALADDIN_DIR")
         filepath = "{}/scripts/kubetail.sh".format(aladdin_dir)
         # Use stdbuf to bypass default unix buffering behavior for pipes so we can see logs real
         # time
-        cmd = ['stdbuf', '-o0', '/bin/bash', filepath]
+        cmd = ["stdbuf", "-o0", "/bin/bash", filepath]
         if pod_name:
             cmd.append(pod_name)
         if container_name:
-            cmd.extend(['-c', container_name])
+            cmd.extend(["-c", container_name])
         if deployment_name:
-            cmd.extend(['-l', 'app={}'.format(deployment_name)])
-        cmd.extend(['-k', color])
+            cmd.extend(["-l", "app={}".format(deployment_name)])
+        cmd.extend(["-k", color])
 
         # Call kubetail.sh script
         f = subprocess.Popen(cmd, bufsize=0, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         for line in f.stdout:
-            sys.stdout.write(line.decode('utf-8'))
+            sys.stdout.write(line.decode("utf-8"))
 
     def get_objects(self, obj_type, label_val=None, label_key=None):
         # obj_type should be the full name singular of the object, i.e. pod, secret, service, deploy
@@ -96,24 +101,27 @@ class Kubernetes(object):
         # docs/CoreV1Api.md if you are not sure
         if not label_key:
             label_key = self.default_component_label
-        get_func_name = 'list_namespaced_%s' % obj_type
+        get_func_name = "list_namespaced_%s" % obj_type
         # Ingress and Deployment are the only k8s objs we care about not in the core_v1_api for
         # some reason, so we use other appropriate clients here
-        if obj_type == 'deployment':
+        if obj_type == "deployment":
             get_func = getattr(self.apps_v1_beta1_api, get_func_name)
-        elif obj_type == 'ingress':
+        elif obj_type == "ingress":
             get_func = getattr(self.extensions_v1_beta1_api, get_func_name)
         else:
             get_func = getattr(self.core_v1_api, get_func_name)
         # Create a label selector filter if label_val was specified
-        label_selector = ''
+        label_selector = ""
         # Check if we have multiple label/selector pairs
         if type(label_key) is list and type(label_val) is list:
             if len(label_key) != len(label_val):
-                raise KubernetesException('Error in calling get_objects in class Kubernetes with '
-                                          'different number of label keys than label values')
-            label_selector = ",".join(["{0}={1}".format(x[0], x[1]) for x in zip(
-                label_key, label_val)])
+                raise KubernetesException(
+                    "Error in calling get_objects in class Kubernetes with "
+                    "different number of label keys than label values"
+                )
+            label_selector = ",".join(
+                ["{0}={1}".format(x[0], x[1]) for x in zip(label_key, label_val)]
+            )
         elif label_val:
             label_selector = "{0}={1}".format(label_key, label_val)
         objs = get_func(self.namespace, label_selector=label_selector).items
@@ -121,7 +129,7 @@ class Kubernetes(object):
 
     # TODO: make this into a __getattr__ possibly to remove duplicate code
     def get_pods(self, label_val=None, label_key=None):
-        return self.get_objects('pod', label_val, label_key)
+        return self.get_objects("pod", label_val, label_key)
 
     def get_pod(self, label_val=None, label_key=None, default=None):
         return (self.get_pods(label_val, label_key) + [default])[0]
@@ -142,13 +150,13 @@ class Kubernetes(object):
         self.core_v1_api.delete_namespaced_pod(name, self.namespace, body=delete_options)
 
     def get_secrets(self, label_val=None, label_key=None):
-        return self.get_objects('secret', label_val, label_key)
+        return self.get_objects("secret", label_val, label_key)
 
     def get_secret(self, label_val=None, label_key=None, default=None):
         return (self.get_secrets(label_val, label_key) + [default])[0]
 
     def get_services(self, label_val=None, label_key=None):
-        return self.get_objects('service', label_val, label_key)
+        return self.get_objects("service", label_val, label_key)
 
     def get_service(self, label_val=None, label_key=None, default=None):
         return (self.get_services(label_val, label_key) + [default])[0]
@@ -157,32 +165,41 @@ class Kubernetes(object):
         self.core_v1_api.patch_namespaced_service(name, self.namespace, body)
 
     def get_deployments(self, label_val=None, label_key=None):
-        return self.get_objects('deployment', label_val, label_key)
+        return self.get_objects("deployment", label_val, label_key)
 
     def get_deployment(self, label_val=None, label_key=None, default=None):
         return (self.get_deployments(label_val, label_key) + [default])[0]
 
-    def get_num_replicas(self, label_val=None, label_key=None, state='ready'):
+    def get_num_replicas(self, label_val=None, label_key=None, state="ready"):
         deployment_status = self.get_deployment(label_val, label_key).status
-        if state == 'ready':
+        if state == "ready":
             return deployment_status.ready_replicas or 0
-        if state == 'available':
+        if state == "available":
             return deployment_status.available_replicas or 0
-        if state == 'desired':
+        if state == "desired":
             return deployment_status.replicas or 0
-        if state == 'updated':
+        if state == "updated":
             return deployment_status.updated_replicas or 0
-        if state == 'unavailable':
+        if state == "unavailable":
             return deployment_status.unavailable_replicas or 0
-        raise KubernetesException('Unrecognized state {} for deployment replicas'.format(state))
+        raise KubernetesException("Unrecognized state {} for deployment replicas".format(state))
 
     """
     Wait for deployment with label_key=label_val to reach num_replicas pods. If a max_time is
     specified, and the condition is not met by then, this will return False. Otherwise it will
     return True once the waiting is done.
     """
-    def wait_replicas(self, label_val, num_replicas, label_key=None,
-                      retry_interval=5, max_time=None, state='ready', print_updates=True):
+
+    def wait_replicas(
+        self,
+        label_val,
+        num_replicas,
+        label_key=None,
+        retry_interval=5,
+        max_time=None,
+        state="ready",
+        print_updates=True,
+    ):
         label_key = label_key or self.default_component_label
         time_waited = 0
         while self.get_num_replicas(label_val, label_key, state) != num_replicas:
@@ -191,12 +208,15 @@ class Kubernetes(object):
             time.sleep(retry_interval)
             time_waited += retry_interval
             if print_updates:
-                print("Waiting for deployment with {0}={1} to scale to {2} pods"
-                      .format(label_key, label_val, num_replicas))
+                print(
+                    "Waiting for deployment with {0}={1} to scale to {2} pods".format(
+                        label_key, label_val, num_replicas
+                    )
+                )
         return True
 
     def get_config_maps(self, label_val=None, label_key=None):
-        return self.get_objects('config_map', label_val, label_key)
+        return self.get_objects("config_map", label_val, label_key)
 
     def get_config_map(self, label_val=None, label_key=None, default=None):
         return (self.get_config_maps(label_val, label_key) + [default])[0]
@@ -227,12 +247,12 @@ class Kubernetes(object):
     def rolling_update_no_change(self, deployment_name):
         deployment = self.get_deployment(deployment_name)
         deployment.spec.template.metadata.annotations = {
-            'aladdin-date-patch': str(int(time.time()))
+            "aladdin-date-patch": str(int(time.time()))
         }
         self.update_deployment(deployment_name, deployment)
 
     def get_ingresses(self, label_val=None, label_key=None):
-        return self.get_objects('ingress', label_val, label_key)
+        return self.get_objects("ingress", label_val, label_key)
 
     def get_ingress(self, label_val=None, label_key=None, default=None):
         return (self.get_ingresses(label_val, label_key) + [default])[0]
@@ -253,8 +273,9 @@ class Kubernetes(object):
         scale_obj.spec = client.AppsV1beta1ScaleSpec()
         scale_obj.spec.replicas = replicas
 
-        apps_v1_beta1_client.replace_namespaced_deployment_scale(deployment, self.namespace,
-                                                                 body=scale_obj)
+        apps_v1_beta1_client.replace_namespaced_deployment_scale(
+            deployment, self.namespace, body=scale_obj
+        )
 
         if wait_for:
             self.wait_replicas(deployment, replicas)

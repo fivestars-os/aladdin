@@ -8,7 +8,7 @@ from project.project_conf import ProjectConf
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser('stop', help='Remove the helm chart in local')
+    subparser = sub_parser.add_parser("stop", help="Remove the helm chart in local")
     subparser.set_defaults(func=stop_args)
     add_namespace_argument(subparser)
 
