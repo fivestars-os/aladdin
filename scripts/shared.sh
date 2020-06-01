@@ -4,19 +4,6 @@
 set -a
 set -eu -o pipefail
 
-function _extract_from_file() {
-    local key="$1"
-    local config_file="$2"
-    local value
-    if [[ -f $config_file ]]; then
-        value="$(eval "jq -r .${key} $config_file")"
-        if [[ "$value" != "null" ]]; then
-            echo "$value"
-            return 0
-        fi
-    fi
-}
-
 function _extract_cluster_config_value() {
     # Try extracting config from cluster config.json, default config.json, then aladdin config.json
     local key="$1"
