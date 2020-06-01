@@ -20,25 +20,26 @@ function _extract_from_file() {
 function _extract_cluster_config_value() {
     # Try extracting config from cluster config.json, default config.json, then aladdin config.json
     local key="$1"
-    local value
-    value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json")
-    if test -n "$value"; then
-        echo "$value"
-        return 0
-    fi
-    value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/default/config.json")
-    if test -n "$value"; then
-        echo "$value"
-        return 0
-    fi
-    value=$(_extract_from_file "$key" "$ALADDIN_CONFIG_DIR/config.json")
-    if test -n "$value"; then
-        echo "$value"
-        return 0
+    local default="${2:-}"
+    local value=""
+    local -a configs=(
+        "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json"
+        "$ALADDIN_CONFIG_DIR/default/config.json"
+        "$ALADDIN_CONFIG_DIR/config.json"
+    )
+    for config in "${configs[@]}"; do
+        value=$(jq -r ".$key" "$config")
+        if [[ "$value" != "null" ]]; then
+            echo "$value"
+            return 0
+        fi
+    done
+    if test -n "$default"; then
+        echo "$default"
     fi
 }
 
-function time_plus_offset() {
+function _time_plus_offset() {
     local offset="$1"
     local current_time="$(date +'%s')"
     echo "$((${current_time}+offset))"
@@ -59,48 +60,34 @@ function clear_cache_file(){
 }
 
 function set_cache() {
+    local cache_file="$HOME/.aladdin/infra/cache.json"
     local key="$(make_hash $1)"
-    local expiration="${2:-}"
-    local data="${3:-}"
-    _get_or_set_cache $key $expiration $data
+    local data=${2:-}
+    local expiration="$(_time_plus_offset ${3:-3600})"
+    contents="$(jq --arg key "${key}" --argjson expiration "${expiration}" --argjson data "${data}" '.[$key] = {"expiration":$expiration,"data":$data}' $cache_file)"
+    echo "${contents}" > $cache_file
 }
 
 function get_cached() {
-    local key="$(make_hash $1)"
-    _get_or_set_cache $key
-}
-
-function _get_or_set_cache(){
     local cache_file="$HOME/.aladdin/infra/cache.json"
     local key="$(make_hash $1)"
-    local expiration="${2:-}"
-    local data="${3:-}"
-    local contents
-
     if ! jq -r . $cache_file &> /dev/null; then
         echo "{}" > "$cache_file"
     fi
-    if test -z "$expiration"; then
-        # function called like `_get_or_set_cache "key"`
-        expiration=$(jq -r --arg key "${key}" '.[$key]["expiration"] // 0' $cache_file)
-    elif test -z "$data"; then
-        # function called like `_get_or_set_cache "key" "expiration"`
-        data=true
-    fi
-
+    expiration=$(jq -r --arg key "${key}" '.[$key]["expiration"] // 0' $cache_file)
     if [[ "$(date +'%s')" -gt "$expiration" ]]; then
-        # if the key is expired, clear the data
-        contents="$(jq --arg key "${key}" '.[$key] = {}' $cache_file)"
-        echo "${contents}" > $cache_file
-    elif test -n "$data"; then
-        # function called like `_get_or_set_cache "key" "expiration" "some data"`
-        contents="$(jq --arg key "${key}" --argjson expiration "${expiration}" --argjson data "${data}" '.[$key] = {"expiration":$expiration,"data":$data}' $cache_file)"
-        echo "${contents}" > $cache_file
-    else
-        # function called like `_get_or_set_cache "key"`, echo the existing data
-        echo "$(jq -r --arg key "${key}" '.[$key]["data"] // ""' $cache_file)"
+        return 1
     fi
-    return 0
+    echo "$(jq -r --arg key "${key}" '.[$key]["data"] // ""' $cache_file)"
+}
+
+function set_ttl() {
+    set_cache "$1" true ${2:3600}
+}
+
+function check_ttl() {
+    test -n "$(get_cached "$1")"
+    return $?
 }
 
 function make_hash(){

@@ -56,7 +56,7 @@ function get_plugin_dir() {
 
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
-    cluster_alias=$(jq -r ".cluster_aliases[\"$CLUSTER_CODE\"]" "$ALADDIN_CONFIG_FILE")
+    cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_FILE")
     if [[ $cluster_alias != null ]]; then
         export CLUSTER_CODE=$cluster_alias
     fi
@@ -77,9 +77,9 @@ function check_and_handle_init() {
     else
         "$SCRIPT_DIR"/infra_k8s_check.sh
     fi
-    if test -z $(docker images -q "$ALADDIN_IMAGE") || test -z "$(get_cached "${ALADDIN_IMAGE}")"; then
+    if test -z $(docker images -q "$ALADDIN_IMAGE") || ! check_ttl "${ALADDIN_IMAGE}"; then
         docker pull "$ALADDIN_IMAGE"
-        set_cache "${ALADDIN_IMAGE}" $(time_plus_offset 3600*24)
+        set_ttl "${ALADDIN_IMAGE}" 3600*24
     fi
 
     check_or_start_minikube
@@ -176,20 +176,11 @@ function copy_ssh_to_minikube() {
 }
 
 function set_cluster_helper_vars() {
-    IS_LOCAL="$(_extract_cluster_config_value is_local)"
-    if [[ -z "$IS_LOCAL" ]]; then
-        IS_LOCAL=false
-    fi
+    IS_LOCAL="$(_extract_cluster_config_value is_local false)"
 
-    IS_PROD="$(_extract_cluster_config_value is_prod)"
-    if [[ -z "$IS_PROD" ]]; then
-        IS_PROD=false
-    fi
+    IS_PROD="$(_extract_cluster_config_value is_prod false)"
 
-    IS_TESTING="$(_extract_cluster_config_value is_testing)"
-    if [[ -z "$IS_TESTING" ]]; then
-        IS_TESTING=false
-    fi
+    IS_TESTING="$(_extract_cluster_config_value is_testing false)"
 }
 
 function exec_host_command() {
@@ -260,16 +251,16 @@ function enter_docker_container() {
 
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
-    local mounts=""
+    local -a mounts
     if "$DEV"; then
-        mounts="$mounts -v $(pathnorm "$ALADDIN_DIR"):/root/aladdin"
+        mounts=("${mounts[@]}" "-v $(pathnorm "$ALADDIN_DIR"):/root/aladdin")
     fi
     if "$IS_LOCAL"; then
-        mounts="$mounts -v $(pathnorm ~/.minikube):/root/.minikube"
+        mounts=("${mounts[@]}" "-v $(pathnorm ~/.minikube):/root/.minikube")
     fi
     if "$IS_LOCAL" || "$DEV"; then
-        mounts="$mounts -v /:/aladdin_root" # mount the whole minikube system
-        mounts="$mounts --workdir /aladdin_root$(pathnorm "$PWD")"
+        mounts=("${mounts[@]}" "-v /:/aladdin_root")
+        mounts=("${mounts[@]}" "--workdir /aladdin_root$(pathnorm "$PWD")")
     fi
 
     if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
@@ -294,7 +285,7 @@ function enter_docker_container() {
     esac
 
     # How to mount docker parts
-    mounts="$mounts -v /var/run/docker.sock:/var/run/docker.sock"
+    mounts=("${mounts[@]}" "-v /var/run/docker.sock:/var/run/docker.sock")
 
     docker run $FLAGS \
         `# Environment` \
@@ -316,8 +307,9 @@ function enter_docker_container() {
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
+        ${mounts[@]} \
         `# Specific command` \
-        $mounts ${ALADDIN_PLUGIN_CMD:-} \
+        ${ALADDIN_PLUGIN_CMD:-} \
         "$ALADDIN_IMAGE" \
         `# Finally, launch the command` \
         /root/aladdin/aladdin-container.sh "$@"

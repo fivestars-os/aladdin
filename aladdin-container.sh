@@ -75,7 +75,7 @@ function exec_command_or_plugin() {
 }
 
 function _replace_aws_secret() {
-    if test -n "$(get_cached "aws_secret_${CLUSTER_NAME}")"; then
+    if check_ttl "aws_secret_${CLUSTER_NAME}"; then
         return 0
     fi
     local creds username password server
@@ -86,17 +86,16 @@ function _replace_aws_secret() {
     kubectl delete secret aws || true
     kubectl create secret docker-registry aws --docker-username="$username" --docker-password="$password" --docker-server="$server" --docker-email="can be anything"
     # token valid for 12 hours, cache for 10 hrs https://docs.aws.amazon.com/cli/latest/reference/ecr/get-login.html
-    local aws_secret_ts="$(date -d $(kubectl get secret aws -o json | jq -r .metadata.creationTimestamp) +%s)"
-    set_cache "aws_secret_${CLUSTER_NAME}" $(time_plus_offset $((${aws_secret_ts}+3600*10)))
+    set_ttl "aws_secret_${CLUSTER_NAME}" 3600*10
 }
 
 function _namespace_init() {
-    if test -n "$(get_cached "${CLUSTER_NAME}_${NAMESPACE}")"; then
+    if check_ttl "${CLUSTER_NAME}_${NAMESPACE}"; then
         return 0
     fi
     kubectl create namespace $NAMESPACE || true
     $PY_MAIN namespace-init --force
-    set_cache "${CLUSTER_NAME}_${NAMESPACE}" $(time_plus_offset 3600)
+    set_ttl "${CLUSTER_NAME}_${NAMESPACE}" 3600
 }
 
 function environment_init() {
@@ -108,7 +107,6 @@ function environment_init() {
 
     if "$IS_LOCAL"; then
         mkdir -p $HOME/.kube/
-        cp $HOME/.kube_local/config $HOME/.kube/config
         # Replace e.g. /Users/ptr/.minikube with /root/.minikube in the minikube conf dir path
         # (since that's where it will be mounted within the aladdin container)
         sed 's|: \?.*\.minikube|: /root/.minikube| ; /: \/root\/.minikube/ s|\\|/|g' $HOME/.kube_local/config > $HOME/.kube/config
@@ -135,7 +133,7 @@ function environment_init() {
 }
 
 function _initialize_helm() {
-    local rbac_enabled="$(_extract_cluster_config_value rbac_enabled)"
+    local rbac_enabled="$(_extract_cluster_config_value rbac_enabled false)"
     if $rbac_enabled; then
         kubectl -n kube-system create serviceaccount tiller || true
         kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || true
@@ -149,7 +147,7 @@ function _handle_authentication_config() {
     # This function exports necessary AUTHENTICATION variables
     # This function does not add the authentication users to `.kube/config`, use `_add_authentication_users_to_kubeconfig` for that
     # export AUTHENTICATION_ENABLED for change-permissions and bash command
-    export AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
+    export AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled false)"
     if $AUTHENTICATION_ENABLED; then
         # export AUTHENTICATION_ALADDIN_ROLE for change_to_aladdin_permission helper command
         export AUTHENTICATION_ALADDIN_ROLE="$(_extract_cluster_config_value authentication_aladdin_role)"
@@ -165,7 +163,7 @@ function _handle_authentication_config() {
 
 function _add_authentication_users_to_kubeconfig() {
     local role_arn
-    local roles="$(_extract_cluster_config_value authentication_roles)"
+    local roles="$(_extract_cluster_config_value authentication_roles [])"
     jq -r '.|keys[]' <<< "$roles" | while read name ; do
         role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $roles)"
         _add_authentication_user_to_kubeconfig "$name" "$role_arn"
@@ -206,7 +204,7 @@ function _handle_aws_config() {
     # Move aws credentials away from mount so we don't edit the host's aws files
     cp -r /root/tmp/.aws /root/.aws
     # See if bastion account is enabled
-    export BASTION_ACCOUNT_ENABLED="$(_extract_cluster_config_value bastion_account_enabled)"
+    export BASTION_ACCOUNT_ENABLED="$(_extract_cluster_config_value bastion_account_enabled false)"
     if "$BASTION_ACCOUNT_ENABLED"; then
         # Export BASTION_ACCOUNT_PROFILE, needed by add-aws-assume-role-config command
         export BASTION_ACCOUNT_PROFILE="$(_extract_cluster_config_value bastion_account_profile)"
@@ -228,14 +226,15 @@ function _handle_aws_config() {
         # Need to add aws configuration for current cluster's aws account
         bastion_profile="$(_extract_cluster_config_value bastion_account_profile_to_assume)"
         bastion_role="$(_extract_cluster_config_value bastion_account_role_to_assume)"
-        bastion_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled)"
+        bastion_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled false)"
+        # if the roles are the same then there's no need to get credentials for both
         if [[ $bastion_role != $publish_role ]]; then
-            if [[ $publish_profile == $bastion_profile ]]; then
+            if [[ $bastion_role != $publish_role ]]; then
                 # the user has set different aws roles for their cluster/publish configs
                 # but using the same profile name for both, continuing would override the publish credentials
-                echo "Bastion account misconfigured!"
-                echo "Cluster role and Publish role are different, but their profile is the same"
-                exit 1
+                >&2 echo "Bastion account misconfigured!"
+                >&2 echo "Cluster role and Publish role are different, but their profile is the same"
+                return 1
             fi
             "$add_assume_role_config" "$publish_role" "$publish_profile" "$publish_mfa_enabled" 3600 # 1 hour
         fi
