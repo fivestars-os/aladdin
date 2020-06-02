@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import textwrap
+import time
 import typing
 
 import coloredlogs
@@ -41,7 +42,7 @@ class ConfigurationException(Exception):
     """Raised if there is an error in the component.yaml."""
 
 
-class UserInfo(collections.namedtuple("UserInfo", ["name", "group", "home", "sudo"])):
+class UserInfo(collections.namedtuple("UserInfo", ["create", "name", "group", "home", "sudo"])):
     def __bool__(self):
         return all(self)
 
@@ -55,6 +56,9 @@ class ComponentConfig:
 
     def __init__(self, data: dict):
         self._data = data
+
+    def __bool__(self):
+        return bool(self._data)
 
     def get(self, path: str, default: typing.Any = UNDEFINED) -> typing.Any:
         """
@@ -88,17 +92,22 @@ class ComponentConfig:
         return self.get("image.base")
 
     @property
-    def image_aladdinize(self) -> bool:
-        return self.get("image.aladdinize", True if self.image_base is UNDEFINED else False)
+    def image_packages(self) -> typing.List[str]:
+        return self.get("image.packages")
 
     @property
     def image_user_info(self) -> UserInfo:
         return UserInfo(
+            create=self.get("image.user.create"),
             name=self.get("image.user.name"),
             group=self.get("image.user.group"),
             home=self.get("image.user.home"),
             sudo=self.get("image.user.sudo"),
         )
+
+    @property
+    def image_workdir(self):
+        return self.get("image.workdir")
 
     @property
     def dependencies(self) -> typing.List[str]:
@@ -114,7 +123,7 @@ class BuildInfo(
             "component_graph",
             "component",
             "config",
-            "hash",
+            "tag_hash",
             "default_language_version",
             "poetry_version",
         ],
@@ -135,11 +144,26 @@ class BuildInfo(
         :param component: The component to check, defaults to the current component.
         :returns: Whether the required files are present.
         """
-        component = component or self.component
-        component_path = pathlib.Path("components") / component
+        component_path = pathlib.Path("components") / (component or self.component)
         pyproject_path = component_path / "pyproject.toml"
         lock_path = component_path / "poetry.lock"
         return pyproject_path.exists() and lock_path.exists()
+
+    def component_packages(self, component=None) -> typing.List[str]:
+        """
+        Provide a list of apt packages required for building python dependencies.
+
+        This packages will only be installed in the builder image used to build the specified
+        component. For instance if a "commands" component depends on a "shared" component and the
+        "commands" component requires some packages, they will only be installed in the
+        builder-commands multi-stage builder image, not the build-shared image.
+
+        :param component: The component to check for package dependencies, defaults to the current
+                          component.
+        :returns: The list of packages to be installed with apt-get.
+        """
+        component_config = self.config if not component else read_component_config(component)
+        return component_config.image_packages or []
 
     @property
     def language_name(self) -> str:
@@ -151,7 +175,7 @@ class BuildInfo(
 
     @property
     def tag(self) -> str:
-        return f"{self.project}-{self.component}:{self.hash}"
+        return f"{self.project}-{self.component}:{self.tag_hash}"
 
     @property
     def editor_tag(self) -> str:
@@ -159,15 +183,7 @@ class BuildInfo(
 
     @property
     def dev(self) -> bool:
-        return self.hash == "local"
-
-    @property
-    def poetry_no_dev(self) -> str:
-        return "" if self.dev else "--no-dev"
-
-    @property
-    def python_optimize(self) -> str:
-        return "" if self.dev else "-O"
+        return self.tag_hash == "local"
 
     @property
     def base_image(self) -> str:
@@ -181,32 +197,21 @@ class BuildInfo(
         return f"python:{'.'.join(self.language_version.split('.', 2)[:2])}-slim"
 
     @property
-    def aladdinize(self) -> bool:
-        return (
-            self.config.image_aladdinize if self.config.image_aladdinize is not UNDEFINED else True
+    def workdir(self):
+        return self.config.image_workdir or (
+            "/code" if self.config.image_base is UNDEFINED else None
         )
 
     @property
-    def dockerfile(self) -> str:
-        path = pathlib.Path("components") / self.component / "Dockerfile"
-        return path if path.exists() else None
-
-    @property
-    def dockerfile_content(self) -> str:
-        with open(self.dockerfile) as dockerfile:
-            return dockerfile.read()
-
-    @property
     def user_info(self) -> UserInfo:
-        if not self.aladdinize and not (
-            self.config.image_user_info.name and self.config.image_user_info.group
-        ):
+        if self.config.image_base is not UNDEFINED and not self.config.image_user_info.name:
             raise ConfigurationException(
-                "Must provide user.name and user.group if specifying a base image"
+                "Must provide at least the user.name if not using the default image"
             )
 
         name = "aladdin-user"
         return UserInfo(
+            create=self.config.image_user_info.create or self.config.image_base is UNDEFINED,
             name=self.config.image_user_info.name or name,
             group=self.config.image_user_info.group or self.config.image_user_info.name or name,
             home=(
@@ -240,6 +245,16 @@ class BuildInfo(
         component itself.
         """
         return self.dependencies + (self.component,)
+
+    @property
+    def dockerfile(self) -> str:
+        path = pathlib.Path("components") / self.component / "Dockerfile"
+        return path if path.exists() else None
+
+    @property
+    def dockerfile_content(self) -> str:
+        with open(self.dockerfile) as dockerfile:
+            return dockerfile.read()
 
 
 def main():
@@ -281,16 +296,10 @@ def main():
         lamp = json.load(lamp_file)
 
     # Let's get to it!
-    build(lamp=lamp, hash=os.getenv("HASH", "local"), components=sys.argv[1:])
+    build_components(lamp=lamp, tag_hash=os.getenv("HASH", "local"), components=sys.argv[1:])
 
 
-def build(
-    lamp: dict,
-    hash: str,
-    components: typing.List[str] = None,
-    default_python_version: str = "3.8",
-    default_poetry_version: str = "1.0.5",
-):
+def build_components(lamp: dict, tag_hash: str, components: typing.List[str] = None):
     """
     Build each component for the project.
 
@@ -298,12 +307,8 @@ def build(
     component and will build each of them.
 
     :param lamp: The data from the project's lamp.json file.
-    :param hash: The build hash provided by ``aladdin build``.
+    :param tag_hash: The build hash provided by ``aladdin build``.
     :param components: The list of components to build, defaults to all of them.
-    :param default_python_version: The python version to use for the base image if not provided in
-                                   the component's ``component.yaml`` file, defaults to ``"3.8"``.
-    :param default_poetry_version: The version of poetry to install in the component images, defaults to
-                           ``"1.0.5"``.
     """
     components_path = pathlib.Path("components")
     all_components = [
@@ -313,7 +318,7 @@ def build(
     ]
 
     if not components:
-        if hash == "local":
+        if tag_hash == "local":
             # Just build everything if doing a local build
             components = all_components
         else:
@@ -344,51 +349,34 @@ def build(
         if component in components
     ]
 
+    # Build each component in turn
     for component in components:
         try:
             logger.notice("Starting build for %s component", component)
-            # Read the component.yaml file
-            component_config = read_component_config(component)
 
-            # We currently assume every component is python.
-            # This assumption could conceivably be configured in the lamp.json file for
-            # language-homogenous projects.
-            language = component_config.language_name or "python"
-
-            if language == "python":
-                build_info = BuildInfo(
-                    project=lamp["name"],
-                    to_publish=lamp["docker_images"],
-                    component_graph=component_graph,
+            component_yaml_path = pathlib.Path("components") / component / "component.yaml"
+            dockerfile_path = pathlib.Path("components") / component / "Dockerfile"
+            if component_yaml_path.exists():
+                build_aladdin_component(
+                    lamp=lamp,
                     component=component,
-                    config=component_config,
-                    hash=hash,
-                    # TODO: Handle these in a better manner when adding support for other languages
-                    default_language_version=default_python_version,
-                    poetry_version=default_poetry_version,
+                    component_graph=component_graph,
+                    tag_hash=tag_hash,
                 )
-
-                language_version = build_info.language_version
-                if not language_version.startswith("3"):
-                    raise ValueError(
-                        f"Unsupported python version for {component} component: {language_version}"
-                    )
-
-                # We only support python 3 components at the moment
-                build_python_component_image(build_info)
-
-                if hash == "local":
-                    # Build the editor image for facilitating poetry package updates
-                    build_editor_image(build_info)
+            elif dockerfile_path.exists():
+                build_traditional_component(
+                    project=lamp["name"], component=component, tag_hash=tag_hash
+                )
             else:
-                raise ValueError(
-                    f"Unsupported language for {component} component: {language}:{language_version}"
+                raise ConfigurationException(
+                    "No component.yaml or Dockerfile found for '%s' component", component
                 )
+
         except Exception:
-            logger.error("Failed to build image for component: %s", build_info.component)
+            logger.error("Failed to build image for component: %s", component)
             raise
         else:
-            logger.success("Built image for component: %s\n\n", build_info.component)
+            logger.success("Built image for component: %s\n\n", component)
     else:
         logger.success("Built images for components: %s", ", ".join(components))
 
@@ -435,7 +423,85 @@ def read_component_config(component: str) -> ComponentConfig:
         return ComponentConfig({})
 
 
-def build_python_component_image(build_info: BuildInfo) -> None:
+def build_traditional_component(project: str, component: str, tag_hash: str) -> None:
+    """
+    Build a standard component image.
+
+    This will build an image based solely on the Dockerfile in the component directory. No aladdin
+    boilerplate or transforms will be applied. It resulting image will be tagged as
+    '{project}-{component}:{tag_hash}'
+
+    :param project: The name of the project containing the component
+    :param component: The name of the component being built.
+    :param tag_hash: The hash to use as the image tag.
+    """
+    logger.info("Building standard image for component: %s", component)
+    _docker_build(
+        tags=f"{project}-{component}:{tag_hash}",
+        dockerfile=pathlib.Path("components") / component / "Dockerfile",
+    )
+
+
+def build_aladdin_component(
+    lamp: dict,
+    component: str,
+    component_graph: networkx.DiGraph,
+    tag_hash: str,
+    default_python_version: str = "3.8",
+    default_poetry_version: str = "1.0.5",
+) -> None:
+    """
+    Build a component that has defined a component.yaml file.
+
+    :param lamp: The data from the project's lamp.json file.
+    ;param component: The name of the component to build.
+    ;param component_graph: The component dependency graph.
+    :param tag_hash: The build hash provided by ``aladdin build``.
+    :param default_python_version: The python version to use for the base image if not provided in
+                                   the component's ``component.yaml`` file, defaults to ``"3.8"``.
+    :param default_poetry_version: The version of poetry to install in the component images,
+                                   defaults to ``"1.0.5"``.
+    """
+    # Read the component.yaml file
+    component_config = read_component_config(component)
+
+    # We currently assume every component is python.
+    # This assumption could conceivably be configured in the lamp.json file for
+    # language-homogenous projects.
+    language = component_config.language_name or "python"
+
+    if language == "python":
+        build_info = BuildInfo(
+            project=lamp["name"],
+            to_publish=lamp["docker_images"],
+            component_graph=component_graph,
+            component=component,
+            config=component_config,
+            tag_hash=tag_hash,
+            # TODO: Handle these in a better manner when adding support for other languages
+            default_language_version=default_python_version,
+            poetry_version=default_poetry_version,
+        )
+
+        language_version = build_info.language_version
+        if not language_version.startswith("3"):
+            raise ValueError(
+                f"Unsupported python version for {component} component: {language_version}"
+            )
+
+        # We only support python 3 components at the moment
+        build_python_component(build_info)
+
+        if tag_hash == "local":
+            # Build the editor image for facilitating poetry package updates
+            build_python_editor_image(build_info)
+    else:
+        raise ValueError(
+            f"Unsupported language for {component} component: {language}:{language_version}"
+        )
+
+
+def build_python_component(build_info: BuildInfo) -> None:
     """
     Build the component.
 
@@ -445,7 +511,7 @@ def build_python_component_image(build_info: BuildInfo) -> None:
 
     :param build_info: The build info populated from the config and command line arguments.
     """
-    logger.info("Building image for component: %s", build_info.component)
+    logger.info("Building aladdin image for python component: %s", build_info.component)
 
     env = jinja2.Environment(
         loader=jinja2.PackageLoader("build_components", "templates/python"), trim_blocks=True
@@ -540,7 +606,7 @@ def build_context(component: str, dockerfile: str, copy_dockerfile: bool) -> typ
             poetry_toml_path.unlink()
 
 
-def build_editor_image(build_info: BuildInfo) -> None:
+def build_python_editor_image(build_info: BuildInfo) -> None:
     """
     Build a companion image to the final built image that removes the ENTRYPOINT and CMD settings.
 
@@ -583,6 +649,7 @@ def _docker_build(
                        with the specified Dockerfile.
     """
     buildargs = buildargs or {}
+    buildargs.setdefault("CACHE_BUST", str(time.time()))
 
     cmd = ["env", "DOCKER_BUILDKIT=1", "docker", "build"]
 
