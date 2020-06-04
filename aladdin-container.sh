@@ -91,9 +91,12 @@ function environment_init() {
 
     _handle_aws_config
 
+    # export AUTHENTICATION_ENABLED for change-permissions and bash command. By default it is false.
+    # It will only get set to true if the cluster is ready and it is enabled in aladdin-config
+    export AUTHENTICATION_ENABLED=false
+
     # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
-    if "$IS_LOCAL" || ( kops export kubecfg --name $CLUSTER_NAME > /dev/null && \
-        kops validate cluster --name $CLUSTER_NAME ) > /dev/null; then
+    if _is_cluster_ready; then
 
         if "$IS_LOCAL"; then
             mkdir -p $HOME/.kube/
@@ -122,6 +125,13 @@ function environment_init() {
 
 }
 
+function _is_cluster_ready() {
+    # Cluster is ready if we are on LOCAL or if we can pull kube config via kops
+    "$IS_LOCAL" && return 0
+    kops export kubecfg --name $CLUSTER_NAME && return 0
+    return 1
+}
+
 function _initialize_helm() {
     local rbac_enabled="$(_extract_cluster_config_value rbac_enabled)"
     if $rbac_enabled; then
@@ -135,7 +145,6 @@ function _initialize_helm() {
 
 function _handle_authentication_config() {
     # This function adds appropriate users to kubeconfig, and exports necessary AUTHENTICATION variables
-    # export AUTHENTICATION_ENABLED for change-permissions and bash command
     export AUTHENTICATION_ENABLED="$(_extract_cluster_config_value authentication_enabled)"
     if $AUTHENTICATION_ENABLED; then
         AUTHENTICATION_ROLES="$(_extract_cluster_config_value authentication_roles)"
