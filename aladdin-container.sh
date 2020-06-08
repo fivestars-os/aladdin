@@ -127,9 +127,7 @@ function environment_init() {
 
 function _is_cluster_ready() {
     # Cluster is ready if we are on LOCAL or if we can pull kube config via kops
-    "$IS_LOCAL" && return 0
-    kops export kubecfg --name $CLUSTER_NAME && return 0
-    return 1
+    "$IS_LOCAL" || kops export kubecfg --name $CLUSTER_NAME
 }
 
 function _initialize_helm() {
