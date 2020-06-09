@@ -253,14 +253,14 @@ function enter_docker_container() {
     # config maps and other settings can be customized by developers
     local -a mounts
     if "$DEV"; then
-        mounts=("${mounts[@]}" "-v $(pathnorm "$ALADDIN_DIR"):/root/aladdin")
+        mounts=("${mounts[@]}" "-v" "$(pathnorm "$ALADDIN_DIR"):/root/aladdin")
     fi
     if "$IS_LOCAL"; then
-        mounts=("${mounts[@]}" "-v $(pathnorm ~/.minikube):/root/.minikube")
+        mounts=("${mounts[@]}" "-v" "$(pathnorm ~/.minikube):/root/.minikube")
     fi
     if "$IS_LOCAL" || "$DEV"; then
-        mounts=("${mounts[@]}" "-v /:/aladdin_root")
-        mounts=("${mounts[@]}" "--workdir /aladdin_root$(pathnorm "$PWD")")
+        mounts=("${mounts[@]}" "-v" "/:/aladdin_root")
+        mounts=("${mounts[@]}" "--workdir" "/aladdin_root$(pathnorm "$PWD")")
     fi
 
     if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
@@ -284,8 +284,8 @@ function enter_docker_container() {
         *)       ssh_src="$(pathnorm ~/.ssh)" ;;
     esac
 
-    # How to mount docker parts
-    mounts=("${mounts[@]}" "-v /var/run/docker.sock:/var/run/docker.sock")
+    # Mount docker engine from host
+    mounts=("${mounts[@]}" "-v" "/var/run/docker.sock:/var/run/docker.sock")
 
     docker run $FLAGS \
         `# Environment` \
@@ -307,7 +307,7 @@ function enter_docker_container() {
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
-        ${mounts[@]} \
+        "${mounts[@]}" \
         `# Specific command` \
         ${ALADDIN_PLUGIN_CMD:-} \
         "$ALADDIN_IMAGE" \
