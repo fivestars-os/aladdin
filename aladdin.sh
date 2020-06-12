@@ -95,7 +95,7 @@ function set_minikube_config(){
     minikube config set kubernetes-version v$KUBERNETES_VERSION > /dev/null
 
     for key in vm_driver memory disk_size cpus; do
-        local minikube_key=$(tr _ - <<< "$key")  # e.g., vm-driver
+        local minikube_key=$(tr _ - <<< "$key")  # e.g., driver
         local default_var="DEFAULT_MINIKUBE_$(tr a-z A-Z <<< "$key")"  # e.g., DEFAULT_MINIKUBE_VM_DRIVER
 
         local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
@@ -110,7 +110,7 @@ function _start_minikube() {
     local minikube_cmd="minikube start"
 
     if test "$OSTYPE" = "linux-gnu"; then
-        if test $(minikube config get vm-driver) = "none"; then
+        if test $(minikube config get driver) = "none"; then
             # If we're running on native docker on a linux host, minikube start must happen as root
             # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
             # to switch users to $SUDO_USER (the user that called sudo) before writing out
@@ -139,7 +139,7 @@ function check_or_start_minikube() {
         _start_minikube
 
         if test -n "$(aladdin config get nfs)"; then
-            if test "$(minikube config get vm-driver)" != "none"; then
+            if test "$(minikube config get driver)" != "none"; then
                 # Determine if we've installed our bootlocal.sh script to replace
                 # the default mounts with nfs mounts.
                 if ! minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh"; then
