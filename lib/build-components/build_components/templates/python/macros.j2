@@ -1,16 +1,36 @@
 {# [Builder image]
     Download and install poetry under the root user.
-
-    This also installs the basic tools for compiling and building python dependencies.
 #}
+{% macro install_poetry(version) %}
+# Install poetry
+# Note: We prefer to install python packages as --user so that the artifacts are easier
+#       to copy out of the builder image into the final image. poetry already installs
+#       itself under the user directory, and we eventually copy the poetry tool and the
+#       installed python packages under the image USER in the resulting image.
+
+# Ensure we have curl so we can install poetry
+RUN apt-get update \
+ && apt-get -y --no-install-recommends install \
+    curl
+
+# Configure pip, mainly to ensure that packages are installed in the user directory.
+COPY pip.conf /etc/pip.conf
+
+# Install poetry under the root user's home directory.
+# On some images "sh" is aliased to "dash" which does not support "set -o pipefail".
+# We use the "exec" form of RUN to delegate this command to bash instead.
+# This is all because we have a pipe in this command and we wish to fail the build
+# if the any command in the pipeline fails.
+RUN ["/bin/bash", "-c", "set -o pipefail && pip install --upgrade pip && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_VERSION={{version}} python && chmod a+x /root/.poetry/bin/poetry"]
+COPY poetry.toml /root/.config/pypoetry/config.toml
+ENV PATH=/root/.poetry/bin:$PATH
+{% endmacro %}
+
+
 {# [Builder image]
     Install or copy the component.
 #}
 {% macro build_component(component, build_info) %}
-
-####################################################################################################
-# [builder-{{component}}]
-####################################################################################################
 FROM {{build_info.builder_image}} AS builder-{{component}}
 
 # Install packages required to build native library components
@@ -28,6 +48,11 @@ RUN apt-get -y --no-install-recommends install \
     {{" ".join(build_info.component_packages(component))}}
 
 {% endif %}
+
+{% if build_info.component_is_poetry_project(component) %}
+{{ install_poetry(build_info.poetry_version) }}
+{% endif %}
+
 {#
     We use the eventual image's working directory here because we will likely "poetry install" a component.
     This will install the package in "editable" mode, where it builds the .egg-info directory directly in
@@ -41,19 +66,12 @@ RUN apt-get -y --no-install-recommends install \
 # Use the final image's working directory
 WORKDIR {{build_info.workdir or "/build"}}
 
-# We will copy the contents of this directory during the "collect" phase.
-# Ensure that it exists even if no python packages were built or installed.
-RUN mkdir -p /root/.local
-
 {% if build_info.component_is_poetry_project(component) %}
-{{ install_poetry(component, build_info) }}
-####################################################################################################
-# [builder-{{component}}] Build python dependencies
-####################################################################################################
 # Copy the {{component}} component's poetry files into the image
 COPY {{component}}/pyproject.toml {{component}}/poetry.lock {{component}}/
 
-# Build the dependencies into /root/.local{% if not build_info.dev %} and then pre-compile them{% endif %}
+# Build the {{component}} component's dependencies into /root/.local{% if not build_info.dev %} and then pre-compile them
+{% endif %}
 
 RUN cd {{component}} \
  && poetry install --no-root {% if not build_info.dev %} --no-dev \
@@ -62,15 +80,11 @@ RUN cd {{component}} \
 
 {% endif %}
 
-####################################################################################################
-# [builder-{{component}}] Get component code
-####################################################################################################
+# Get the {{component}} component's code and assets
 COPY {{component}} {{component}}
 
 {% if build_info.component_is_poetry_project(component) %}
-####################################################################################################
-# [builder-{{component}}] Install component
-####################################################################################################
+# Install the {{component}} component's python package
 RUN cd {{component}} \
  && poetry install {% if not build_info.dev %} --no-dev \
  && python -O -m compileall .
@@ -78,35 +92,6 @@ RUN cd {{component}} \
 
 {% endif %}
 {% endmacro %}
-
-{#
-    Download and install the poetry package manager tool and configure pip as well.
-#}
-{% macro install_poetry(builder_name, build_info) %}
-####################################################################################################
-# [builder-{{builder_name}}] Install poetry
-####################################################################################################
-# Note: We prefer installing python packages as --user so that the artifacts are easier
-#       to copy out of the builder image into the final image. poetry already installs
-#       itself under the user directory (and ironically, we eventually copy the poetry
-#       tool into a system directory in the final image).
-
-RUN apt-get update \
- && apt-get -y --no-install-recommends install \
-    curl
-
-# Configure pip, mainly to ensure that packages are installed in the user directory.
-COPY pip.conf /etc/pip.conf
-
-# Install poetry under the root user's home directory.
-# On some images "sh" is aliased to "dash" which does not support "set -o pipefail".
-# We use the "exec" form of RUN to delegate this command to bash instead.
-# This is all because we have a pipe in this command.
-RUN ["/bin/bash", "-c", "set -o pipefail && pip install --upgrade pip && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_VERSION={{build_info.poetry_version}} python && chmod a+x /root/.poetry/bin/poetry"]
-COPY poetry.toml /root/.config/pypoetry/config.toml
-ENV PATH=/root/.poetry/bin:$PATH
-{% endmacro %}
-
 
 {# [Builder image]
     Collect the python dependencies and component content into an intermediate builder image
@@ -117,10 +102,10 @@ ENV PATH=/root/.poetry/bin:$PATH
 FROM {{build_info.builder_image}} AS builder-collect
 
 # We will copy the contents of this directory to the final image.
-# Ensure that it exists even if no python packages were built or installed.
+# Ensure that it exists even if no python packages were built and collected.
 RUN mkdir -p /root/.local
 
-# Copy built python dependencies
+# Copy built python dependencies before copying any code over to maximize layer caching
 {% for component in build_info.components %}
 {% if build_info.component_is_poetry_project(component) %}
 COPY --from="builder-{{component}}" /root/.local /root/.local
@@ -132,37 +117,32 @@ COPY --from="builder-{{component}}" /root/.local /root/.local
 {% for component in build_info.components %}
 COPY --from="builder-{{component}}" {{build_info.workdir or "/build"}}/{{component}} /code/{{component}}
 {% endfor %}
-
 {% endmacro %}
 
 
 {#
-    Copy the poetry install from the poetry builder image into a system location and configure
-    it for usage by any user on the system.
-#}
-{% macro add_poetry() %}
-####################################################################################################
-# Install poetry from builder-poetry
-####################################################################################################
-# Copy installed poetry packages from the builder image to a system directory in the
-# this image. While this isn't strictly how poetry is expected to be installed, it's
-# not violating any assumptions. We'll use the XDG_CONFIG_HOME to inform poetry where
-# it can read its config from and add the .poetry/bin directory to the PATH so any user
-# can use it.
-COPY --from="builder-poetry" /root/.poetry /usr/local/share/.poetry
+    Copy the components' dependencies and artifacts into the final image.
 
-# Configure poetry
-COPY --from="builder-poetry" /root/.config/pypoetry /usr/local/etc/pypoetry
-ENV XDG_CONFIG_HOME=/usr/local/etc \
-    PATH=/usr/local/share/.poetry/bin:$PATH
+    Built python dependencies get copied to the users ~/.local directory.
+    Component code & assets get copied to WORKDIR.
+ #}
+{% macro add_collected_components(user_info) %}
+# Copy any built python packages to the ~/.local directory hierarchy and
+# ensure that any installed python scripts can be found on the PATH
+COPY --from="builder-collect" --chown={{user_info.chown}} /root/.local {{user_info.home}}/.local
+ENV PATH={{user_info.home}}/.local/bin:$PATH
+
+# Copy components' contents to the working directory
+COPY --from="builder-collect" --chown={{user_info.chown}} /code ./
 {% endmacro %}
-
 
 {#
     Add a user account to the image and switch to it.
 #}
 {% macro add_user(user_info) %}
-# Create the unprivileged user account
+{% if user_info.sudo %}
+# Add it to the sudoers list, too
+{% endif %}
 RUN groupadd -f {{user_info.group}} \
  && useradd -m -d {{user_info.home}} -g {{user_info.group}} {{user_info.name}} {% if user_info.sudo %} \
  && apt-get update && apt-get -y --no-install-recommends install sudo \
@@ -174,15 +154,18 @@ RUN groupadd -f {{user_info.group}} \
 USER {{user_info.name}}
 {% endmacro %}
 
+
 {#
-    Copy the components' dependencies and artifacts into the final image.
- #}
-{% macro add_collected_components(build_info) %}
-####################################################################################################
-# Add collected components
-####################################################################################################
-# Copy component dependencies and contents (to minimize layers in final build)
-{# COPY --from="builder-collect" --chown={{build_info.user_info.chown}} /root/.local {{build_info.user_info.home}}/.local #}
-COPY --from="builder-collect" --chown={{build_info.user_info.chown}} /root/.local /usr/local
-COPY --from="builder-collect" --chown={{build_info.user_info.chown}} /code ./
+    Copy the poetry install from the poetry builder image into a system location and configure
+    it for usage by any user on the system.
+#}
+{% macro add_poetry(user_info) %}
+# Copy the poetry installation from the builder image to the user directory in the target image.
+# We also take care to add the poetry bin directory to the PATH, which is what "source $HOME/.poetry/env"
+# would accomplish in a normal installation scenario.
+COPY --from="builder-poetry" /root/.poetry {{user_info.home}}/.poetry
+ENV PATH={{user_info.home}}/.poetry/bin:$PATH
+
+# Configure poetry (to avoid virtual env usage)
+COPY --from="builder-poetry" /root/.config/pypoetry {{user_info.home}}/.config/pypoetry
 {% endmacro %}

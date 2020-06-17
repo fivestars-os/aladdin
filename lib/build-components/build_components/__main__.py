@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """
-The aladdin build script indicated in this project's lamp.json file.
+The default aladdin build script to be run when "aladdin build" is invoked.
 
-It will run when ``aladdin build`` is invoked.
+It expects your project to conform to the "component" layout described in the documentation.
+
+A project can override this behavior and provide their own build script by specifying the
+"build_docker" entry in its lamp.json file.
 """
-import collections
 import contextlib
-import functools
 import json
 import logging
 import os
@@ -22,239 +23,11 @@ import coloredlogs
 import jinja2
 import networkx
 import verboselogs
-import yaml
+
+from .configuration import UNDEFINED, BuildConfig, ComponentConfig, ConfigurationException, UserInfo
+from .build_info import BuildInfo, PythonBuildInfo
 
 logger = None
-
-
-class Undefined:
-    def __bool__(self):
-        return False
-
-    def __str__(self):
-        raise NotImplementedError
-
-
-UNDEFINED = Undefined()
-
-
-class ConfigurationException(Exception):
-    """Raised if there is an error in the component.yaml."""
-
-
-class UserInfo(collections.namedtuple("UserInfo", ["create", "name", "group", "home", "sudo"])):
-    def __bool__(self):
-        return all(self)
-
-    @property
-    def chown(self) -> str:
-        return f"{self.name}:{self.group}"
-
-
-class ComponentConfig:
-    """The representation of the component.yaml."""
-
-    def __init__(self, data: dict):
-        self._data = data
-
-    def __bool__(self):
-        return bool(self._data)
-
-    def get(self, path: str, default: typing.Any = UNDEFINED) -> typing.Any:
-        """
-        Perform a lookup on the provided path name.
-
-        :param path: The dot-delimited path to the config value.
-        :param default: The value to return if the config value was not found.
-        """
-        return functools.reduce(
-            lambda d, key: d.get(key, default) if isinstance(d, dict) else default,
-            path.split("."),
-            self._data,
-        )
-
-    @property
-    def version(self) -> int:
-        return self.get("meta.version", 1)
-
-    @property
-    def language_name(self) -> str:
-        name = self.get("language.name")
-        return name.lower() if name else UNDEFINED
-
-    @property
-    def language_version(self) -> str:
-        version = self.get("language.version")
-        return str(version) if version else UNDEFINED
-
-    @property
-    def image_base(self) -> str:
-        return self.get("image.base")
-
-    @property
-    def image_packages(self) -> typing.List[str]:
-        return self.get("image.packages")
-
-    @property
-    def image_user_info(self) -> UserInfo:
-        return UserInfo(
-            create=self.get("image.user.create"),
-            name=self.get("image.user.name"),
-            group=self.get("image.user.group"),
-            home=self.get("image.user.home"),
-            sudo=self.get("image.user.sudo"),
-        )
-
-    @property
-    def image_workdir(self):
-        return self.get("image.workdir")
-
-    @property
-    def dependencies(self) -> typing.List[str]:
-        return self.get("dependencies", [])
-
-
-class BuildInfo(
-    collections.namedtuple(
-        "BuildInfo",
-        [
-            "project",
-            "to_publish",
-            "component_graph",
-            "component",
-            "config",
-            "tag_hash",
-            "default_language_version",
-            "poetry_version",
-        ],
-    )
-):
-    """
-    A wrapper around the component config and some other high-level info to make parameterizing
-    the build process a bit simpler. The build functions should use this rather than directly
-    accessing the config.
-    """
-
-    def component_is_poetry_project(self, component=None) -> bool:
-        """
-        Return whether the component directory appears to be a python poetry project.
-
-        A poetry project is defined by having two files: pyproject.toml and poetry.lock.
-
-        :param component: The component to check, defaults to the current component.
-        :returns: Whether the required files are present.
-        """
-        component_path = pathlib.Path("components") / (component or self.component)
-        pyproject_path = component_path / "pyproject.toml"
-        lock_path = component_path / "poetry.lock"
-        return pyproject_path.exists() and lock_path.exists()
-
-    def component_packages(self, component=None) -> typing.List[str]:
-        """
-        Provide a list of apt packages required for building python dependencies.
-
-        This packages will only be installed in the builder image used to build the specified
-        component. For instance if a "commands" component depends on a "shared" component and the
-        "commands" component requires some packages, they will only be installed in the
-        builder-commands multi-stage builder image, not the build-shared image.
-
-        :param component: The component to check for package dependencies, defaults to the current
-                          component.
-        :returns: The list of packages to be installed with apt-get.
-        """
-        component_config = self.config if not component else read_component_config(component)
-        return component_config.image_packages or []
-
-    @property
-    def language_name(self) -> str:
-        return self.config.language_name
-
-    @property
-    def language_version(self) -> str:
-        return self.config.language_version or self.default_language_version
-
-    @property
-    def tag(self) -> str:
-        return f"{self.project}-{self.component}:{self.tag_hash}"
-
-    @property
-    def editor_tag(self) -> str:
-        return f"{self.project}-{self.component}:editor"
-
-    @property
-    def dev(self) -> bool:
-        return self.tag_hash == "local"
-
-    @property
-    def base_image(self) -> str:
-        return (
-            self.config.image_base
-            or f"python:{'.'.join(self.language_version.split('.', 2)[:2])}-slim"
-        )
-
-    @property
-    def builder_image(self):
-        return f"python:{'.'.join(self.language_version.split('.', 2)[:2])}-slim"
-
-    @property
-    def workdir(self):
-        return self.config.image_workdir or (
-            "/code" if self.config.image_base is UNDEFINED else None
-        )
-
-    @property
-    def user_info(self) -> UserInfo:
-        if self.config.image_base is not UNDEFINED and not self.config.image_user_info.name:
-            raise ConfigurationException(
-                "Must provide at least the user.name if not using the default image"
-            )
-
-        name = "aladdin-user"
-        return UserInfo(
-            create=self.config.image_user_info.create or self.config.image_base is UNDEFINED,
-            name=self.config.image_user_info.name or name,
-            group=self.config.image_user_info.group or self.config.image_user_info.name or name,
-            home=(
-                self.config.image_user_info.home
-                or f"/home/{self.config.image_user_info.name or name}"
-            ),
-            sudo=(
-                self.dev
-                if self.config.image_user_info.sudo is UNDEFINED
-                else self.config.image_user_info.sudo
-            ),
-        )
-
-    @property
-    def dependencies(self) -> typing.Tuple[str]:
-        """
-        The topologically sorted list of dependencies required for this component.
-
-        This will include the complete hierarchy of dependencies for this component, so it is only
-        necessary to enumerate a component's direct dependencies in the component.yaml file.
-        """
-        dependencies = networkx.algorithms.dag.ancestors(self.component_graph, self.component)
-        return tuple(
-            networkx.algorithms.dag.topological_sort(self.component_graph.subgraph(dependencies))
-        )
-
-    @property
-    def components(self) -> typing.Tuple[str]:
-        """
-        The topologically sorted list of dependencies required for this component followed by this
-        component itself.
-        """
-        return self.dependencies + (self.component,)
-
-    @property
-    def dockerfile(self) -> str:
-        path = pathlib.Path("components") / self.component / "Dockerfile"
-        return path if path.exists() else None
-
-    @property
-    def dockerfile_content(self) -> str:
-        with open(self.dockerfile) as dockerfile:
-            return dockerfile.read()
 
 
 def main():
@@ -296,18 +69,32 @@ def main():
         lamp = json.load(lamp_file)
 
     # Let's get to it!
-    build_components(lamp=lamp, tag_hash=os.getenv("HASH", "local"), components=sys.argv[1:])
+    build_components(
+        lamp=lamp,
+        tag_hash=os.getenv("HASH", "local"),
+        build_config=BuildConfig(),
+        components=sys.argv[1:],
+    )
 
 
-def build_components(lamp: dict, tag_hash: str, components: typing.List[str] = None):
+def build_components(
+    lamp: dict, tag_hash: str, build_config=BuildConfig, components: typing.List[str] = None
+):
     """
     Build each component for the project.
 
     If components is empty, this will assume each directory in the components/ directory is a
     component and will build each of them.
 
+    Each component will result in up to two images being built: the image to be used in whatever
+    intended use case the component fulfils, and a second image, identical to the first except
+    that its ENTRYPOINT and CMD instructions have been "cleared". This second image will only be
+    built if tag_hash is "local". The resulting images will be tagged as
+    ``{project}-{component}:{tag_hash}`` and ``{project}-{component}:editor``, respectively.
+
     :param lamp: The data from the project's lamp.json file.
     :param tag_hash: The build hash provided by ``aladdin build``.
+    :param build_config: The default values for general build settings.
     :param components: The list of components to build, defaults to all of them.
     """
     components_path = pathlib.Path("components")
@@ -318,8 +105,10 @@ def build_components(lamp: dict, tag_hash: str, components: typing.List[str] = N
     ]
 
     if not components:
+        # No components were specified at the command line
+
         if tag_hash == "local":
-            # Just build everything if doing a local build
+            # Build everything if doing a local build
             components = all_components
         else:
             # Only build components that will be published
@@ -329,6 +118,7 @@ def build_components(lamp: dict, tag_hash: str, components: typing.List[str] = N
                 for image in lamp.get("docker_images", [])
             }
 
+    # Check that all specified components actually exist in the project
     for component in components:
         if component not in all_components:
             raise ValueError(f"Component '{component}' does not exist")
@@ -354,20 +144,26 @@ def build_components(lamp: dict, tag_hash: str, components: typing.List[str] = N
         try:
             logger.notice("Starting build for %s component", component)
 
-            component_yaml_path = pathlib.Path("components") / component / "component.yaml"
-            dockerfile_path = pathlib.Path("components") / component / "Dockerfile"
-            if component_yaml_path.exists():
+            component_dir = pathlib.Path("components") / component
+            if (component_dir / "component.yaml").exists():
+                # This component will take advantage of our advanced build features.
+                # It may either be a "standard" build or a "compatible" build, depending
+                # on whether they specify a base image to use in their component.yaml file.
                 build_aladdin_component(
                     lamp=lamp,
+                    build_config=build_config,
                     component=component,
                     component_graph=component_graph,
                     tag_hash=tag_hash,
                 )
-            elif dockerfile_path.exists():
+            elif (component_dir / "Dockerfile").exists():
+                # This component is a traditional Dockerfile component and we won't do any
+                # special processing
                 build_traditional_component(
                     project=lamp["name"], component=component, tag_hash=tag_hash
                 )
             else:
+                # If neither of these are specified, we do not know how to build this component
                 raise ConfigurationException(
                     "No component.yaml or Dockerfile found for '%s' component", component
                 )
@@ -387,14 +183,30 @@ def validate_component_dependencies(components: typing.List[str]) -> networkx.Di
 
     :returns: The component dependency graph
     """
+    # Copy for destructive operations
+    components = set(components)
+
     # Create the component dependency graph
     component_graph = networkx.DiGraph()
-    component_graph.add_nodes_from(components)
-    for component in components:
-        config = read_component_config(component)
-        component_graph.add_edges_from(
-            (dependency, component) for dependency in config.dependencies
-        )
+
+    visited = set()
+    while components:
+        component = components.pop()
+        if component not in visited:
+            # Mark visited to prevent infinite loop on unexpected cycles
+            visited.add(component)
+
+            # Add to graph, if not already present
+            component_graph.add_node(component)
+
+            # Add dependencies to graph (will implicitly add nodes)
+            config = ComponentConfig.read_from_component(component)
+            component_graph.add_edges_from(
+                (dependency, component) for dependency in config.dependencies
+            )
+
+            # Add any dependencies to the list of components to traverse to
+            components.update(config.dependencies)
 
     # Check the graph for cycles
     try:
@@ -406,30 +218,12 @@ def validate_component_dependencies(components: typing.List[str]) -> networkx.Di
         raise ConfigurationException("Cycle(s) found in component dependency graph", cycles)
 
 
-def read_component_config(component: str) -> ComponentConfig:
-    """
-    Read the component's ``component.yaml`` file into a ``ComponentConfig`` object.
-
-    :param component: The component's config to read.
-    :returns: The config data for the component. If the component does not provide a
-              ``component.yaml`` file, this returns an empty config.
-    """
-    try:
-        with open(pathlib.Path("components") / component / "component.yaml") as file:
-            return ComponentConfig(yaml.safe_load(file))
-    except ConfigurationException:
-        raise
-    except Exception:
-        return ComponentConfig({})
-
-
 def build_traditional_component(project: str, component: str, tag_hash: str) -> None:
     """
-    Build a standard component image.
+    Build the component image in the traditional Dockerfile-based manner.
 
     This will build an image based solely on the Dockerfile in the component directory. No aladdin
-    boilerplate or transforms will be applied. It resulting image will be tagged as
-    '{project}-{component}:{tag_hash}'
+    boilerplate or transforms will be applied.
 
     :param project: The name of the project containing the component
     :param component: The name of the component being built.
@@ -444,100 +238,125 @@ def build_traditional_component(project: str, component: str, tag_hash: str) -> 
 
 def build_aladdin_component(
     lamp: dict,
+    build_config: BuildConfig,
     component: str,
     component_graph: networkx.DiGraph,
     tag_hash: str,
-    default_python_version: str = "3.8",
-    default_poetry_version: str = "1.0.5",
 ) -> None:
     """
-    Build a component that has defined a component.yaml file.
+    Build a component image that has been defined with a component.yaml file.
+
+    A component can be either a "standard" build, where the base image is not specified in the
+    component.yaml file and default base image for the language is used (although it may be a
+    different version than the default), or a "compatible" build where one specifies an alternative
+    base image to use but still wishes to build (optional) and composite in other components' assets
+    into the final image.
+
+    The "standard" build will default to applying helpful aladdin-prescribed transforms, such as
+    setting the working directory and creating the aladdin-user account. The "compatible" build will
+    default to not applying those transforms. Also, in the "compatible" build mode, it is expected
+    that the user will provide required information about the alternative image such as the user
+    account info.
+
+    The resulting image will be tagged as ``{project}-{component}:{tag_hash}``
+
+    If tag_hash is "local", an accompanying editor image will be built as well and tagged with
+    ``{project}-{component}:editor``.
+
+    Note: The only supported language at this time is Python 3
 
     :param lamp: The data from the project's lamp.json file.
+    :param build_config: The default values for general build settings.
     ;param component: The name of the component to build.
     ;param component_graph: The component dependency graph.
     :param tag_hash: The build hash provided by ``aladdin build``.
-    :param default_python_version: The python version to use for the base image if not provided in
-                                   the component's ``component.yaml`` file, defaults to ``"3.8"``.
-    :param default_poetry_version: The version of poetry to install in the component images,
-                                   defaults to ``"1.0.5"``.
     """
     # Read the component.yaml file
-    component_config = read_component_config(component)
+    component_config = ComponentConfig.read_from_component(component)
 
-    # We currently assume every component is python.
-    # This assumption could conceivably be configured in the lamp.json file for
-    # language-homogenous projects.
-    language = component_config.language_name or "python"
+    # TODO: Confirm that the component.yaml file conforms to our JSON schema
+    # TODO: Determine if it's a "standard" component or a "compatible" one.
+    #       That info could be provided to the build_python_component() function as a hint
+    #       to choose a more-specific build process.
 
-    if language == "python":
-        build_info = BuildInfo(
+    if component_config.language_name == "python":
+        build_info = PythonBuildInfo(
             project=lamp["name"],
-            to_publish=lamp["docker_images"],
             component_graph=component_graph,
             component=component,
             config=component_config,
             tag_hash=tag_hash,
-            # TODO: Handle these in a better manner when adding support for other languages
-            default_language_version=default_python_version,
-            poetry_version=default_poetry_version,
+            default_language_version=build_config.default_python_version,
+            poetry_version=build_config.default_poetry_version,
         )
 
-        language_version = build_info.language_version
-        if not language_version.startswith("3"):
-            raise ValueError(
-                f"Unsupported python version for {component} component: {language_version}"
-            )
-
-        # We only support python 3 components at the moment
         build_python_component(build_info)
-
-        if tag_hash == "local":
-            # Build the editor image for facilitating poetry package updates
-            build_python_editor_image(build_info)
     else:
-        raise ValueError(
-            f"Unsupported language for {component} component: {language}:{language_version}"
-        )
+        raise ValueError(f"Unsupported language for {component} component: {language_name}")
+
+    if tag_hash == "local":
+        # Build the editor image for development use cases
+        build_editor_image(build_info)
 
 
-def build_python_component(build_info: BuildInfo) -> None:
+def build_python_component(build_info: PythonBuildInfo) -> None:
     """
     Build the component.
 
-    This builds the component image according to the ``component.yaml`` configuration. It begins by
-    building or tagging a base image and then adding to it things like the poetry tool and any
-    component dependency assets.
+    This builds the component image according to the ``component.yaml`` configuration. It will
+    generate a Dockerfile and populate the components/ directory with some ephemeral configuration
+    files to facilate the build. A copy of the utilized Dockerfile will be able to be found at
+    ``components/<component>/_build.dockerfile`` for debugging and development purposes.
 
     :param build_info: The build info populated from the config and command line arguments.
     """
-    logger.info("Building aladdin image for python component: %s", build_info.component)
+    logger.info("Building image for python component: %s", build_info.component)
 
-    env = jinja2.Environment(
+    # We only support python 3 components at the moment
+    language_version = build_info.language_version
+    if not language_version.startswith("3"):
+        raise ValueError(
+            f"Unsupported python version for {component} component: {language_version}"
+        )
+
+    # Load our jinja templates for python images.
+    jinja_env = jinja2.Environment(
         loader=jinja2.PackageLoader("build_components", "templates/python"), trim_blocks=True
     )
 
-    template = env.get_template("Dockerfile.j2")
+    # This is the top-level template for a component Dockerfile
+    jinja_template = jinja_env.get_template("Dockerfile.j2")
 
+    # Place the temporary files for the duration of the build.
     with build_context(
-        component=build_info.component,
-        dockerfile=template.render(build_info=build_info),
-        copy_dockerfile=build_info.dev,
-    ):
+        component=build_info.component, dockerfile=jinja_template.render(build_info=build_info)
+    ) as dockerfile_path:
+
+        # Make the generated Dockerfile available to the component prior to attempting the build
+        if build_info.dev:
+            with contextlib.suppress():
+                shutil.copyfile(
+                    dockerfile_path,
+                    pathlib.Path("components") / build_info.component / "_build.dockerfile",
+                )
+
         _docker_build(tags=build_info.tag)
 
 
 @contextlib.contextmanager
-def build_context(component: str, dockerfile: str, copy_dockerfile: bool) -> typing.Generator:
+def build_context(component: str, dockerfile: str) -> typing.Generator:
     """
-    A context manager that writes the contents to components/Dockerfile
+    A context manager that writes necessary files to disk for the duration of a docker build.
+
+    It will write three files to the components/ directory:
+        - The contents of dockerfile to components/Dockerfile
+        - A boilerplate pip.conf that ensures --user behavior
+        - A boilerplate poetry.toml that prevents virtual env usage
 
     This writes the provided contents to components/Dockerfile. It then deletes the file upon exit.
 
     :param component: The component to build.
     :param contents: The Dockerfile contents to use within the contents.
-    :param copy_dockerfile: Whether to write the generated Dockerfile to the component directory
-                            for debuging purposes.
     """
     components_path = pathlib.Path("components")
     pip_conf_path = components_path / "pip.conf"
@@ -578,8 +397,8 @@ def build_context(component: str, dockerfile: str, copy_dockerfile: bool) -> typ
 
                     [virtualenvs]
                     # We're in a docker container, there's no need for virtualenvs
-                    # One should still specify "ENV PIP_USER yes" to let poetry know
-                    # install packages as --user so they show up in ~/.local
+                    # One should still configure pip to use "--user" behavior so that
+                    # poetry-installed packages will be placed in ~/.local
                     create = false
                     """
                 )
@@ -588,13 +407,7 @@ def build_context(component: str, dockerfile: str, copy_dockerfile: bool) -> typ
         with open(dockerfile_path, "w") as outfile:
             outfile.write(dockerfile)
 
-        if copy_dockerfile:
-            with contextlib.suppress():
-                shutil.copyfile(
-                    dockerfile_path, pathlib.Path("components") / component / "build.dockerfile"
-                )
-
-        yield
+        yield dockerfile_path
     finally:
         with contextlib.suppress():
             dockerfile_path.unlink()
@@ -606,12 +419,14 @@ def build_context(component: str, dockerfile: str, copy_dockerfile: bool) -> typ
             poetry_toml_path.unlink()
 
 
-def build_python_editor_image(build_info: BuildInfo) -> None:
+def build_editor_image(build_info: BuildInfo) -> None:
     """
     Build a companion image to the final built image that removes the ENTRYPOINT and CMD settings.
 
     This image can be used for shelling into for debugging and/or running arbitrary commands in a
     mirror of the built image.
+
+    The resulting image will be tagged as ``{project}-{component}:editor``
 
     :param build_info: The build info populated from the config and command line arguments.
     """

@@ -20,7 +20,7 @@ RUN ln -fs /usr/bin/python3 /usr/bin/python \
  && ln -fs /usr/bin/pip3 /usr/bin/pip \
  && pip install --no-cache-dir setuptools==46.4.0
 
-# This can take a bit of time, so we move it earlier in the build process
+# This can take a bit of time, so we do it earlier in the build process
 RUN go get -u -v sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator
 
 # Update all needed tool versions here

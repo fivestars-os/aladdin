@@ -11,11 +11,23 @@
 # Build multi-stage builder images
 ####################################################################################################
 ####################################################################################################
-FROM {{build_info.builder_image}} AS builder-poetry
-{{ install_poetry("poetry", build_info) -}}
 
+####################################################################################################
+# [builder-poetry]
+####################################################################################################
+FROM {{build_info.builder_image}} AS builder-poetry
+{{ install_poetry(build_info.poetry_version) }}
+
+### /end [builder-poetry] ##########################################################################
 {% for component in build_info.components %}
-{{ build_component(component, build_info) -}}
+
+
+####################################################################################################
+# [builder-{{component}}]
+####################################################################################################
+{{ build_component(component, build_info) }}
+
+### /end [builder-{{component}}] ###################################################################
 {% endfor %}
 
 
@@ -25,7 +37,7 @@ FROM {{build_info.builder_image}} AS builder-poetry
 # Collect components (to minimize layers in final build)
 ####################################################################################################
 ####################################################################################################
-{{ collect_components(build_info) -}}
+{{ collect_components(build_info) }}
 
 
 ####################################################################################################
@@ -35,40 +47,74 @@ FROM {{build_info.builder_image}} AS builder-poetry
 ####################################################################################################
 FROM {{build_info.base_image}}
 
-{{ add_poetry() -}}
-
-{% if not build_info.dev %}
+####################################################################################################
 # Pre-compile python core library code
+####################################################################################################
+{% if not build_info.dev %}
 RUN python -O -m compileall
+{% else %}
+# Not pre-compiling python core library code since this is a dev image
 {% endif %}
 
-{% if build_info.workdir %}
-# Use our own special directory for our project code
+{% if build_info.workdir_create %}
+####################################################################################################
+# Create the WORKDIR to house our project code
+####################################################################################################
 WORKDIR {{build_info.workdir}}
-ENV PYTHONPATH={{build_info.workdir}}
+{% else %}
+####################################################################################################
+# Use existing WORKDIR to house our project code
+####################################################################################################
+# WORKDIR {{build_info.workdir}}
 {% endif %}
+
+# Ensure WORKDIR is on the PYTHONPATH
+ENV PYTHONPATH={{build_info.workdir}}${PYTHONPATH:+:$PYTHONPATH}
 
 {% if build_info.user_info.create %}
-{{ add_user(build_info.user_info) -}}
+####################################################################################################
+# Create the unprivileged user account
+####################################################################################################
+{{ add_user(build_info.user_info) }}
+{% else %}
+####################################################################################################
+# Use the existing user account
+####################################################################################################
+# USER {{build_info.user_info.name}}
+# home: {{build_info.user_info.home}}
+# group: {{build_info.user_info.group}}
+# chown: {{build_info.user_info.chown}}
 {% endif %}
+
+{% if build_info.component_is_poetry_project() %}
+{#
+    This must be done after the user directory is created, as poetry expects to
+    be installed under the current user's home directory.
+#}
+####################################################################################################
+# Install poetry
+####################################################################################################
+{{ add_poetry(build_info.user_info) }}
+{% endif %}
+
+####################################################################################################
+# Add collected components
+####################################################################################################
+{{ add_collected_components(build_info.user_info) }}
 
 {% if build_info.dockerfile %}
 ####################################################################################################
-# Specialized Dockerfile for {{build_info.component}}
+# Component dockerfile: components/{{build_info.component}}/Dockerfile
 ####################################################################################################
 {{ build_info.dockerfile_content }}
-{% endif %}
-
-{% if build_info.components %}
-{{ add_collected_components(build_info) -}}
+{% else %}
+####################################################################################################
+# No Dockerfile found for {{build_info.component}} component
+####################################################################################################
 {% endif %}
 
 ####################################################################################################
 # Finalize image
 ####################################################################################################
-# Check that our libraries didn't introduce any conflicts
+# Check that our collected libraries didn't introduce any conflicts
 RUN pip check
-
-{# # Add the user's bin directory to the PATH to enable any python scripts
-ENV PATH={{build_info.user_info.home}}/.local/bin:$PATH
- #}
