@@ -68,8 +68,8 @@ WORKDIR {{build_info.workdir}}
 # WORKDIR {{build_info.workdir}}
 {% endif %}
 
-# Ensure WORKDIR is on the PYTHONPATH
-ENV PYTHONPATH={{build_info.workdir}}${PYTHONPATH:+:$PYTHONPATH}
+# Ensure WORKDIR/components is on the PYTHONPATH
+ENV PYTHONPATH={{build_info.workdir}}/components${PYTHONPATH:+:$PYTHONPATH}
 
 {% if build_info.user_info.create %}
 ####################################################################################################
@@ -86,7 +86,7 @@ ENV PYTHONPATH={{build_info.workdir}}${PYTHONPATH:+:$PYTHONPATH}
 # chown: {{build_info.user_info.chown}}
 {% endif %}
 
-{% if build_info.component_is_poetry_project() %}
+{% if build_info.dev %}
 {#
     This must be done after the user directory is created, as poetry expects to
     be installed under the current user's home directory.

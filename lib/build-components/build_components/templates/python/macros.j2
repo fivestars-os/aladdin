@@ -64,16 +64,16 @@ RUN apt-get -y --no-install-recommends install \
     crucial to allowing us to mount the source code directory during development for rapid dev and testing.
 #}
 # Use the final image's working directory
-WORKDIR {{build_info.workdir or "/build"}}
+WORKDIR {{build_info.workdir}}
 
 {% if build_info.component_is_poetry_project(component) %}
 # Copy the {{component}} component's poetry files into the image
-COPY {{component}}/pyproject.toml {{component}}/poetry.lock {{component}}/
+COPY {{component}}/pyproject.toml {{component}}/poetry.lock components/{{component}}/
 
 # Build the {{component}} component's dependencies into /root/.local{% if not build_info.dev %} and then pre-compile them
 {% endif %}
 
-RUN cd {{component}} \
+RUN cd components/{{component}} \
  && poetry install --no-root {% if not build_info.dev %} --no-dev \
  && python -O -m compileall /root/.local
 {% endif %}
@@ -81,11 +81,11 @@ RUN cd {{component}} \
 {% endif %}
 
 # Get the {{component}} component's code and assets
-COPY {{component}} {{component}}
+COPY {{component}} components/{{component}}
 
 {% if build_info.component_is_poetry_project(component) %}
 # Install the {{component}} component's python package
-RUN cd {{component}} \
+RUN cd components/{{component}} \
  && poetry install {% if not build_info.dev %} --no-dev \
  && python -O -m compileall .
 {% endif %}
@@ -113,9 +113,14 @@ COPY --from="builder-{{component}}" /root/.local /root/.local
 
 {% endfor %}
 
+{#
+    We collect components' assets into the /components directory. This directory location is
+    unimportant as the contents are only being stashed here until they can be copied out to
+    the final image in a single COPY step.
+#}
 # Copy component contents (from the builder images' WORKDIRs)
 {% for component in build_info.components %}
-COPY --from="builder-{{component}}" {{build_info.workdir or "/build"}}/{{component}} /code/{{component}}
+COPY --from="builder-{{component}}" {{build_info.workdir}}/components/{{component}} /components/{{component}}
 {% endfor %}
 {% endmacro %}
 
@@ -132,8 +137,9 @@ COPY --from="builder-{{component}}" {{build_info.workdir or "/build"}}/{{compone
 COPY --from="builder-collect" --chown={{user_info.chown}} /root/.local {{user_info.home}}/.local
 ENV PATH={{user_info.home}}/.local/bin:$PATH
 
-# Copy components' contents to the working directory
-COPY --from="builder-collect" --chown={{user_info.chown}} /code ./
+{# This is where we copy the items from the temporary /components directory noted above #}
+# Copy collected components' contents to the components/ directory in the working directory
+COPY --from="builder-collect" --chown={{user_info.chown}} /components components
 {% endmacro %}
 
 {#
@@ -168,4 +174,7 @@ ENV PATH={{user_info.home}}/.poetry/bin:$PATH
 
 # Configure poetry (to avoid virtual env usage)
 COPY --from="builder-poetry" /root/.config/pypoetry {{user_info.home}}/.config/pypoetry
+
+# Configure pip (to install as --user)
+COPY --from="builder-poetry" /etc/pip.conf /etc/pip.conf
 {% endmacro %}
