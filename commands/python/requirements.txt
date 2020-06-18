@@ -1,6 +1,0 @@
-awscli==1.18.62
-boto3==1.13.12
-cached-property==1.5.1
-colorlog==4.1.0
-jmespath==0.10.0
-kubernetes==11.0.0b2
