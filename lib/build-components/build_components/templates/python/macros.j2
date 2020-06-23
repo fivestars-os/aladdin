@@ -21,7 +21,7 @@ COPY pip.conf /etc/pip.conf
 # We use the "exec" form of RUN to delegate this command to bash instead.
 # This is all because we have a pipe in this command and we wish to fail the build
 # if the any command in the pipeline fails.
-RUN ["/bin/bash", "-c", "set -o pipefail && pip install --upgrade pip && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_VERSION={{version}} python && chmod a+x /root/.poetry/bin/poetry"]
+RUN ["/bin/bash", "-c", "set -o pipefail && pip install --upgrade pip && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_VERSION={{version}} python"]
 COPY poetry.toml /root/.config/pypoetry/config.toml
 ENV PATH=/root/.poetry/bin:$PATH
 {% endmacro %}
