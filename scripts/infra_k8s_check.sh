@@ -539,7 +539,7 @@ function main(){
 
                 check_and_warn "wget               " wget
                 check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
-                check_and_warn "docker ($WINDOWS_VERSION_DOCKER)" docker
+                check_and_warn "docker ($VERSION_DOCKER)" docker
                 check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
                 check_and_install "helm ($VERSION_HELM)       " helm
                 check_and_warn "virtualbox         " virtualbox

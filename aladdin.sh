@@ -89,7 +89,7 @@ function set_minikube_config(){
     minikube config set kubernetes-version v$KUBERNETES_VERSION > /dev/null
 
     for key in vm_driver memory disk_size cpus; do
-        local minikube_key=$(tr _ - <<< "$key")  # e.g., vm-driver
+        local minikube_key=$(tr _ - <<< "$key")  # e.g., driver
         local default_var="DEFAULT_MINIKUBE_$(tr a-z A-Z <<< "$key")"  # e.g., DEFAULT_MINIKUBE_VM_DRIVER
 
         local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
@@ -104,7 +104,7 @@ function _start_minikube() {
     local minikube_cmd="minikube start"
 
     if test "$OSTYPE" = "linux-gnu"; then
-        if test $(minikube config get vm-driver) = "none"; then
+        if test $(minikube config get driver) = "none"; then
             # If we're running on native docker on a linux host, minikube start must happen as root
             # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
             # to switch users to $SUDO_USER (the user that called sudo) before writing out
@@ -130,15 +130,17 @@ function check_or_start_minikube() {
 
         echo "Starting minikube... (this will take a moment)"
         set_minikube_config
-
         _start_minikube
 
-        # Determine if we've installed our bootlocal.sh script to replace the vboxsf mounts with nfs mounts
-        if ! "$(minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh && echo -n true || echo -n false")"; then
-            if test $(minikube config get vm-driver) != "none"; then
-                echo "Installing NFS mounts from host..."
-                "$SCRIPT_DIR"/install_nfs_mounts.sh
-                echo "NFS mounts installed"
+        if test -n "$(aladdin config get nfs)"; then
+            if test "$(minikube config get driver)" != "none"; then
+                # Determine if we've installed our bootlocal.sh script to replace
+                # the default mounts with nfs mounts.
+                if ! minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh"; then
+                    echo "Installing NFS mounts from host..."
+                    "$SCRIPT_DIR"/install_nfs_mounts.sh
+                    echo "NFS mounts installed"
+                fi
             fi
         fi
         echo "Minikube started"
@@ -167,12 +169,14 @@ function copy_ssh_to_minikube() {
         cygwin*) # Cygwin under windows
             echo "Copying ~/.ssh into minikube"
             (
-                minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/.ssh" &
-                minikube ssh -- 'sudo rm -rf /.ssh && sudo cp -r /tmp/.ssh /.ssh && sudo chmod -R 600 /.ssh'
+                tmp_ssh_dir=".ssh.$(tr </dev/urandom -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)" ||:
+                minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/$tmp_ssh_dir" &
+                minikube ssh -- "sudo rm -rf /.ssh && sudo cp -r /tmp/$tmp_ssh_dir /.ssh && sudo chmod -R 600 /.ssh"
                 kill $!
             ) >/dev/null
         ;;
     esac
+    :
 }
 
 function set_cluster_helper_vars() {
@@ -230,9 +234,8 @@ function handle_ostypes() {
         cygwin*) # Cygwin under windows
             function pathnorm(){
                 # Normalize the path, the path should exist
-                typeset path="$1"
-                typeset abspath="$(cd "$path" ; pwd)"
-                cygpath --mixed "$abspath" | sed 's%^C:/%/c/%g'
+                typeset abspath="$(cd "$1" ; pwd)"
+                echo "${abspath#/cygdrive}"
             }
         ;;
         win*|bsd*|solaris*) # Windows

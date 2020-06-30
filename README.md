@@ -77,33 +77,30 @@ Note that these commands only take effect when the minikube cluster is first set
 
 ### NFS mounts
 
-Aladdin uses minikube for local development which is a VirtualBox-based VM. Internally it mounts your `/Users` (or `/cygdrive/c/Users` for Cygwin users) directory to the root of the minikube filesystem. We have discovered that the `vboxsf` mounts are not as performant as NFS mounts and furthermore are not as reliable when it comes to detecting file changes made from the host. To address this, we replace the `vboxsf` mounts within minikube with NFS mounts. However, this requires a bit of manual setup on the host machine before it will take effect.
+Aladdin uses minikube for local development which is a VirtualBox-based VM. Internally minikube mounts your `/Users` (or `/cygdrive/c/Users` for Cygwin users) directory to the root of the minikube filesystem. We have discovered that the `vboxsf` mounts are not as performant as NFS mounts and furthermore are not as reliable when it comes to detecting file changes made from the host. To address this, we replace the `vboxsf` mounts within minikube with NFS mounts. However, this requires a bit of manual setup on the host machine before it can be enabled.
+
+Once you have configured your host as an NFS server, instruct `aladdin` to replace the default `vboxsf` mounts with NFS mounts by setting this config value and then restarting your minikube instance:
+
+```
+aladdin config set nfs 1
+minikube stop
+aladdin
+```
 
 #### NFS Host Setup
 
 1. Install an NFS service on your host
     1. **macOS** You should already have it available.
-    1. **Windows** You should install Cygwin and the `unfsd` package
-        * Take care when configuring the `unfsd` package as it can inadvertently remove login capabilities for your active user account.
-        * Be sure to add firewall exceptions for the installed services (/usr/sbin/unfsd & /usr/sbin/rpcbind).
+    1. **Windows**
+        We used to advise that one should install the `unfsd` package, but recent updates to that package have introduced seemingly insurmountable instabilities. We cannot recommend that one install `unfsd` for NFS capabilities.
+        There are other options such as [Allegro NFS](https://nfsforwindows.com/home) that have been shown to work, but setting that up is outside the scope of this documentation.
 1. Add entries to your `/etc/exports` file
     1. **macOS**
     ```
     echo "/Users -alldirs -mapall="$(id -u)":"$(id -g)" $(minikube ip)" | sudo tee -a /etc/exports
     ```
     1. **Windows**
-    ```
-    # Ensure you have a line for "minikube" in your /etc/hosts file.
-    cat /etc/hosts
-
-    # If not, add it when you get minikube up and running.
-    echo "$(minikube ip) minikube" >> /etc/hosts
-
-    # Export this /Users directory as an NFS share.
-    echo "/cygdrive/c/Users    minikube(rw,all_squash,anonuid=$(id -u),anongid=$(id -g))" >> /etc/exports
-
-    # Restart the unfsd service through the Windows Service GUI now.
-    ```
+    *Possible, but unsupported*
 
 ## Creating and managing an aws kubernetes cluster
 This is all encapsulated in the [aladdin cluster command](./docs/cluster_cmd.md)
