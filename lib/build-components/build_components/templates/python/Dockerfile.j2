@@ -47,6 +47,15 @@ FROM {{build_info.builder_image}} AS builder-poetry
 ####################################################################################################
 FROM {{build_info.base_image}}
 
+{% if build_info.component_packages() %}
+# Install any additional packages required by the component
+RUN apt-get update \
+ && apt-get -y --no-install-recommends install \
+    {{" ".join(build_info.component_packages())}} \
+ && rm -rf /var/lib/apt/lists/*
+
+{% endif %}
+
 ####################################################################################################
 # Pre-compile python core library code
 ####################################################################################################

@@ -101,17 +101,28 @@ RUN cd components/{{component}} \
 {% macro collect_components(build_info) %}
 FROM {{build_info.builder_image}} AS builder-collect
 
-# We will copy the contents of this directory to the final image.
-# Ensure that it exists even if no python packages were built and collected.
-RUN mkdir -p /root/.local
+# The /root/.local directory is where poetry will have installed our python packages.
+# The easy-install.pth file contains additional package locations for installed packages.
+# In our case, it's important because components organized as installable python packages
+# will be added to this file when installed with poetry. We need to take steps to composite
+# these files together here, since each component will have been built in its own builder
+# image. We will copy this directory (containing the composited easy-install.pth file) into
+# the final built image.
+# Ensure that these exist even if no python packages were built and collected.
+RUN mkdir -p /root/.local \
+ && touch /tmp/easy-install.pth
 
 # Copy built python dependencies before copying any code over to maximize layer caching
 {% for component in build_info.components %}
 {% if build_info.component_is_poetry_project(component) %}
 COPY --from="builder-{{component}}" /root/.local /root/.local
+RUN pth="$(python -c "import site; print(site.getusersitepackages())")/easy-install.pth" \
+ && touch "$pth" \
+ && cat "$pth" >> /tmp/easy-install.pth
 {% endif -%}
-
 {% endfor %}
+
+RUN sort </tmp/easy-install.pth | uniq > "$(python -c \\"import site; print(site.getusersitepackages())\\")/easy-install.pth"
 
 {#
     We collect components' assets into the /components directory. This directory location is
@@ -169,12 +180,12 @@ USER {{user_info.name}}
 # Copy the poetry installation from the builder image to the user directory in the target image.
 # We also take care to add the poetry bin directory to the PATH, which is what "source $HOME/.poetry/env"
 # would accomplish in a normal installation scenario.
-COPY --from="builder-poetry" /root/.poetry {{user_info.home}}/.poetry
+COPY --from="builder-poetry" --chown={{user_info.chown}} /root/.poetry {{user_info.home}}/.poetry
 ENV PATH={{user_info.home}}/.poetry/bin:$PATH
 
 # Configure poetry (to avoid virtual env usage)
-COPY --from="builder-poetry" /root/.config/pypoetry {{user_info.home}}/.config/pypoetry
+COPY --from="builder-poetry" --chown={{user_info.chown}} /root/.config/pypoetry {{user_info.home}}/.config/pypoetry
 
 # Configure pip (to install as --user)
-COPY --from="builder-poetry" /etc/pip.conf /etc/pip.conf
+COPY --from="builder-poetry" --chown={{user_info.chown}} /etc/pip.conf /etc/pip.conf
 {% endmacro %}
