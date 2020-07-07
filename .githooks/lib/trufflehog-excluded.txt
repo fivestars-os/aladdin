@@ -1,0 +1,1 @@
+commands/bash/container/get-dashboard-url/get-dashboard-url
