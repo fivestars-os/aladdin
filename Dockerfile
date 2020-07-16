@@ -28,7 +28,7 @@ ARG DOCKER_VERSION=18.09.7
 ARG KUBE_VERSION=1.15.6
 ARG HELM_VERSION=2.16.1
 ARG KOPS_VERSION=1.15.0
-ARG POETRY_VERSION=1.0.5
+ARG POETRY_VERSION=1.0.9
 
 RUN curl -L -o- https://download.docker.com/linux/static/stable/x86_64/docker-$DOCKER_VERSION.tgz | tar -zxvf - && cp docker/docker \
     /usr/bin/docker && chmod 755 /usr/bin/docker
@@ -42,7 +42,11 @@ RUN	curl -L -o- https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSI
 RUN	curl -L -o /bin/kops https://github.com/kubernetes/kops/releases/download/$KOPS_VERSION/kops-linux-amd64 \
 	&& chmod 755 /bin/kops
 
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+# On some images "sh" is aliased to "dash" which does not support "set -o pipefail".
+# We use the "exec" form of RUN to delegate this command to bash instead.
+# This is all because we have a pipe in this command and we wish to fail the build
+# if any command in the pipeline fails.
+RUN ["/bin/bash", "-c", "set -o pipefail && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python"]
 ENV PATH="/root/.poetry/bin:${PATH}"
 COPY poetry.toml /root/.config/pypoetry/config.toml
 

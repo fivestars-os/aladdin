@@ -20,7 +20,7 @@ COPY pip.conf /etc/pip.conf
 # On some images "sh" is aliased to "dash" which does not support "set -o pipefail".
 # We use the "exec" form of RUN to delegate this command to bash instead.
 # This is all because we have a pipe in this command and we wish to fail the build
-# if the any command in the pipeline fails.
+# if any command in the pipeline fails.
 RUN ["/bin/bash", "-c", "set -o pipefail && pip install --upgrade pip && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_VERSION={{version}} python"]
 COPY poetry.toml /root/.config/pypoetry/config.toml
 ENV PATH=/root/.poetry/bin:$PATH
@@ -122,7 +122,7 @@ RUN pth="$(python -c "import site; print(site.getusersitepackages())")/easy-inst
 {% endif -%}
 {% endfor %}
 
-RUN sort </tmp/easy-install.pth | uniq > "$(python -c \\"import site; print(site.getusersitepackages())\\")/easy-install.pth"
+RUN sort </tmp/easy-install.pth | uniq > "$(python -c "import site; print(site.getusersitepackages())")/easy-install.pth"
 
 {#
     We collect components' assets into the /components directory. This directory location is
