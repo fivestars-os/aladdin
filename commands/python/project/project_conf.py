@@ -27,6 +27,8 @@ class ProjectConf(object):
 
     CONTENT_EXAMPLE = {
         "name": "<project_name>",
+        # Commenting this out so that we get the build-components behavior by default,
+        # but leaving it here for structural documentation purposes.
         # "build_docker": ["./commands/build.bash"],
         "helm_chart": ["./builds/<project_name>"],
         "docker_images": ["img1", "img2", "img3"],
