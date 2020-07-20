@@ -133,14 +133,14 @@ def build_components(
     component_graph = validate_component_dependencies(components=components)
 
     # Let's build in topological order
-    components = [
+    ordered_components = [
         component
         for component in networkx.algorithms.dag.topological_sort(component_graph)
         if component in components
     ]
 
     # Build each component in turn
-    for component in components:
+    for component in ordered_components:
         try:
             logger.notice("Starting build for %s component", component)
 
@@ -174,7 +174,7 @@ def build_components(
         else:
             logger.success("Built image for component: %s\n\n", component)
     else:
-        logger.success("Built images for components: %s", ", ".join(components))
+        logger.success("Built images for components: %s", ", ".join(ordered_components))
 
 
 def validate_component_dependencies(components: typing.List[str]) -> networkx.DiGraph:
@@ -466,7 +466,10 @@ def _docker_build(
     buildargs = buildargs or {}
     buildargs.setdefault("CACHE_BUST", str(time.time()))
 
-    cmd = ["env", "DOCKER_BUILDKIT=1", "docker", "build"]
+    # Disable new build system if specified by the user
+    docker_buildkit = os.environ.get("DOCKER_BUILDKIT", 1)
+
+    cmd = ["env", f"DOCKER_BUILDKIT={docker_buildkit}", "docker", "build"]
 
     for key, value in buildargs.items():
         cmd.extend(["--build-arg", f"{key}={value}"])

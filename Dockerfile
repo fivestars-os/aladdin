@@ -16,8 +16,8 @@ RUN apt-get update \
 # ncurses-bin or libncurses6 ?
 
 # Default to python3 and update setuptools
-RUN ln -fs /usr/bin/python3 /usr/bin/python \
- && ln -fs /usr/bin/pip3 /usr/bin/pip \
+RUN ln -fs /usr/bin/python3 /usr/local/bin/python \
+ && ln -fs /usr/bin/pip3 /usr/local/bin/pip \
  && pip install --no-cache-dir setuptools==46.4.0
 
 # This can take a bit of time, so we do it earlier in the build process

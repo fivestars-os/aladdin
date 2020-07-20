@@ -6,7 +6,10 @@ import typing
 import yaml
 
 
-class Undefined:
+# You won't be able to instantiate this outside of this module
+class _Undefined:
+    """Used to create a sentinel object for missing configuration values."""
+
     def __bool__(self):
         return False
 
@@ -14,7 +17,9 @@ class Undefined:
         raise NotImplementedError
 
 
-UNDEFINED = Undefined()
+UNDEFINED = _Undefined()
+
+del _Undefined
 
 
 class ConfigurationException(Exception):
