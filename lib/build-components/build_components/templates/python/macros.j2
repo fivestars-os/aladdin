@@ -114,11 +114,14 @@ RUN mkdir -p /root/.local \
 
 # Copy built python dependencies before copying any code over to maximize layer caching
 {% for component in build_info.components %}
-{% if build_info.component_is_poetry_project(component) %}
-COPY --from="builder-{{component}}" /root/.local /root/.local
 RUN pth="$(python -c "import site; print(site.getusersitepackages())")/easy-install.pth" \
- && touch "$pth" \
+ && mkdir -p "$(dirname "$pth")" \
+ && touch "$pth"
+
+{% if build_info.component_is_poetry_project(component) %}
+RUN pth="$(python -c "import site; print(site.getusersitepackages())")/easy-install.pth" \
  && cat "$pth" >> /tmp/easy-install.pth
+COPY --from="builder-{{component}}" /root/.local /root/.local
 {% endif -%}
 {% endfor %}
 
