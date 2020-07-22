@@ -119,9 +119,10 @@ RUN pth="$(python -c "import site; print(site.getusersitepackages())")/easy-inst
  && touch "$pth"
 
 {% if build_info.component_is_poetry_project(component) %}
-RUN pth="$(python -c "import site; print(site.getusersitepackages())")/easy-install.pth" \
- && cat "$pth" >> /tmp/easy-install.pth
 COPY --from="builder-{{component}}" /root/.local /root/.local
+RUN pth="$(python -c "import site; print(site.getusersitepackages())")/easy-install.pth" \
+ && cat "$pth" >> /tmp/easy-install.pth \
+ && cat /tmp/easy-install.pth
 {% endif -%}
 {% endfor %}
 
