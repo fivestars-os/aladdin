@@ -68,12 +68,12 @@ WORKDIR {{build_info.workdir}}
 
 {% if build_info.component_is_poetry_project(component) %}
 # Copy the {{component}} component's poetry files into the image
-COPY {{component}}/pyproject.toml {{component}}/poetry.lock components/{{component}}/
+COPY {{component}}/pyproject.toml {{component}}/poetry.lock {{component}}/
 
 # Build the {{component}} component's dependencies into /root/.local{% if not build_info.dev %} and then pre-compile them
 {% endif %}
 
-RUN cd components/{{component}} \
+RUN cd {{component}} \
  && poetry install --no-root {% if not build_info.dev %} --no-dev \
  && python -O -m compileall /root/.local
 {% endif %}
@@ -81,11 +81,11 @@ RUN cd components/{{component}} \
 {% endif %}
 
 # Get the {{component}} component's code and assets
-COPY {{component}} components/{{component}}
+COPY {{component}} {{component}}
 
 {% if build_info.component_is_poetry_project(component) %}
 # Install the {{component}} component's python package
-RUN cd components/{{component}} \
+RUN cd {{component}} \
  && poetry install {% if not build_info.dev %} --no-dev \
  && python -O -m compileall .
 {% endif %}
@@ -135,7 +135,7 @@ RUN sort </tmp/easy-install.pth | uniq > "$(python -c "import site; print(site.g
 #}
 # Copy component contents (from the builder images' WORKDIRs)
 {% for component in build_info.components %}
-COPY --from="builder-{{component}}" {{build_info.workdir}}/components/{{component}} /components/{{component}}
+COPY --from="builder-{{component}}" {{build_info.workdir}}/{{component}} /components/{{component}}
 {% endfor %}
 {% endmacro %}
 
@@ -153,8 +153,8 @@ COPY --from="builder-collect" --chown={{user_info.chown}} /root/.local {{user_in
 ENV PATH={{user_info.home}}/.local/bin:$PATH
 
 {# This is where we copy the items from the temporary /components directory noted above #}
-# Copy collected components' contents to the components/ directory in the working directory
-COPY --from="builder-collect" --chown={{user_info.chown}} /components components
+# Copy collected components' contents to the working directory
+COPY --from="builder-collect" --chown={{user_info.chown}} /components ./
 {% endmacro %}
 
 {#

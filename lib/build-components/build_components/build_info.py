@@ -83,15 +83,13 @@ class BuildInfo(abc.ABC):
 
     @property
     def user_info(self) -> UserInfo:
-        name = "aladdin-user"
+        default_name = "aladdin-user"
+        name = self.config.image_user_info.name or default_name
         return UserInfo(
             create=self.config.image_user_info.create or self.config.image_base is UNDEFINED,
-            name=self.config.image_user_info.name or name,
-            group=self.config.image_user_info.group or self.config.image_user_info.name or name,
-            home=(
-                self.config.image_user_info.home
-                or f"/home/{self.config.image_user_info.name or name}"
-            ),
+            name=name,
+            group=(self.config.image_user_info.group or name),
+            home=(self.config.image_user_info.home or f"/home/{name}"),
             sudo=(
                 self.dev
                 if self.config.image_user_info.sudo is UNDEFINED

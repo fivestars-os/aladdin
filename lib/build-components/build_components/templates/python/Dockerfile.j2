@@ -70,6 +70,7 @@ RUN python -O -m compileall
 # Create the WORKDIR to house our project code
 ####################################################################################################
 WORKDIR {{build_info.workdir}}
+RUN chown {{build_info.user_info.chown}} {{build_info.workdir}}
 {% else %}
 ####################################################################################################
 # Use existing WORKDIR to house our project code
@@ -77,8 +78,8 @@ WORKDIR {{build_info.workdir}}
 # WORKDIR {{build_info.workdir}}
 {% endif %}
 
-# Ensure WORKDIR/components is on the PYTHONPATH
-ENV PYTHONPATH={{build_info.workdir}}/components${PYTHONPATH:+:$PYTHONPATH}
+# Ensure WORKDIR is on the PYTHONPATH
+ENV PYTHONPATH={{build_info.workdir}}${PYTHONPATH:+:$PYTHONPATH}
 
 {% if build_info.user_info.create %}
 ####################################################################################################
