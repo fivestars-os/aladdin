@@ -101,6 +101,11 @@ def deploy(
         # Values precedence is command < cluster rules < --set-override-values
         # Deploy command values
         values = {
+            "service.globalCertificateDNS": cr.global_certificate_dns,
+            "service.globalCertificateHostname": cr.global_certificate_dns.strip("*."),
+            "service.certificateDNS": cr.certificate_dns,
+            "service.certificateHostname": cr.certificate_dns.strip("*."),
+            "service.globalCertificateArn": cr.get_certificate_arn(get_global=True),
             "service.certificateArn": cr.get_certificate_arn(),
             "deploy.ecr": pr.docker_registry,
         }

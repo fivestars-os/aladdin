@@ -25,14 +25,18 @@ class ClusterRules(object):
             "'{}' object has no attribute '{}'".format(self.__class__.__name__, attr)
         )
 
-    def get_certificate_arn(self):
-        cert = self.values.get("service.certificateArn")
+    def get_certificate_arn(self, get_global=False):
+        cert = self.values.get(
+            "service.globalCertificateArn" if get_global else "service.certificateArn"
+        )
+
         # Check against None to allow empty string
         if cert is None:
-            cert = search_certificate_arn(self._boto, self.certificate_dns)
+            certificate_dns = self.global_certificate_dns if get_global else self.certificate_dns
+            cert = search_certificate_arn(self._boto, certificate_dns)
         # Check against None to allow empty string
         if cert is None:
-            cert = new_certificate_arn(self._boto, self.certificate_dns)
+            cert = new_certificate_arn(self._boto, certificate_dns)
         return cert
 
     @property
@@ -40,8 +44,23 @@ class ClusterRules(object):
         return self._namespace
 
     @property
+    def global_certificate_dns(self):
+        return "*.{}".format(self.global_service_dns_suffix)
+
+    @property
     def certificate_dns(self):
         return "*.{}".format(self.service_dns_suffix)
+
+    @property
+    def global_sub_dns(self):
+        """
+        The DNS name for the cluster-wide global namespace.
+
+        To be used for "cluster global" resources when deploying to a cluster that makes use of
+        namespaces to separate deployments.
+        """
+        global_namespace = self.rules.get("service_global_namespace", "default")
+        return "{}.{}".format(global_namespace, self.root_dns)
 
     @property
     def sub_dns(self):
@@ -49,6 +68,18 @@ class ClusterRules(object):
         The dns we are going to use
         """
         return "{}.{}".format(self._namespace, self.root_dns)
+
+    @property
+    def global_service_dns_suffix(self):
+        """
+        The DNS name for the cluster-wide global namespace.
+
+        To be used for "cluster global" resources when deploying to a cluster that makes use of
+        namespaces to separate deployments.
+
+        If "service_dns_suffix" is defined in the cluster config, that value will be used instead.
+        """
+        return self.rules.get("service_dns_suffix", self.global_sub_dns)
 
     @property
     def service_dns_suffix(self):
@@ -122,6 +153,7 @@ def cluster_rules(cluster=None, namespace="default"):
         cluster_config = load_cluster_config(cluster)
     except FileNotFoundError:
         raise FileNotFoundError(f"Could not find config.json file for cluster {cluster}")
+
     try:
         namespace_override_config = load_namespace_override_config(cluster, namespace)
     except FileNotFoundError:
