@@ -23,7 +23,7 @@ def search_certificate_arn(boto_session, dns_name):
 
     if len(list_cert) == 1:
         arn_res = list_cert[0]["CertificateArn"]
-        log.info("Found ISSUED certficate %s", arn_res)
+        log.info("Found ISSUED certificate %s for %s", arn_res, dns_name)
         return arn_res
 
     if len(list_cert) == 0:

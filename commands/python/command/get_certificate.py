@@ -16,12 +16,21 @@ def parse_args(sub_parser):
         dest="get_global",
         help='Get the certificate arn for the cluster\'s "global" namespace',
     )
+    subparser.add_argument(
+        "--root",
+        "-r",
+        action="store_true",
+        dest="get_root",
+        help="Get the certificate arn for the cluster's un-namespaced domain name",
+    )
 
 
 def get_certificate_args(args):
-    get_certificate(args.namespace, get_global=args.get_global)
+    get_certificate(args.namespace, get_global=args.get_global, get_root=args.get_root)
 
 
-def get_certificate(namespace, get_global):
+def get_certificate(namespace, get_global, get_root):
     cr = cluster_rules(namespace=namespace)
-    return cr.get_certificate_arn(get_global=get_global)
+    if get_global:
+        cr = cluster_rules(namespace=cr.global_namespace)
+    return cr.get_certificate_arn(get_root=get_root)

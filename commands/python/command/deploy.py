@@ -78,6 +78,7 @@ def deploy(
         pr = PublishRules()
         helm = Helm()
         cr = cluster_rules(namespace=namespace)
+        global_cr = cluster_rules(namespace=cr.global_namespace)
         helm_path = "{}/{}".format(tmpdirname, project)
         hr = HelmRules(cr, project)
         git_account = load_git_configs()["account"]
@@ -101,11 +102,14 @@ def deploy(
         # Values precedence is command < cluster rules < --set-override-values
         # Deploy command values
         values = {
-            "service.globalCertificateDNS": cr.global_certificate_dns,
-            "service.globalCertificateHostname": cr.global_certificate_dns.strip("*."),
+            "service.rootCertificateDNS": cr.root_certificate_dns,
+            "service.rootCertificateHostname": cr.root_certificate_dns.strip("*."),
+            "service.rootCertificateArn": cr.get_certificate_arn(get_root=True),
+            "service.globalCertificateDNS": global_cr.certificate_dns,
+            "service.globalCertificateHostname": global_cr.certificate_dns.strip("*."),
+            "service.globalCertificateArn": global_cr.get_certificate_arn(),
             "service.certificateDNS": cr.certificate_dns,
             "service.certificateHostname": cr.certificate_dns.strip("*."),
-            "service.globalCertificateArn": cr.get_certificate_arn(get_global=True),
             "service.certificateArn": cr.get_certificate_arn(),
             "deploy.ecr": pr.docker_registry,
         }
