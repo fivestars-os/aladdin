@@ -23,7 +23,7 @@ def search_certificate_arn(boto_session, dns_name):
 
     if len(list_cert) == 1:
         arn_res = list_cert[0]["CertificateArn"]
-        log.info("Found ISSUED certficate %s", arn_res)
+        log.info("Found ISSUED certificate %s for %s", arn_res, dns_name)
         return arn_res
 
     if len(list_cert) == 0:
@@ -95,7 +95,7 @@ def _validate_certificate_with_retry(boto_session, dns_name, arn, max_retries=20
 
     # Create the hosted zone for later dns validation
     hostedzone_name = ".".join(dns_name.split(".")[1:])
-    dns_id = get_hostedzone(boto_session, hostedzone_name) or create_hostedzone(
+    hostedzone = get_hostedzone(boto_session, hostedzone_name) or create_hostedzone(
         boto_session, hostedzone_name
     )
 
@@ -120,7 +120,7 @@ def _validate_certificate_with_retry(boto_session, dns_name, arn, max_retries=20
             " https://github.com/fivestars/aladdin-fs/blob/master/doc/dns_and_certificate.md."
         )
     else:
-        fill_dns_dict(boto_session, dns_id, cname_record)
+        fill_dns_dict(boto_session, hostedzone, cname_record)
 
 
 def _list_all_certificates(client, **pagination_options):
