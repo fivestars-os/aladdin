@@ -65,6 +65,21 @@ RUN python -O -m compileall
 # Not pre-compiling python core library code since this is a dev image
 {% endif %}
 
+{% if build_info.user_info.create %}
+####################################################################################################
+# Create the unprivileged user account
+####################################################################################################
+{{ add_user(build_info.user_info) }}
+{% else %}
+####################################################################################################
+# Use the existing user account
+####################################################################################################
+# USER {{build_info.user_info.name}}
+# home: {{build_info.user_info.home}}
+# group: {{build_info.user_info.group}}
+# chown: {{build_info.user_info.chown}}
+{% endif %}
+
 {% if build_info.workdir_create %}
 ####################################################################################################
 # Create the WORKDIR to house our project code
@@ -80,21 +95,6 @@ RUN chown {{build_info.user_info.chown}} {{build_info.workdir}}
 
 # Ensure WORKDIR is on the PYTHONPATH
 ENV PYTHONPATH={{build_info.workdir}}${PYTHONPATH:+:$PYTHONPATH}
-
-{% if build_info.user_info.create %}
-####################################################################################################
-# Create the unprivileged user account
-####################################################################################################
-{{ add_user(build_info.user_info) }}
-{% else %}
-####################################################################################################
-# Use the existing user account
-####################################################################################################
-# USER {{build_info.user_info.name}}
-# home: {{build_info.user_info.home}}
-# group: {{build_info.user_info.group}}
-# chown: {{build_info.user_info.chown}}
-{% endif %}
 
 {% if build_info.dev %}
 {#
@@ -128,3 +128,10 @@ ENV PYTHONPATH={{build_info.workdir}}${PYTHONPATH:+:$PYTHONPATH}
 ####################################################################################################
 # Check that our collected libraries didn't introduce any conflicts
 RUN pip check
+
+{% if not build_info.dev %}
+# Compile our collected python code and libraries
+RUN python -O -m compileall ~/.local .
+{% else %}
+# Not pre-compiling python components and library code since this is a dev image
+{% endif %}

@@ -23,6 +23,7 @@ import coloredlogs
 import jinja2
 import networkx
 import verboselogs
+from orderedset import OrderedSet
 
 from .configuration import UNDEFINED, BuildConfig, ComponentConfig, ConfigurationException, UserInfo
 from .build_info import BuildInfo, PythonBuildInfo
@@ -129,14 +130,17 @@ def build_components(
         )
         return
 
+    # Sort components to attempt some level of determinism in the topological sort later
+    presorted_components = sorted(components)
+
     # Check for cycles in the component dependency graph
-    component_graph = validate_component_dependencies(components=components)
+    component_graph = validate_component_dependencies(components=presorted_components)
 
     # Let's build in topological order
     ordered_components = [
         component
         for component in networkx.algorithms.dag.topological_sort(component_graph)
-        if component in components
+        if component in presorted_components
     ]
 
     # Build each component in turn
@@ -184,12 +188,12 @@ def validate_component_dependencies(components: typing.List[str]) -> networkx.Di
     :returns: The component dependency graph
     """
     # Copy for destructive operations
-    components = set(components)
+    components = OrderedSet(components)
 
     # Create the component dependency graph
     component_graph = networkx.DiGraph()
 
-    visited = set()
+    visited = OrderedSet()
     while components:
         component = components.pop()
         if component not in visited:

@@ -12,13 +12,14 @@ RUN apt-get update \
     jq \
     less \
     python3 \
-    python3-pip
+    python3-pip \
+    python3-dev
 # ncurses-bin or libncurses6 ?
 
-# Default to python3 and update setuptools
+# Default to python3, update setuptools and install wheel
 RUN ln -fs /usr/bin/python3 /usr/local/bin/python \
  && ln -fs /usr/bin/pip3 /usr/local/bin/pip \
- && pip install --no-cache-dir setuptools==46.4.0
+ && pip install --no-cache-dir setuptools==46.4.0 wheel==0.34.2
 
 # This can take a bit of time, so we do it earlier in the build process
 RUN go get -u -v sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator
