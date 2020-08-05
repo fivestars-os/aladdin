@@ -96,10 +96,15 @@ RUN chown {{build_info.user_info.chown}} {{build_info.workdir}}
 # Ensure WORKDIR is on the PYTHONPATH
 ENV PYTHONPATH={{build_info.workdir}}${PYTHONPATH:+:$PYTHONPATH}
 
+{% if build_info.user_info.create %}
+# Switch to the unprivileged user account
+USER {{build_info.user_info.name}}
+{% endif %}
+
 {% if build_info.dev %}
 {#
-    This must be done after the user directory is created, as poetry expects to
-    be installed under the current user's home directory.
+    This must be done after the user directory is created and switched to,
+    as poetry expects to be installed under the current user's home directory.
 #}
 ####################################################################################################
 # Install poetry

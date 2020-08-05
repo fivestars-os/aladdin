@@ -170,9 +170,6 @@ RUN groupadd -f {{user_info.group}} \
  && rm -rf /var/lib/apt/lists/* \
  && echo >> /etc/sudoers "{{user_info.name}} ALL=(ALL) NOPASSWD: ALL"
 {% endif %}
-
-# Switch to the unprivileged user account
-USER {{user_info.name}}
 {% endmacro %}
 
 
