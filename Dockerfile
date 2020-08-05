@@ -14,7 +14,6 @@ RUN apt-get update \
     python3 \
     python3-pip \
     python3-dev
-# ncurses-bin or libncurses6 ?
 
 # Default to python3, update setuptools and install wheel
 RUN ln -fs /usr/bin/python3 /usr/local/bin/python \
@@ -55,14 +54,8 @@ WORKDIR /root/aladdin
 
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
+COPY lib/build-components /root/aladdin/lib/build-components
 RUN poetry install --no-root
-
-# Install the build-components project
-# Perhaps this just becomes a normal python library dependency once it stabilizes a bit
-COPY lib/build-components/pyproject.toml lib/build-components/poetry.lock lib/build-components/
-RUN cd lib/build-components && poetry install --no-root
-COPY lib/build-components lib/build-components
-RUN cd lib/build-components && poetry install
 
 # Install aladdin
 COPY . /root/aladdin

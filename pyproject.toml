@@ -13,6 +13,7 @@ colorlog = "4.1.0"
 jmespath = "0.10.0"
 kubernetes = "11.0.0b2"
 orderedset = "^2.0.3"
+build-components = { path = "lib/build-components" }
 
 [tool.poetry.dev-dependencies]
 
