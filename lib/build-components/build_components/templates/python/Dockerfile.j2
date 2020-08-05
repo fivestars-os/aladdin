@@ -1,0 +1,137 @@
+{% from "macros.j2" import install_poetry, build_component, collect_components, add_poetry, add_user, add_collected_components %}
+####################################################################################################
+# This is a dynamically generated file created by build-components for building the
+# "{{build_info.tag}}" docker image. This is actually a copy of the file used
+# during the build and is only intended for informational and debugging purposes.
+####################################################################################################
+
+
+####################################################################################################
+####################################################################################################
+# Build multi-stage builder images
+####################################################################################################
+####################################################################################################
+
+####################################################################################################
+# [builder-poetry]
+####################################################################################################
+FROM {{build_info.builder_image}} AS builder-poetry
+{{ install_poetry(build_info.poetry_version) }}
+
+### /end [builder-poetry] ##########################################################################
+{% for component in build_info.components %}
+
+
+####################################################################################################
+# [builder-{{component}}]
+####################################################################################################
+{{ build_component(component, build_info) }}
+
+### /end [builder-{{component}}] ###################################################################
+{% endfor %}
+
+
+
+####################################################################################################
+####################################################################################################
+# Collect components (to minimize layers in final build)
+####################################################################################################
+####################################################################################################
+{{ collect_components(build_info) }}
+
+
+####################################################################################################
+####################################################################################################
+# Begin actual image build
+####################################################################################################
+####################################################################################################
+FROM {{build_info.base_image}}
+
+{% if build_info.component_packages() %}
+# Install any additional packages required by the component
+RUN apt-get update \
+ && apt-get -y --no-install-recommends install \
+    {{" ".join(build_info.component_packages())}} \
+ && rm -rf /var/lib/apt/lists/*
+
+{% endif %}
+
+####################################################################################################
+# Pre-compile python core library code
+####################################################################################################
+{% if not build_info.dev %}
+RUN python -O -m compileall
+{% else %}
+# Not pre-compiling python core library code since this is a dev image
+{% endif %}
+
+{% if build_info.user_info.create %}
+####################################################################################################
+# Create the unprivileged user account
+####################################################################################################
+{{ add_user(build_info.user_info) }}
+{% else %}
+####################################################################################################
+# Use the existing user account
+####################################################################################################
+# USER {{build_info.user_info.name}}
+# home: {{build_info.user_info.home}}
+# group: {{build_info.user_info.group}}
+# chown: {{build_info.user_info.chown}}
+{% endif %}
+
+{% if build_info.workdir_create %}
+####################################################################################################
+# Create the WORKDIR to house our project code
+####################################################################################################
+WORKDIR {{build_info.workdir}}
+RUN chown {{build_info.user_info.chown}} {{build_info.workdir}}
+{% else %}
+####################################################################################################
+# Use existing WORKDIR to house our project code
+####################################################################################################
+# WORKDIR {{build_info.workdir}}
+{% endif %}
+
+# Ensure WORKDIR is on the PYTHONPATH
+ENV PYTHONPATH={{build_info.workdir}}${PYTHONPATH:+:$PYTHONPATH}
+
+{% if build_info.dev %}
+{#
+    This must be done after the user directory is created, as poetry expects to
+    be installed under the current user's home directory.
+#}
+####################################################################################################
+# Install poetry
+####################################################################################################
+{{ add_poetry(build_info.user_info) }}
+{% endif %}
+
+####################################################################################################
+# Add collected components
+####################################################################################################
+{{ add_collected_components(build_info.user_info) }}
+
+{% if build_info.dockerfile %}
+####################################################################################################
+# Component dockerfile: components/{{build_info.component}}/Dockerfile
+####################################################################################################
+{{ build_info.dockerfile_content }}
+{% else %}
+####################################################################################################
+# No Dockerfile found for {{build_info.component}} component
+####################################################################################################
+{% endif %}
+
+####################################################################################################
+# Finalize image
+####################################################################################################
+# Check that our collected libraries didn't introduce any conflicts
+RUN pip check
+
+{% if not build_info.dev %}
+# Compile our collected python code and libraries
+RUN python -O -m compileall ~/.local .
+{% else %}
+# Not pre-compiling python components and library code since this is a dev image
+{% endif %}

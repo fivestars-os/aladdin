@@ -83,12 +83,7 @@ class Helm(object):
     def stop(self, helm_rules):
         release_name = helm_rules.release_name
 
-        command = [
-            "helm",
-            "delete",
-            "--purge",
-            release_name,
-        ]
+        command = ["helm", "delete", "--purge", release_name]
 
         if self.release_exists(release_name):
             subprocess.run(command, check=True)
