@@ -81,10 +81,6 @@ class ProjectConf(object):
 
         subprocess.run(command, check=True, cwd=self.path, env=run_env)
 
-    @property
-    def helm_path(self):
-        return abspath(os.path.join(self.path, self.lamp_content["helm_chart"]))
-
     def get_docker_images(self):
         images = search("docker_images", self.lamp_content)
         if isinstance(images, str):

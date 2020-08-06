@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import os
+
 from arg_tools import add_namespace_argument
 from cluster_rules import cluster_rules
 from command import sync_ingress, sync_dns
@@ -11,6 +13,12 @@ def parse_args(sub_parser):
     subparser = sub_parser.add_parser("start", help="Start the helm chart in local")
     subparser.set_defaults(func=start_args)
     add_namespace_argument(subparser)
+    subparser.add_argument(
+        "--chart",
+        action="append",
+        dest="charts",
+        help="Only start these charts (may be specified multiple times)",
+    )
     subparser.add_argument(
         "--dry-run",
         "-d",
@@ -37,10 +45,24 @@ def parse_args(sub_parser):
 
 
 def start_args(args):
-    start(args.namespace, args.dry_run, args.with_mount, args.force_helm, args.set_override_values)
+    start(
+        args.namespace,
+        args.charts,
+        args.dry_run,
+        args.with_mount,
+        args.force_helm,
+        args.set_override_values,
+    )
 
 
-def start(namespace, dry_run=False, with_mount=False, force_helm=False, set_override_values=None):
+def start(
+    namespace,
+    charts=None,
+    dry_run=False,
+    with_mount=False,
+    force_helm=False,
+    set_override_values=None,
+):
     if set_override_values is None:
         set_override_values = []
     pc = ProjectConf()
@@ -48,6 +70,10 @@ def start(namespace, dry_run=False, with_mount=False, force_helm=False, set_over
 
     cr = cluster_rules(namespace=namespace)
     hr = HelmRules(cr, pc.name)
+
+    # Start each of the project's charts
+    if charts is None:
+        charts = [os.path.basename(chart_path) for chart_path in pc.get_helm_chart_paths()]
 
     # Values precedence is command < cluster rules < --set-override-values
     # Start command values
@@ -62,9 +88,11 @@ def start(namespace, dry_run=False, with_mount=False, force_helm=False, set_over
     value_overrides = {k: v for k, v in (value.split("=") for value in set_override_values)}
     values.update(value_overrides)
 
-    if dry_run:
-        helm.dry_run(hr, pc.helm_path, cr.cluster_name, namespace, **values)
-    else:
-        helm.start(hr, pc.helm_path, cr.cluster_name, namespace, force_helm, **values)
-        sync_ingress.sync_ingress(namespace)
-        sync_dns.sync_dns(namespace)
+    for chart_path in pc.get_helm_chart_paths():
+        if os.path.basename(chart_path) in charts:
+            if dry_run:
+                helm.dry_run(hr, chart_path, cr.cluster_name, namespace, **values)
+            else:
+                helm.start(hr, chart_path, cr.cluster_name, namespace, force_helm, **values)
+                sync_ingress.sync_ingress(namespace)
+                sync_dns.sync_dns(namespace)
