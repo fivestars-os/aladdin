@@ -31,11 +31,11 @@ class ClusterRules(object):
 
         # Check against None to allow empty string
         if cert is None:
-            cert = search_certificate_arn(self._boto, certificate_scope)
+            cert = search_certificate_arn(self.boto, certificate_scope)
 
         # Check against None to allow empty string
         if cert is None:
-            cert = new_certificate_arn(self._boto, certificate_scope)
+            cert = new_certificate_arn(self.boto, certificate_scope)
 
         return cert
 
@@ -111,7 +111,7 @@ class ClusterRules(object):
         return self.rules.get("dual_dns_prefix_annotation_name", None)
 
     @property
-    def _boto(self):
+    def boto(self):
         return boto3.Session(profile_name=self.aws_profile)
 
 

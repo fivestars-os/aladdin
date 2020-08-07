@@ -19,7 +19,7 @@ def fill_hostedzone(
 
     check_ns_values(boto_session, cluster_hosted_zone, namespace_domain_name, dns_nameservers)
 
-    return fill_dns_dict(boto_session, namespace_hosted_zone, service_hostnames_to_loadbalancers)
+    return fill_dns_dict(boto_session, namespace_hosted_zone, hostnames_to_loadbalancers)
 
 
 def get_hostedzone(boto_session, dns_name):

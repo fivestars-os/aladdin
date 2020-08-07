@@ -37,6 +37,11 @@ def sync_dns(namespace):
         for service_name, loadbalancer_hostname in service_loadbalancers.items()
     }
 
-    nb_updated = fill_hostedzone(service_hostnames_to_loadbalancers)
+    nb_updated = fill_hostedzone(
+        cr.boto,
+        cr.cluster_domain_name,
+        cr.namespace_domain_name,
+        service_hostnames_to_loadbalancers,
+    )
 
     logging.info("%s DNS mapping updated" % (nb_updated or "No",))
