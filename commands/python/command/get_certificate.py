@@ -23,4 +23,4 @@ def get_certificate_args(args):
 
 def get_certificate(namespace, for_cluster):
     cr = cluster_rules(namespace=namespace)
-    return cr.get_certificate_arn(for_cluster=for_cluster)
+    return cr.cluster_certificate_arn if for_cluster else cr.service_certificate_arn

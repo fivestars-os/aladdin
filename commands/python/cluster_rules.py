@@ -18,11 +18,16 @@ class ClusterRules(object):
             "'{}' object has no attribute '{}'".format(self.__class__.__name__, attr)
         )
 
-    def get_certificate_arn(self, for_cluster=False):
+    @property
+    def service_certificate_arn(self):
+        return self._get_certificate_arn(self.service_certificate_scope)
+
+    @property
+    def cluster_certificate_arn(self):
+        return self._get_certificate_arn(self.cluster_certificate_scope)
+
+    def _get_certificate_arn(self, certificate_scope):
         cert = self.values.get("service.certificateArn")
-        certificate_scope = (
-            self.cluster_certificate_scope if for_cluster else self.service_certificate_scope
-        )
 
         # Check against None to allow empty string
         if cert is None:

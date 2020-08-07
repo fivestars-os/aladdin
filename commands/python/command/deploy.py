@@ -101,12 +101,12 @@ def deploy(
         # Values precedence is command < cluster rules < --set-override-values
         # Deploy command values
         values = {
-            "service.clusterCertificateHostname": cr.cluster_domain_name_suffix,
+            "service.clusterDomainName": cr.cluster_domain_name_suffix,
             "service.clusterCertificateScope": cr.cluster_certificate_scope,
-            "service.clusterCertificateArn": cr.get_certificate_arn(get_for_cluster=True),
-            "service.certificateHostname": cr.service_domain_name_suffix,
+            "service.clusterCertificateArn": cr.cluster_certificate_arn,
+            "service.domainName": cr.service_domain_name_suffix,
             "service.certificateScope": cr.service_certificate_scope,
-            "service.certificateArn": cr.get_certificate_arn(),
+            "service.certificateArn": cr.service_certificate_arn,
             "deploy.ecr": pr.docker_registry,
         }
         # Update with cluster rule values
