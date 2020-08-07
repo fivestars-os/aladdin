@@ -20,12 +20,12 @@ class ClusterRules(object):
 
     def get_certificate_arn(self, for_cluster=False):
         cert = self.values.get("service.certificateArn")
+        certificate_scope = (
+            self.cluster_certificate_scope if for_cluster else self.service_certificate_scope
+        )
 
         # Check against None to allow empty string
         if cert is None:
-            certificate_scope = (
-                self.cluster_certificate_scope if for_cluster else self.service_certificate_scope
-            )
             cert = search_certificate_arn(self._boto, certificate_scope)
 
         # Check against None to allow empty string
