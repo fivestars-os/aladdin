@@ -84,7 +84,7 @@ def deploy(
         helm = Helm()
         cr = cluster_rules(namespace=namespace)
         helm_chart_path = "{}/{}".format(tmpdirname, chart or project)
-        hr = HelmRules(cr, project)
+        hr = HelmRules(cr, chart or project)
         git_account = load_git_configs()["account"]
         repo = repo or project
         git_url = f"git@github.com:{git_account}/{repo}.git"
@@ -106,8 +106,10 @@ def deploy(
         # Values precedence is command < cluster rules < --set-override-values
         # Deploy command values
         values = {
+            "project.name": project,
             "service.certificateArn": cr.get_certificate_arn(),
             "deploy.ecr": pr.docker_registry,
+            "deploy.namespace": namespace,
         }
         # Update with cluster rule values
         values.update(cr.values)
