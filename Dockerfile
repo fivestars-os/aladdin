@@ -37,12 +37,6 @@ ARG HELM_VERSION=2.16.1
 RUN	curl -L -o- https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar -zxvf - && cp linux-amd64/helm \
 	/bin/helm && chmod 755 /bin/helm && helm init --client-only
 
-# Install helm 3
-ARG HELM_3_VERSION=3.2.4
-RUN curl -L -o- https://get.helm.sh/helm-v${HELM_3_VERSION}-linux-amd64.tar.gz | tar -zxvf - \
- && cp linux-amd64/helm /usr/local/bin/helm3 \
- && rm -r linux-amd64
-
 ARG KOPS_VERSION=1.15.0
 RUN	curl -L -o /bin/kops https://github.com/kubernetes/kops/releases/download/$KOPS_VERSION/kops-linux-amd64 \
 	&& chmod 755 /bin/kops
@@ -60,7 +54,7 @@ ENV PATH="/root/.poetry/bin:${PATH}"
 COPY poetry.toml /root/.config/pypoetry/config.toml
 
 # Add datawire helm repo
-RUN helm3 repo add datawire https://www.getambassador.io
+RUN helm repo add datawire https://www.getambassador.io
 
 WORKDIR /root/aladdin
 
