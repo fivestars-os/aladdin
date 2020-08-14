@@ -69,18 +69,25 @@ def start(
     helm = Helm()
 
     cr = cluster_rules(namespace=namespace)
-    hr = HelmRules(cr, pc.name)
 
-    # Start each of the project's charts
     if charts is None:
+        # Start each of the project's charts
         charts = [os.path.basename(chart_path) for chart_path in pc.get_helm_chart_paths()]
 
     # Values precedence is command < cluster rules < --set-override-values
     # Start command values
     values = {
-        "deploy.withMount": with_mount,
-        "deploy.mountPath": pc.mount_path,
+        "project.name": pc.name,
+        "service.clusterDomainName": cr.cluster_domain_name_suffix,
+        "service.clusterCertificateScope": cr.cluster_certificate_scope,
+        "service.clusterCertificateArn": cr.cluster_certificate_arn,
+        "service.domainName": cr.service_domain_name_suffix,
+        "service.certificateScope": cr.service_certificate_scope,
+        "service.certificateArn": cr.service_certificate_arn,
         "deploy.imageTag": "local",
+        "deploy.mountPath": pc.mount_path,
+        "deploy.namespace": namespace,
+        "deploy.withMount": with_mount,
     }
     # Update with cluster rule values
     values.update(cr.values)
@@ -88,11 +95,19 @@ def start(
     value_overrides = {k: v for k, v in (value.split("=") for value in set_override_values)}
     values.update(value_overrides)
 
-    for chart_path in pc.get_helm_chart_paths():
-        if os.path.basename(chart_path) in charts:
-            if dry_run:
-                helm.dry_run(hr, chart_path, cr.cluster_name, namespace, **values)
-            else:
-                helm.start(hr, chart_path, cr.cluster_name, namespace, force_helm, **values)
-                sync_ingress.sync_ingress(namespace)
-                sync_dns.sync_dns(namespace)
+    sync_required = False
+    try:
+        for chart_path in pc.get_helm_chart_paths():
+            chart_name = os.path.basename(chart_path)
+            if chart_name in charts:
+                hr = HelmRules(cr, chart_name or pc.name)
+                if dry_run:
+                    helm.dry_run(hr, chart_path, cr.cluster_name, namespace, **values)
+                else:
+                    helm.start(hr, chart_path, cr.cluster_name, namespace, force_helm, **values)
+                    sync_required = True
+    finally:
+        # Sync if any helm.start() call succeeded, even if a subsequent one fails
+        if sync_required:
+            sync_ingress.sync_ingress(namespace)
+            sync_dns.sync_dns(namespace)

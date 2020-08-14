@@ -151,12 +151,16 @@ class Helm(object):
             helm_args = []
         if force:
             helm_args.append("--force")
+        logger.info("Installing release %s in namespace %s", helm_rules.release_name, namespace)
         return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
 
     def dry_run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
         if helm_args is None:
             helm_args = []
         helm_args += ["--dry-run", "--debug"]
+        logger.info(
+            "Dry run installing release %s in namespace %s", helm_rules.release_name, namespace
+        )
         return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
 
     def _run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
@@ -180,5 +184,5 @@ class Helm(object):
         if helm_args:
             command.extend(helm_args)
 
-        logger.info("Executing: " + " ".join(command))
+        logger.info("Executing: %s", " ".join(command))
         subprocess.run(command, check=True)

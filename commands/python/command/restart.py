@@ -11,7 +11,7 @@ def parse_args(sub_parser):
         "--chart",
         action="append",
         dest="charts",
-        help="Only start these charts (may be specified multiple times)",
+        help="Start only these charts (may be specified multiple times)",
     )
     subparser.add_argument(
         "--with-mount",
@@ -26,5 +26,5 @@ def restart_args(args):
 
 
 def restart(namespace, charts, with_mount):
-    stop.stop(namespace)
+    stop.stop(namespace, charts)
     start.start(namespace, charts, False, with_mount)
