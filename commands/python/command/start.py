@@ -100,14 +100,14 @@ def start(
         for chart_path in pc.get_helm_chart_paths():
             chart_name = os.path.basename(chart_path)
             if chart_name in charts:
-                hr = HelmRules(cr, chart_name or pc.name)
+                hr = HelmRules(cr, chart_name)
                 if dry_run:
                     helm.dry_run(hr, chart_path, cr.cluster_name, namespace, **values)
                 else:
                     helm.start(hr, chart_path, cr.cluster_name, namespace, force_helm, **values)
                     sync_required = True
     finally:
-        # Sync if any helm.start() call succeeded, even if a subsequent one fails
+        # Sync if any helm.start() call succeeded, even if a subsequent one failed
         if sync_required:
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)

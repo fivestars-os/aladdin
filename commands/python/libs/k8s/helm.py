@@ -22,7 +22,7 @@ class Helm(object):
         # We need to have local helm initialized for it to works
         subprocess.check_call(["helm", "init", "--client-only"])
 
-    def publish(self, project_name, publish_rules, helm_path, hash):
+    def publish(self, project_name, publish_rules, chart_path, hash):
 
         # HelmContext = namedtuple('HelmContext', ['chart_home', 'values_files', 'name'])
 
@@ -31,18 +31,20 @@ class Helm(object):
         logger.info("Building package")
         self.init()
 
-        charts_dir, chart_name = os.path.split(helm_path)
+        charts_dir, chart_name = os.path.split(chart_path)
 
         subprocess.check_call(["helm", "package", "--version", version, chart_name], cwd=charts_dir)
 
-        package_path = join(charts_dir, "{}-{}.tgz".format(chart_name, version))
-        bucket_path = self.PACKAGE_PATH.format(
-            project_name=project_name, chart_name=chart_name, git_ref=hash
-        )
+        try:
+            package_path = join(charts_dir, "{}-{}.tgz".format(chart_name, version))
+            bucket_path = self.PACKAGE_PATH.format(
+                project_name=project_name, chart_name=chart_name, git_ref=hash
+            )
 
-        logger.info("Uploading %s chart to %s", chart_name, bucket_path)
-        publish_rules.s3_bucket.upload_file(package_path, bucket_path)
-        os.remove(package_path)
+            logger.info("Uploading %s chart to %s", chart_name, bucket_path)
+            publish_rules.s3_bucket.upload_file(package_path, bucket_path)
+        finally:
+            os.remove(package_path)
 
     def pull_packages(self, project_name, publish_rules, git_ref, extract_dir):
         """
@@ -73,9 +75,13 @@ class Helm(object):
             except ClientError:
                 logger.error("Error downloading from S3: {}".format(package_key))
                 raise
-
-            subprocess.check_call(["tar", "-xvzf", downloaded_package, "-C", extract_dir])
-            os.remove(downloaded_package)
+            else:
+                subprocess.check_call(["tar", "-xvzf", downloaded_package, "-C", extract_dir])
+            finally:
+                try:
+                    os.remove(downloaded_package)
+                except FileNotFoundError:
+                    pass
 
     def find_values(self, chart_path, cluster_name, namespace):
         values = []

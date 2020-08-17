@@ -40,11 +40,11 @@ def stop(namespace, charts):
         for chart_path in pc.get_helm_chart_paths():
             chart_name = os.path.basename(chart_path)
             if chart_name in charts:
-                hr = HelmRules(cr, chart_name or pc.name)
+                hr = HelmRules(cr, chart_name)
                 helm.stop(hr)
                 sync_required = True
     finally:
-        # Sync if any helm.start() call succeeded, even if a subsequent one fails
+        # Sync if any helm.stop() call succeeded, even if a subsequent one failed
         if sync_required:
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)
