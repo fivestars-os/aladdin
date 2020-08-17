@@ -52,9 +52,17 @@ def start(namespace, dry_run=False, with_mount=False, force_helm=False, set_over
     # Values precedence is command < cluster rules < --set-override-values
     # Start command values
     values = {
-        "deploy.withMount": with_mount,
-        "deploy.mountPath": pc.mount_path,
         "deploy.imageTag": "local",
+        "deploy.mountPath": pc.mount_path,
+        "deploy.namespace": namespace,
+        "deploy.withMount": with_mount,
+        "project.name": pc.name,
+        "service.certificateArn": cr.service_certificate_arn,
+        "service.certificateScope": cr.service_certificate_scope,
+        "service.domainName": cr.service_domain_name_suffix,
+        "service.clusterCertificateArn": cr.cluster_certificate_arn,
+        "service.clusterCertificateScope": cr.cluster_certificate_scope,
+        "service.clusterDomainName": cr.cluster_domain_name_suffix,
     }
     # Update with cluster rule values
     values.update(cr.values)
