@@ -26,7 +26,7 @@ def sync_ingress(namespace):
         ingress_list = k.get_ingresses()
         ingress = build_ingress(
             k.get_services(),
-            cr.service_dns_suffix,
+            cr.service_domain_name_suffix,
             cr.dual_dns_prefix_annotation_name,
             ingress_info,
         )
