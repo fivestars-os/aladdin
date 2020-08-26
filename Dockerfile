@@ -11,9 +11,11 @@ RUN apt-get update \
     groff \
     jq \
     less \
+    openssl \
     python3 \
     python3-pip \
-    python3-dev
+    python3-dev \
+    vim
 
 # Default to python3, update setuptools and install wheel
 RUN ln -fs /usr/bin/python3 /usr/local/bin/python \
@@ -27,19 +29,27 @@ RUN go get -u -v sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator
 
 ARG DOCKER_VERSION=18.09.7
 RUN curl -L -o- https://download.docker.com/linux/static/stable/x86_64/docker-$DOCKER_VERSION.tgz | tar -zxvf - && cp docker/docker \
-    /usr/bin/docker && chmod 755 /usr/bin/docker
+    /usr/local/bin/docker && chmod 755 /usr/local/bin/docker
 
 ARG KUBE_VERSION=1.15.6
-RUN	curl -L -o /bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/amd64/kubectl \
-	&& chmod 755 /bin/kubectl
+RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/amd64/kubectl \
+    && chmod 755 /usr/local/bin/kubectl
 
 ARG HELM_VERSION=2.16.1
-RUN	curl -L -o- https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar -zxvf - && cp linux-amd64/helm \
-	/bin/helm && chmod 755 /bin/helm && helm init --client-only
+RUN curl -L -o- https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar -zxvf - && cp linux-amd64/helm \
+    /usr/local/bin/helm && chmod 755 /usr/local/bin/helm && helm init --client-only
+
+ARG HELM3_VERSION=3.3.0
+RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 \
+    && chmod 700 get_helm.sh && BINARY_NAME=helm3 ./get_helm.sh --version v$HELM3_VERSION
 
 ARG KOPS_VERSION=1.15.0
-RUN	curl -L -o /bin/kops https://github.com/kubernetes/kops/releases/download/$KOPS_VERSION/kops-linux-amd64 \
-	&& chmod 755 /bin/kops
+RUN curl -L -o /usr/local/bin/kops https://github.com/kubernetes/kops/releases/download/$KOPS_VERSION/kops-linux-amd64 \
+    && chmod 755 /usr/local/bin/kops
+
+ARG ISTIO_VERSION=1.6.2
+RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - \
+    && mv /go/istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
 
 # Install edgectl
 RUN curl -fL https://metriton.datawire.io/downloads/linux/edgectl -o /usr/local/bin/edgectl && chmod a+x /usr/local/bin/edgectl
