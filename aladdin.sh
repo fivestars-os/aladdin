@@ -15,6 +15,7 @@ NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
 KUBERNETES_VERSION="1.15.6"
+INSTALL_SOFTWARE=true
 
 # Set key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" ; pwd)"
@@ -74,7 +75,9 @@ function check_and_handle_init() {
     fi
     # Handle initialization logic
     if "$INIT"; then
-        "$SCRIPT_DIR"/infra_k8s_check.sh --force
+        if "$INSTALL_SOFTWARE"; then
+            "$SCRIPT_DIR"/infra_k8s_check.sh --force
+        fi
         enter_minikube_env
         copy_ssh_to_minikube
         minikube addons enable ingress > /dev/null
@@ -86,7 +89,9 @@ function check_and_handle_init() {
         docker pull "$aladdin_image"
         echo "$current_time" > "$last_launched_file"
     else
-        "$SCRIPT_DIR"/infra_k8s_check.sh
+        if "$INSTALL_SOFTWARE"; then
+            "$SCRIPT_DIR"/infra_k8s_check.sh
+        fi
         enter_minikube_env
     fi
 }
@@ -372,6 +377,9 @@ while [[ $# -gt 0 ]]; do
         ;;
         --skip-prompts)
             SKIP_PROMPTS=true
+        ;;
+        --no-install-software)
+            INSTALL_SOFTWARE=false
         ;;
         *)
             command="$1"
