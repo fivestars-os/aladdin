@@ -14,6 +14,7 @@ CLUSTER_CODE=minikube
 NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
+MANAGE_MINIKUBE=true
 KUBERNETES_VERSION="1.15.6"
 
 # Set key directory paths
@@ -30,6 +31,15 @@ DEFAULT_MINIKUBE_MEMORY=4096
 
 source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
 
+# If $MANAGE_MINIKUBE is true, then all commands will be executed
+# using the external 'minikube' command.
+# https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-command
+# Otherwise calls to minikube will be no-op
+function minikube() {
+    if "$MANAGE_MINIKUBE"; then
+      command minikube "$@"
+    fi
+}
 function get_config_path() {
     if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
         echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
@@ -92,6 +102,9 @@ function check_and_handle_init() {
 }
 
 function set_minikube_config(){
+    if [ "$MANAGE_MINIKUBE" = false ] ; then
+        return
+    fi
     minikube config set kubernetes-version v$KUBERNETES_VERSION > /dev/null
 
     for key in vm_driver memory disk_size cpus; do
@@ -107,6 +120,9 @@ function set_minikube_config(){
 }
 
 function _start_minikube() {
+    if [ "$MANAGE_MINIKUBE" = false ] ; then
+        return
+    fi
     local minikube_cmd="minikube start"
 
     if test "$OSTYPE" = "linux-gnu"; then
@@ -132,6 +148,9 @@ function _start_minikube() {
 
 # Start minikube if we need to
 function check_or_start_minikube() {
+    if [ "$MANAGE_MINIKUBE" = false ] ; then
+        return
+    fi
     if ! minikube status | grep Running > /dev/null; then
 
         echo "Starting minikube... (this will take a moment)"
@@ -162,6 +181,9 @@ function check_or_start_minikube() {
 }
 
 function copy_ssh_to_minikube() {
+    if [ "$MANAGE_MINIKUBE" = false ] ; then
+        return
+    fi
     # Some systems fail when we directly mount the host's ~/.ssh directory into the aladdin container.
     # This allows us to move the ~/.ssh directory into minikube and later mount that directory (with
     # the adjusted ownernship and permissions) such that the container can leverage the user's
@@ -181,6 +203,9 @@ function copy_ssh_to_minikube() {
 }
 
 function enter_minikube_env() {
+    if [ "$MANAGE_MINIKUBE" = false ] ; then
+        return
+    fi
     if [[ $OSTYPE = darwin* || $OSTYPE = cygwin* || $OSTYPE = linux* ]]; then
         check_or_start_minikube
         eval "$(minikube docker-env)"
@@ -272,15 +297,20 @@ function prepare_docker_subcommands() {
     # config maps and other settings can be customized by developers
     if "$DEV"; then
         DEV_CMD="-v $(pathnorm "$ALADDIN_DIR"):/root/aladdin"
-        DEV_CMD="$DEV_CMD -v /:/minikube_root" # mount the whole minikube system
-        DEV_CMD="$DEV_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+        if [ "$CLUSTER_CODE" = "minikube" ] ; then
+            DEV_CMD="$DEV_CMD -v /:/minikube_root" # mount the whole minikube system
+            DEV_CMD="$DEV_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+        fi
     fi
 
     # If on minikube mount minikube credentials
     if "$IS_LOCAL"; then
-        MINIKUBE_CMD="-v $(pathnorm ~/.minikube):/root/.minikube"
-        MINIKUBE_CMD="$MINIKUBE_CMD -v /:/minikube_root" # mount the whole minikube system
-        MINIKUBE_CMD="$MINIKUBE_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+        MINIKUBE_CMD=""
+        if [ "$CLUSTER_CODE" = "minikube" ] ; then
+            MINIKUBE_CMD="-v $(pathnorm ~/.minikube):/root/.minikube"
+            MINIKUBE_CMD="$MINIKUBE_CMD -v /:/minikube_root" # mount the whole minikube system
+            MINIKUBE_CMD="$MINIKUBE_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+        fi
     fi
 
     if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
@@ -290,6 +320,9 @@ function prepare_docker_subcommands() {
 
 function synchronize_datetime()
 {
+    if [ "$MANAGE_MINIKUBE" = false ] ; then
+        return
+    fi
   # When minikube wakes up from sleep, date or time could be out of sync.
   # Take date + time from host and set it on minikube.
   if test "$(minikube config get vm-driver)" != "none"; then
@@ -369,6 +402,9 @@ while [[ $# -gt 0 ]]; do
         ;;
         --non-terminal)
             IS_TERMINAL=false
+        ;;
+        --no-manage-minikube)
+            MANAGE_MINIKUBE=false
         ;;
         --skip-prompts)
             SKIP_PROMPTS=true
