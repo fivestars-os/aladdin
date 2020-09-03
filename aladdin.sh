@@ -53,6 +53,14 @@ function get_plugin_dir() {
     fi
 }
 
+function get_install_software() {
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        INSTALL_SOFTWARE=$(jq -r .install_software $HOME/.aladdin/config/config.json)
+        if [[ "$INSTALL_SOFTWARE" == null ]]; then
+            INSTALL_SOFTWARE=true
+        fi
+    fi
+}
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
     cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_FILE")
@@ -378,9 +386,6 @@ while [[ $# -gt 0 ]]; do
         --skip-prompts)
             SKIP_PROMPTS=true
         ;;
-        --no-install-software)
-            INSTALL_SOFTWARE=false
-        ;;
         *)
             command="$1"
             shift
@@ -393,6 +398,7 @@ done
 exec_host_command "$@"
 get_config_path
 get_plugin_dir
+get_install_software
 exec_host_plugin "$@"
 check_cluster_alias
 check_and_handle_init
