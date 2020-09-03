@@ -62,6 +62,15 @@ function get_plugin_dir() {
     fi
 }
 
+function get_manage_minikube() {
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        MANAGE_MINIKUBE=$(jq -r .manage_minikube $HOME/.aladdin/config/config.json)
+        if [[ "$MANAGE_MINIKUBE" == null ]]; then
+            MANAGE_MINIKUBE=true
+        fi
+    fi
+}
+
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
     cluster_alias=$(jq -r ".cluster_aliases.$CLUSTER_CODE" "$ALADDIN_CONFIG_FILE")
@@ -397,9 +406,6 @@ while [[ $# -gt 0 ]]; do
         --non-terminal)
             IS_TERMINAL=false
         ;;
-        --no-manage-minikube)
-            MANAGE_MINIKUBE=false
-        ;;
         --skip-prompts)
             SKIP_PROMPTS=true
         ;;
@@ -416,6 +422,7 @@ exec_host_command "$@"
 get_config_path
 get_plugin_dir
 exec_host_plugin "$@"
+get_manage_minikube
 check_cluster_alias
 check_and_handle_init
 set_cluster_helper_vars
