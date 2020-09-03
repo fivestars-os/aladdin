@@ -73,7 +73,7 @@ function get_manage_minikube() {
 
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
-    cluster_alias=$(jq -r ".cluster_aliases.$CLUSTER_CODE" "$ALADDIN_CONFIG_FILE")
+    cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_FILE")
     if [[ $cluster_alias != null ]]; then
         export CLUSTER_CODE=$cluster_alias
     fi
