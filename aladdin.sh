@@ -64,7 +64,7 @@ function get_plugin_dir() {
 
 function get_manage_minikube() {
     if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        MANAGE_MINIKUBE=$(jq -r .manage_minikube $HOME/.aladdin/config/config.json)
+        MANAGE_MINIKUBE=$(jq -r .manage.minikube $HOME/.aladdin/config/config.json)
         if [[ "$MANAGE_MINIKUBE" == null ]]; then
             MANAGE_MINIKUBE=true
         fi
