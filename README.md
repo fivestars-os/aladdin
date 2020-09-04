@@ -68,6 +68,21 @@ Then run:
 aladdin config set manage.software_dependencies false
 ```
 
+#### minikube
+aladdin uses minikube to get access to docker functionality.
+It also sets up minikube (file sharing etc) so that you can deploy to minikube.
+
+But you may not need that if this applies to your situation:
+1. You already have docker installed (say using docker.app on mac for example) 
+1. You are using an alternative to minikube (like docker-desktop or kind, etc) for local cluster or
+1. You are using aladdin to connect to a remote cluster (like staging, prod etc)
+
+Then run:
+
+```
+aladdin config set manage.minikube false
+```
+
 ### VM Configuration
 Currently, the following parameters are configurable:
  * memory: By default, we create a minikube vm with 4096MB (4GB) of memory.  To change the size of the vm we create to e.g. 8GB, you may run:

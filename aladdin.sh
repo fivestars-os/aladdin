@@ -14,6 +14,7 @@ CLUSTER_CODE=minikube
 NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
+MANAGE_MINIKUBE=true
 KUBERNETES_VERSION="1.15.6"
 MANAGE_SOFTWARE_DEPENDENCIES=true
 
@@ -31,6 +32,15 @@ DEFAULT_MINIKUBE_MEMORY=4096
 
 source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
 
+# If $MANAGE_MINIKUBE is true, then all commands will be executed
+# using the external 'minikube' command.
+# https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-command
+# Otherwise calls to minikube will be no-op
+function minikube() {
+    if "$MANAGE_MINIKUBE"; then
+      command minikube "$@"
+    fi
+}
 function get_config_path() {
     if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
         echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
@@ -49,6 +59,15 @@ function get_plugin_dir() {
         ALADDIN_PLUGIN_DIR=$(jq -r .plugin_dir $HOME/.aladdin/config/config.json)
         if [[ "$ALADDIN_PLUGIN_DIR" == null ]]; then
             ALADDIN_PLUGIN_DIR=
+        fi
+    fi
+}
+
+function get_manage_minikube() {
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        MANAGE_MINIKUBE=$(jq -r .manage.minikube $HOME/.aladdin/config/config.json)
+        if [[ "$MANAGE_MINIKUBE" == null ]]; then
+            MANAGE_MINIKUBE=true
         fi
     fi
 }
@@ -105,98 +124,108 @@ function check_and_handle_init() {
 }
 
 function set_minikube_config(){
-    minikube config set kubernetes-version v$KUBERNETES_VERSION > /dev/null
+    if "$MANAGE_MINIKUBE"; then
+        minikube config set kubernetes-version v$KUBERNETES_VERSION > /dev/null
 
-    for key in vm_driver memory disk_size cpus; do
-        local minikube_key=$(tr _ - <<< "$key")  # e.g., driver
-        local default_var="DEFAULT_MINIKUBE_$(tr a-z A-Z <<< "$key")"  # e.g., DEFAULT_MINIKUBE_VM_DRIVER
+        for key in vm_driver memory disk_size cpus; do
+            local minikube_key=$(tr _ - <<< "$key")  # e.g., driver
+            local default_var="DEFAULT_MINIKUBE_$(tr a-z A-Z <<< "$key")"  # e.g., DEFAULT_MINIKUBE_VM_DRIVER
 
-        local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
+            local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
 
-        if test -n "$value"; then
-            minikube config set "$minikube_key" "$value" > /dev/null
-        fi
-    done
+            if test -n "$value"; then
+                minikube config set "$minikube_key" "$value" > /dev/null
+            fi
+        done
+    fi
 }
 
 function _start_minikube() {
-    local minikube_cmd="minikube start"
+    if "$MANAGE_MINIKUBE"; then
+        local minikube_cmd="minikube start"
 
-    if test "$OSTYPE" = "linux-gnu"; then
-        if test $(minikube config get driver) = "none"; then
-            # If we're running on native docker on a linux host, minikube start must happen as root
-            # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
-            # to switch users to $SUDO_USER (the user that called sudo) before writing out
-            # configuration.
-            minikube_cmd="sudo -E CHANGE_MINIKUBE_NONE_USER=true '$(which minikube)' start"
+        if test "$OSTYPE" = "linux-gnu"; then
+            if test $(minikube config get driver) = "none"; then
+                # If we're running on native docker on a linux host, minikube start must happen as root
+                # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
+                # to switch users to $SUDO_USER (the user that called sudo) before writing out
+                # configuration.
+                minikube_cmd="sudo -E CHANGE_MINIKUBE_NONE_USER=true '$(which minikube)' start"
 
-        else
-            # On linux, /home gets mounted on /hosthome in the minikube vm, so as not to
-            # override /home/docker.  We still want the user's home directory to be in the
-            # same path both in and outside the minikube vm though, so symlink it into place.
-            minikube_cmd="$minikube_cmd &&\
-                          minikube ssh \"sudo mkdir '$HOME' && \
-                                         sudo mount --bind '${HOME/\/home//hosthome}' '$HOME'\""
+            else
+                # On linux, /home gets mounted on /hosthome in the minikube vm, so as not to
+                # override /home/docker.  We still want the user's home directory to be in the
+                # same path both in and outside the minikube vm though, so symlink it into place.
+                minikube_cmd="$minikube_cmd &&\
+                              minikube ssh \"sudo mkdir '$HOME' && \
+                                             sudo mount --bind '${HOME/\/home//hosthome}' '$HOME'\""
+            fi
         fi
-    fi
 
-    bash -c "$minikube_cmd"
+        bash -c "$minikube_cmd"
+    fi
 }
 
 # Start minikube if we need to
 function check_or_start_minikube() {
-    if ! minikube status | grep Running > /dev/null; then
+    if "$MANAGE_MINIKUBE"; then
+        if ! minikube status | grep Running > /dev/null; then
 
-        echo "Starting minikube... (this will take a moment)"
-        set_minikube_config
-        _start_minikube
+            echo "Starting minikube... (this will take a moment)"
+            set_minikube_config
+            _start_minikube
 
-        if test -n "$(aladdin config get nfs)"; then
-            if test "$(minikube config get driver)" != "none"; then
-                # Determine if we've installed our bootlocal.sh script to replace
-                # the default mounts with nfs mounts.
-                if ! minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh"; then
-                    echo "Installing NFS mounts from host..."
-                    "$SCRIPT_DIR"/install_nfs_mounts.sh
-                    echo "NFS mounts installed"
+            if test -n "$(aladdin config get nfs)"; then
+                if test "$(minikube config get driver)" != "none"; then
+                    # Determine if we've installed our bootlocal.sh script to replace
+                    # the default mounts with nfs mounts.
+                    if ! minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh"; then
+                        echo "Installing NFS mounts from host..."
+                        "$SCRIPT_DIR"/install_nfs_mounts.sh
+                        echo "NFS mounts installed"
+                    fi
                 fi
             fi
-        fi
-        echo "Minikube started"
-    else
-        if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" > /dev/null; then
-            echo "Minikube detected on the incorrect version, stopping and restarting"
-            minikube stop > /dev/null
-            minikube delete > /dev/null
-            set_minikube_config
-            check_or_start_minikube
+            echo "Minikube started"
+        else
+            if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" > /dev/null; then
+                echo "Minikube detected on the incorrect version, stopping and restarting"
+                minikube stop > /dev/null
+                minikube delete > /dev/null
+                set_minikube_config
+                check_or_start_minikube
+            fi
         fi
     fi
 }
 
 function copy_ssh_to_minikube() {
-    # Some systems fail when we directly mount the host's ~/.ssh directory into the aladdin container.
-    # This allows us to move the ~/.ssh directory into minikube and later mount that directory (with
-    # the adjusted ownernship and permissions) such that the container can leverage the user's
-    # credentials for ssh operations.
-    case "$OSTYPE" in
-        cygwin*) # Cygwin under windows
-            echo "Copying ~/.ssh into minikube"
-            (
-                tmp_ssh_dir=".ssh.$(tr </dev/urandom -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)" ||:
-                minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/$tmp_ssh_dir" &
-                minikube ssh -- "sudo rm -rf /.ssh && sudo cp -r /tmp/$tmp_ssh_dir /.ssh && sudo chmod -R 600 /.ssh"
-                kill $!
-            ) >/dev/null
-        ;;
-    esac
-    :
+    if "$MANAGE_MINIKUBE"; then
+        # Some systems fail when we directly mount the host's ~/.ssh directory into the aladdin container.
+        # This allows us to move the ~/.ssh directory into minikube and later mount that directory (with
+        # the adjusted ownernship and permissions) such that the container can leverage the user's
+        # credentials for ssh operations.
+        case "$OSTYPE" in
+            cygwin*) # Cygwin under windows
+                echo "Copying ~/.ssh into minikube"
+                (
+                    tmp_ssh_dir=".ssh.$(tr </dev/urandom -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)" ||:
+                    minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/$tmp_ssh_dir" &
+                    minikube ssh -- "sudo rm -rf /.ssh && sudo cp -r /tmp/$tmp_ssh_dir /.ssh && sudo chmod -R 600 /.ssh"
+                    kill $!
+                ) >/dev/null
+            ;;
+        esac
+        :
+    fi
 }
 
 function enter_minikube_env() {
-    if [[ $OSTYPE = darwin* || $OSTYPE = cygwin* || $OSTYPE = linux* ]]; then
-        check_or_start_minikube
-        eval "$(minikube docker-env)"
+    if "$MANAGE_MINIKUBE"; then
+        if [[ $OSTYPE = darwin* || $OSTYPE = cygwin* || $OSTYPE = linux* ]]; then
+            check_or_start_minikube
+            eval "$(minikube docker-env)"
+        fi
     fi
 }
 
@@ -285,15 +314,20 @@ function prepare_docker_subcommands() {
     # config maps and other settings can be customized by developers
     if "$DEV"; then
         DEV_CMD="-v $(pathnorm "$ALADDIN_DIR"):/root/aladdin"
-        DEV_CMD="$DEV_CMD -v /:/minikube_root" # mount the whole minikube system
-        DEV_CMD="$DEV_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+        if [ "$CLUSTER_CODE" = "minikube" ] ; then
+            DEV_CMD="$DEV_CMD -v /:/minikube_root" # mount the whole minikube system
+            DEV_CMD="$DEV_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+        fi
     fi
 
     # If on minikube mount minikube credentials
     if "$IS_LOCAL"; then
-        MINIKUBE_CMD="-v $(pathnorm ~/.minikube):/root/.minikube"
-        MINIKUBE_CMD="$MINIKUBE_CMD -v /:/minikube_root" # mount the whole minikube system
-        MINIKUBE_CMD="$MINIKUBE_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+        MINIKUBE_CMD=""
+        if [ "$CLUSTER_CODE" = "minikube" ] ; then
+            MINIKUBE_CMD="-v $(pathnorm ~/.minikube):/root/.minikube"
+            MINIKUBE_CMD="$MINIKUBE_CMD -v /:/minikube_root" # mount the whole minikube system
+            MINIKUBE_CMD="$MINIKUBE_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+        fi
     fi
 
     if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
@@ -303,12 +337,14 @@ function prepare_docker_subcommands() {
 
 function synchronize_datetime()
 {
-  # When minikube wakes up from sleep, date or time could be out of sync.
-  # Take date + time from host and set it on minikube.
-  if test "$(minikube config get vm-driver)" != "none"; then
-    echo "Synchronizing date and time on minikube with the host"
-    minikube ssh "sudo date -s @$(date +%s)"
-  fi
+    if "$MANAGE_MINIKUBE"; then
+        # When minikube wakes up from sleep, date or time could be out of sync.
+        # Take date + time from host and set it on minikube.
+        if test "$(minikube config get vm-driver)" != "none"; then
+            echo "Synchronizing date and time on minikube with the host"
+            minikube ssh "sudo date -s @$(date +%s)"
+        fi
+    fi
 }
 
 function enter_docker_container() {
@@ -398,6 +434,7 @@ done
 exec_host_command "$@"
 get_config_path
 get_plugin_dir
+get_manage_minikube
 get_manage_software_dependencies
 exec_host_plugin "$@"
 check_cluster_alias
