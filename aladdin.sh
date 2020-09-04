@@ -16,6 +16,7 @@ IS_TERMINAL=true
 SKIP_PROMPTS=false
 MANAGE_MINIKUBE=true
 KUBERNETES_VERSION="1.15.6"
+MANAGE_SOFTWARE_DEPENDENCIES=true
 
 # Set key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" ; pwd)"
@@ -71,6 +72,14 @@ function get_manage_minikube() {
     fi
 }
 
+function get_manage_software_dependencies() {
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        MANAGE_SOFTWARE_DEPENDENCIES=$(jq -r .manage.software_dependencies $HOME/.aladdin/config/config.json)
+        if [[ "$MANAGE_SOFTWARE_DEPENDENCIES" == null ]]; then
+            MANAGE_SOFTWARE_DEPENDENCIES=true
+        fi
+    fi
+}
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
     cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_FILE")
@@ -93,7 +102,9 @@ function check_and_handle_init() {
     fi
     # Handle initialization logic
     if "$INIT"; then
-        "$SCRIPT_DIR"/infra_k8s_check.sh --force
+        if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
+            "$SCRIPT_DIR"/infra_k8s_check.sh --force
+        fi
         enter_minikube_env
         copy_ssh_to_minikube
         minikube addons enable ingress > /dev/null
@@ -105,7 +116,9 @@ function check_and_handle_init() {
         docker pull "$aladdin_image"
         echo "$current_time" > "$last_launched_file"
     else
-        "$SCRIPT_DIR"/infra_k8s_check.sh
+        if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
+            "$SCRIPT_DIR"/infra_k8s_check.sh
+        fi
         enter_minikube_env
     fi
 }
@@ -421,8 +434,9 @@ done
 exec_host_command "$@"
 get_config_path
 get_plugin_dir
-exec_host_plugin "$@"
 get_manage_minikube
+get_manage_software_dependencies
+exec_host_plugin "$@"
 check_cluster_alias
 check_and_handle_init
 set_cluster_helper_vars
