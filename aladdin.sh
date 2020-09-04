@@ -15,7 +15,7 @@ NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
 KUBERNETES_VERSION="1.15.6"
-INSTALL_SOFTWARE=true
+MANAGE_SOFTWARE_DEPENDENCIES=true
 
 # Set key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" ; pwd)"
@@ -53,11 +53,11 @@ function get_plugin_dir() {
     fi
 }
 
-function get_install_software() {
+function get_manage_software_dependencies() {
     if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        INSTALL_SOFTWARE=$(jq -r .install_software $HOME/.aladdin/config/config.json)
-        if [[ "$INSTALL_SOFTWARE" == null ]]; then
-            INSTALL_SOFTWARE=true
+        MANAGE_SOFTWARE_DEPENDENCIES=$(jq -r .manage.software_dependencies $HOME/.aladdin/config/config.json)
+        if [[ "$MANAGE_SOFTWARE_DEPENDENCIES" == null ]]; then
+            MANAGE_SOFTWARE_DEPENDENCIES=true
         fi
     fi
 }
@@ -83,7 +83,7 @@ function check_and_handle_init() {
     fi
     # Handle initialization logic
     if "$INIT"; then
-        if "$INSTALL_SOFTWARE"; then
+        if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
             "$SCRIPT_DIR"/infra_k8s_check.sh --force
         fi
         enter_minikube_env
@@ -97,7 +97,7 @@ function check_and_handle_init() {
         docker pull "$aladdin_image"
         echo "$current_time" > "$last_launched_file"
     else
-        if "$INSTALL_SOFTWARE"; then
+        if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
             "$SCRIPT_DIR"/infra_k8s_check.sh
         fi
         enter_minikube_env
@@ -398,7 +398,7 @@ done
 exec_host_command "$@"
 get_config_path
 get_plugin_dir
-get_install_software
+get_manage_software_dependencies
 exec_host_plugin "$@"
 check_cluster_alias
 check_and_handle_init
