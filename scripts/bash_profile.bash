@@ -25,8 +25,8 @@ function restore_permission() {
 }
 
 function with_aladdin_perms_wrapper() {
-    old_user="$(get_current_user)"
     if "$AUTHENTICATION_ENABLED"; then
+        old_user="$(get_current_user)"
         change_to_aladdin_permission
     fi
     "$@"
