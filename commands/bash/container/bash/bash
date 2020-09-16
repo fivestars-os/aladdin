@@ -8,27 +8,24 @@ function run_bash {
         export PS1="$CLUSTER_CODE:$NAMESPACE> "
     fi
     echo "Launching bash shell. Press CTRL+D to exit."
+
     # If authentication is enabled, switch to the AUTHENTICATION_DEFAULT_ROLE level
     if "$AUTHENTICATION_ENABLED"; then
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
             --namespace="$NAMESPACE" --user "$AUTHENTICATION_DEFAULT_ROLE"
     fi
 
-    if [[ "$#" -eq 0 ]]; then
-        bash --init-file "$SCRIPT_DIR/bash_profile.bash"
-    else
-        # --init-file only works for interactive shells and this invocation is not going to
-        # be interactive. Instead, we use the BASH_ENV env var to run our configuration code
-        # prior to the provided command.
-        # https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html#Invoked-non_002dinteractively
-        BASH_ENV="$SCRIPT_DIR/bash_profile.bash" bash <<<"$@"
-
-        # This an alternative form. Unfortunately, neither of these forms seem to preserve
-        # argument word splitting well. For instance 'echo "hello there"' will be invoked as
-        # 'echo hello there' with two arguments instead of just the intended one.
-        # Suggestions for improvement are welcome.
-        # BASH_ENV="$SCRIPT_DIR/bash_profile.bash" bash -c "$*"
+    # If we received a command, pass it through to the bash invocation with "-c".
+    cmd=( )
+    if [[ "$#" -gt 0 ]]; then
+        cmd=( -c '"$0" "$@"' "$@" )
     fi
+
+    # The BASH_ENV script is only automatically sourced for non-interactive shells, while the --init-file is
+    # only sourced for interactive ones. The "bash_cmd_init.bash" script will source "bash_cmd_includes.bash"
+    # and also perform some extra interactive shell setup.
+    # https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html#Invoked-non_002dinteractively
+    BASH_ENV="${SCRIPT_DIR}/bash_cmd_includes.bash" bash --init-file "${SCRIPT_DIR}/bash_cmd_init.bash" "${cmd[@]}"
 }
 
 function usage {
