@@ -13,12 +13,15 @@ function run_bash {
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
             --namespace="$NAMESPACE" --user "$AUTHENTICATION_DEFAULT_ROLE"
     fi
-    if [[ -n "$*" ]]; then
-        bash --init-file "$SCRIPT_DIR/bash_profile.bash" <<EOF
-$@
-EOF
-    else
+
+    if [[ "$#" -eq 0 ]]; then
         bash --init-file "$SCRIPT_DIR/bash_profile.bash"
+    else
+        # --init-file only works for interactive shells and since we're supplying stdin
+        # it is not going to be interactive. Instead, we use the BASH_ENV env var to run
+        # our configuration code prior to the provided command.
+        # https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html#Invoked-non_002dinteractively
+        BASH_ENV="$SCRIPT_DIR/bash_profile.bash" bash <<<"$@"
     fi
 }
 
