@@ -7,13 +7,20 @@ function run_bash {
     else
         export PS1="$CLUSTER_CODE:$NAMESPACE> "
     fi
-    echo Launching bash shell. Press CTRL+D to exit.
+    echo "Launching bash shell. Press CTRL+D to exit."
     # If authentication is enabled, switch to the AUTHENTICATION_DEFAULT_ROLE level
     if "$AUTHENTICATION_ENABLED"; then
         kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
             --namespace="$NAMESPACE" --user "$AUTHENTICATION_DEFAULT_ROLE"
     fi
-    bash --init-file "$SCRIPT_DIR/bash_profile.bash" "$@"
+    if [[ -n "$*" ]]; then
+        echo "$@"
+        bash --init-file "$SCRIPT_DIR/bash_profile.bash" <<EOF
+$@
+EOF
+    else
+        bash --init-file "$SCRIPT_DIR/bash_profile.bash"
+    fi
 }
 
 function usage {
@@ -25,11 +32,8 @@ function usage {
 	EOF
 }
 
-if [[ $# -eq 0 ]]; then
-    run_bash
-elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     usage
 else
-    echo >&2 "aladdin: error: unrecognized arguments: $1"
-    exit 1
+    run_bash "$@"
 fi
