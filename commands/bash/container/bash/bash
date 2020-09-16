@@ -14,7 +14,6 @@ function run_bash {
             --namespace="$NAMESPACE" --user "$AUTHENTICATION_DEFAULT_ROLE"
     fi
     if [[ -n "$*" ]]; then
-        echo "$@"
         bash --init-file "$SCRIPT_DIR/bash_profile.bash" <<EOF
 $@
 EOF
