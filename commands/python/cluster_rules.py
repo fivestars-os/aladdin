@@ -2,13 +2,6 @@
 import boto3
 
 from libs.aws.certificate import search_certificate_arn, new_certificate_arn
-from libs.aws.dns_mapping import (
-    get_hostedzone,
-    create_hostedzone,
-    get_ns_from_hostedzone,
-    check_ns_values,
-    fill_dns_dict,
-)
 
 from config import *
 
@@ -25,34 +18,69 @@ class ClusterRules(object):
             "'{}' object has no attribute '{}'".format(self.__class__.__name__, attr)
         )
 
-    def get_certificate_arn(self):
+    @property
+    def service_certificate_arn(self):
+        return self._get_certificate_arn(self.service_certificate_scope)
+
+    @property
+    def cluster_certificate_arn(self):
+        return self._get_certificate_arn(self.cluster_certificate_scope)
+
+    def _get_certificate_arn(self, certificate_scope):
         cert = self.values.get("service.certificateArn")
+
         # Check against None to allow empty string
         if cert is None:
-            cert = search_certificate_arn(self._boto, self.certificate_dns)
+            cert = search_certificate_arn(self.boto, certificate_scope)
+
         # Check against None to allow empty string
         if cert is None:
-            cert = new_certificate_arn(self._boto, self.certificate_dns)
+            cert = new_certificate_arn(self.boto, certificate_scope)
+
         return cert
+
+    @property
+    def cluster_certificate_scope(self):
+        return "*.{}".format(self.cluster_domain_name_suffix)
+
+    @property
+    def service_certificate_scope(self):
+        return "*.{}".format(self.service_domain_name_suffix)
+
+    @property
+    def cluster_domain_name_suffix(self):
+        """
+        The "top-level" DNS name for the cluster services.
+
+        Will be "root_dns" from the cluster config unless "service_dns_suffix" is defined,
+        in which case the latter will be used.
+        """
+        return self.rules.get("service_dns_suffix", self.cluster_domain_name)
+
+    @property
+    def service_domain_name_suffix(self):
+        return self.rules.get("service_dns_suffix", self.namespace_domain_name)
+
+    @property
+    def cluster_domain_name(self):
+        """
+        Alias to aladdin "root_dns" config value.
+
+        "root_dns" has other denotations that are not helpful in this context. We can at least use
+        more appropriate terminology here in the code.
+        """
+        return self.root_dns
+
+    @property
+    def namespace_domain_name(self):
+        """
+        The dns we are going to use
+        """
+        return "{}.{}".format(self.namespace, self.cluster_domain_name)
 
     @property
     def namespace(self):
         return self._namespace
-
-    @property
-    def certificate_dns(self):
-        return "*.{}".format(self.service_dns_suffix)
-
-    @property
-    def sub_dns(self):
-        """
-        The dns we are going to use
-        """
-        return "{}.{}".format(self._namespace, self.root_dns)
-
-    @property
-    def service_dns_suffix(self):
-        return self.rules.get("service_dns_suffix", self.sub_dns)
 
     @property
     def check_branch(self):
@@ -83,25 +111,8 @@ class ClusterRules(object):
         return self.rules.get("dual_dns_prefix_annotation_name", None)
 
     @property
-    def _boto(self):
+    def boto(self):
         return boto3.Session(profile_name=self.aws_profile)
-
-    def fill_hostedzone(self, services_by_name):
-        # Apply our dns to the names
-        service_by_name = {"%s.%s" % (k, self.sub_dns): v for k, v in services_by_name.items()}
-
-        # Main DNS is on prod, sub DNS should be on sandbox
-        sub_dns_id = get_hostedzone(self._boto, self.sub_dns) or create_hostedzone(
-            self._boto, self.sub_dns
-        )
-        main_dns_id = get_hostedzone(self._boto, self.root_dns)
-        if main_dns_id is None:
-            raise KeyError("route 53 for [%s] not found" % self.root_dns)
-
-        dns_ns = get_ns_from_hostedzone(self._boto, sub_dns_id)
-        check_ns_values(self._boto, main_dns_id, self.sub_dns, dns_ns)
-
-        return fill_dns_dict(self._boto, sub_dns_id, service_by_name)
 
 
 def cluster_rules(cluster=None, namespace="default"):
@@ -122,6 +133,7 @@ def cluster_rules(cluster=None, namespace="default"):
         cluster_config = load_cluster_config(cluster)
     except FileNotFoundError:
         raise FileNotFoundError(f"Could not find config.json file for cluster {cluster}")
+
     try:
         namespace_override_config = load_namespace_override_config(cluster, namespace)
     except FileNotFoundError:

@@ -3,9 +3,6 @@
 # Bash init script for aladdin.
 # Provide shortcuts functions for a lot of features
 
-echo "This bash contain a lot helpful function aliases to aladdin commands"
-echo "Don't forget to checkout scripts/bash_profile.bash in aladdin"
-
 function change_to_aladdin_permission() {
     echo "Temporarily changing your permissions to run aladdin command..."
     kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
@@ -25,8 +22,8 @@ function restore_permission() {
 }
 
 function with_aladdin_perms_wrapper() {
-    old_user="$(get_current_user)"
     if "$AUTHENTICATION_ENABLED"; then
+        old_user="$(get_current_user)"
         change_to_aladdin_permission
     fi
     "$@"
@@ -51,8 +48,3 @@ for cmd in `ls $ALADDIN_DIR/commands/bash/container/`; do
 done
 
 alias help="$PY_MAIN -h"
-
-source /etc/profile.d/bash_completion.sh
-source <(kubectl completion bash)
-source <(helm completion bash)
-complete -C "$(which aws_completer)" aws

@@ -27,7 +27,9 @@ class ProjectConf(object):
 
     CONTENT_EXAMPLE = {
         "name": "<project_name>",
-        "build_docker": ["./commands/build.bash"],
+        # Commenting this out so that we get the build-components behavior by default,
+        # but leaving it here for structural documentation purposes.
+        # "build_docker": ["./commands/build.bash"],
         "helm_chart": ["./builds/<project_name>"],
         "docker_images": ["img1", "img2", "img3"],
     }
@@ -64,7 +66,7 @@ class ProjectConf(object):
 
     @property
     def build_command(self):
-        cmd = search("build_docker", self.lamp_content)
+        cmd = search("build_docker", self.lamp_content) or "build-components"
         return [cmd] if isinstance(cmd, str) else cmd
 
     def build_docker(self, env=None, build_args=None):
@@ -78,10 +80,6 @@ class ProjectConf(object):
         run_env.update(env)
 
         subprocess.run(command, check=True, cwd=self.path, env=run_env)
-
-    @property
-    def helm_path(self):
-        return abspath(os.path.join(self.path, self.lamp_content["helm_chart"]))
 
     def get_docker_images(self):
         images = search("docker_images", self.lamp_content)
@@ -97,7 +95,7 @@ class ProjectConf(object):
 
     def lamp_checker(self):
         try:
-            for key in self.CONTENT_EXAMPLE.keys():
+            for key in self.CONTENT_EXAMPLE:
                 self.lamp_content[key]
         except KeyError as e:
             logger.error(

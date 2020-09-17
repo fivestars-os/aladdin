@@ -1,0 +1,7 @@
+# This file is copied into our docker images to globally configure the poetry tool
+
+[virtualenvs]
+# We're in a docker container, there's no need for virtualenvs
+# One should still specify "ENV PIP_USER yes" to let poetry know
+# install packages as --user so they show up in ~/.local
+create = false

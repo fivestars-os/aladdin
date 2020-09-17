@@ -3,15 +3,16 @@ import os
 import subprocess
 import logging
 
+import yaml
 from botocore.exceptions import ClientError
-from os.path import join, dirname, expanduser
+from os.path import join, expanduser
 
 logger = logging.getLogger(__name__)
 
 
 class Helm(object):
-    PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{project_name}.{git_ref}.tgz"
-    VALUE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/values.{values_name}.yaml"
+    PACKAGE_DIR_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/"
+    PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{chart_name}.{git_ref}.tgz"
 
     @property
     def helm_home(self):
@@ -21,7 +22,7 @@ class Helm(object):
         # We need to have local helm initialized for it to works
         subprocess.check_call(["helm", "init", "--client-only"])
 
-    def publish(self, name, publish_rules, helm_path, hash):
+    def publish(self, project_name, publish_rules, chart_path, hash):
 
         # HelmContext = namedtuple('HelmContext', ['chart_home', 'values_files', 'name'])
 
@@ -30,33 +31,59 @@ class Helm(object):
         logger.info("Building package")
         self.init()
 
-        subprocess.check_call(
-            ["helm", "package", "--version", version, name], cwd=dirname(helm_path)
-        )
-        package_path = join(dirname(helm_path), "{}-{}.tgz".format(name, version))
-        bucket_path = self.PACKAGE_PATH.format(project_name=name, git_ref=hash)
+        charts_dir, chart_name = os.path.split(chart_path)
 
-        logger.info("Uploading chart")
-        publish_rules.s3_bucket.upload_file(package_path, bucket_path)
-        os.remove(package_path)
+        subprocess.check_call(["helm", "package", "--version", version, chart_name], cwd=charts_dir)
 
-    def pull_package(self, project_name, publish_rules, git_ref, extract_dir):
-        extract_loc = "{}/{}.tgz".format(extract_dir, project_name)
         try:
-            publish_rules.s3_bucket.download_file(
-                self.PACKAGE_PATH.format(project_name=project_name, git_ref=git_ref), extract_loc
+            package_path = join(charts_dir, "{}-{}.tgz".format(chart_name, version))
+            bucket_path = self.PACKAGE_PATH.format(
+                project_name=project_name, chart_name=chart_name, git_ref=hash
             )
-        except ClientError:
-            logger.error(
-                "Error downloading from S3: {}".format(
-                    self.PACKAGE_PATH.format(project_name=project_name, git_ref=git_ref)
-                )
+
+            logger.info("Uploading %s chart to %s", chart_name, bucket_path)
+            publish_rules.s3_bucket.upload_file(package_path, bucket_path)
+        finally:
+            os.remove(package_path)
+
+    def pull_packages(self, project_name, publish_rules, git_ref, extract_dir):
+        """
+        Retrieve all charts published for this project at this git_ref.
+
+        This will download all the published charts and extract them to extract_dir.
+
+        :param project_name: The name of the aladdin project being retrieved.
+        :param publish_rules: Details for accessing the S3 bucket.
+        :param git_ref: The version of the chart(s) to retrieve.
+        :param extract_dir: Where to place the downloaded charts.
+        """
+        # List the contents of the publish "directory" and find
+        # everything that looks like a chart.
+        package_keys = [
+            obj.key
+            for obj in publish_rules.s3_bucket.objects.filter(
+                Prefix=self.PACKAGE_DIR_PATH.format(project_name=project_name, git_ref=git_ref)
             )
-            raise
-        subprocess.check_call(["tar", "-xvzf", extract_loc, "-C", extract_dir])
+            if obj.key.endswith(f".{git_ref}.tgz")
+        ]
+
+        # Download the chart archives and extract the contents into their own chart sub-directories
+        for package_key in package_keys:
+            downloaded_package = join(extract_dir, os.path.basename(package_key))
+            try:
+                publish_rules.s3_bucket.download_file(package_key, downloaded_package)
+            except ClientError:
+                logger.error("Error downloading from S3: {}".format(package_key))
+                raise
+            else:
+                subprocess.check_call(["tar", "-xvzf", downloaded_package, "-C", extract_dir])
+            finally:
+                try:
+                    os.remove(downloaded_package)
+                except FileNotFoundError:
+                    pass
 
     def find_values(self, chart_path, cluster_name, namespace):
-
         values = []
 
         # Find all possible values yaml files for override in increasing priority
@@ -83,12 +110,7 @@ class Helm(object):
     def stop(self, helm_rules):
         release_name = helm_rules.release_name
 
-        command = [
-            "helm",
-            "delete",
-            "--purge",
-            release_name,
-        ]
+        command = ["helm", "delete", "--purge", release_name]
 
         if self.release_exists(release_name):
             subprocess.run(command, check=True)
@@ -135,12 +157,16 @@ class Helm(object):
             helm_args = []
         if force:
             helm_args.append("--force")
+        logger.info("Installing release %s in namespace %s", helm_rules.release_name, namespace)
         return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
 
     def dry_run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
         if helm_args is None:
             helm_args = []
         helm_args += ["--dry-run", "--debug"]
+        logger.info(
+            "Dry run installing release %s in namespace %s", helm_rules.release_name, namespace
+        )
         return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
 
     def _run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
@@ -164,5 +190,5 @@ class Helm(object):
         if helm_args:
             command.extend(helm_args)
 
-        logger.info("Executing: " + " ".join(command))
+        logger.info("Executing: %s", " ".join(command))
         subprocess.run(command, check=True)

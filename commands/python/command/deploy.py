@@ -21,6 +21,9 @@ def parse_args(sub_parser):
     subparser.add_argument("project", help="which project to deploy")
     subparser.add_argument("git_ref", help="which git hash or tag or branch to deploy")
     subparser.add_argument(
+        "--chart", help="which chart in the project to deploy, defaults to the project name"
+    )
+    subparser.add_argument(
         "--dry-run",
         "-d",
         action="store_true",
@@ -54,6 +57,7 @@ def deploy_args(args):
         args.project,
         args.git_ref,
         args.namespace,
+        args.chart,
         args.dry_run,
         args.force,
         args.force_helm,
@@ -66,6 +70,7 @@ def deploy(
     project,
     git_ref,
     namespace,
+    chart=None,
     dry_run=False,
     force=False,
     force_helm=False,
@@ -78,8 +83,8 @@ def deploy(
         pr = PublishRules()
         helm = Helm()
         cr = cluster_rules(namespace=namespace)
-        helm_path = "{}/{}".format(tmpdirname, project)
-        hr = HelmRules(cr, project)
+        helm_chart_path = "{}/{}".format(tmpdirname, chart or project)
+        hr = HelmRules(cr, chart or project)
         git_account = load_git_configs()["account"]
         repo = repo or project
         git_url = f"git@github.com:{git_account}/{repo}.git"
@@ -93,7 +98,7 @@ def deploy(
             )
             sys.exit(1)
 
-        helm.pull_package(project, pr, git_ref, tmpdirname)
+        helm.pull_packages(project, pr, git_ref, tmpdirname)
 
         # We need to use --set-string in case the git ref is all digits
         helm_args = ["--set-string", f"deploy.imageTag={git_ref}"]
@@ -101,8 +106,15 @@ def deploy(
         # Values precedence is command < cluster rules < --set-override-values
         # Deploy command values
         values = {
-            "service.certificateArn": cr.get_certificate_arn(),
             "deploy.ecr": pr.docker_registry,
+            "deploy.namespace": namespace,
+            "project.name": project,
+            "service.certificateArn": cr.service_certificate_arn,
+            "service.certificateScope": cr.service_certificate_scope,
+            "service.domainName": cr.service_domain_name_suffix,
+            "service.clusterCertificateArn": cr.cluster_certificate_arn,
+            "service.clusterCertificateScope": cr.cluster_certificate_scope,
+            "service.clusterDomainName": cr.cluster_domain_name_suffix,
         }
         # Update with cluster rule values
         values.update(cr.values)
@@ -111,10 +123,18 @@ def deploy(
         values.update(value_overrides)
 
         if dry_run:
-            helm.dry_run(hr, helm_path, cr.cluster_name, namespace, helm_args=helm_args, **values)
+            helm.dry_run(
+                hr, helm_chart_path, cr.cluster_name, namespace, helm_args=helm_args, **values
+            )
         else:
             helm.start(
-                hr, helm_path, cr.cluster_name, namespace, force_helm, helm_args=helm_args, **values
+                hr,
+                helm_chart_path,
+                cr.cluster_name,
+                namespace,
+                force_helm,
+                helm_args=helm_args,
+                **values,
             )
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)

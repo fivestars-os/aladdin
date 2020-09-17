@@ -104,6 +104,9 @@ function environment_init() {
     echo "NAMESPACE = $NAMESPACE"
 
     _handle_aws_config
+    # export AUTHENTICATION_ENABLED for change-permissions and bash command. By default it is false.
+    # It will only get set to true if the cluster is ready and it is enabled in aladdin-config
+    export AUTHENTICATION_ENABLED=false
 
     if "$IS_LOCAL"; then
         mkdir -p $HOME/.kube/
@@ -127,9 +130,13 @@ function environment_init() {
         "$INIT" && _initialize_helm
         _replace_aws_secret || true
         _namespace_init
-    fi
     echo "END ENVIRONMENT CONFIGURATION==============================================="
 
+}
+
+function _is_cluster_ready() {
+    # Cluster is ready if we are on LOCAL or if we can pull kube config via kops
+    "$IS_LOCAL" || kops export kubecfg --name $CLUSTER_NAME
 }
 
 function _initialize_helm() {
