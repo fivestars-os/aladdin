@@ -113,7 +113,7 @@ function check_and_handle_init() {
             eval "$repo_login_command"
         fi
         local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"
-        docker pull "$aladdin_image" ||:
+        docker pull "$aladdin_image"
         echo "$current_time" > "$last_launched_file"
     else
         if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
