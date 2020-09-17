@@ -3,7 +3,7 @@
 # Bash init script for aladdin.
 # Provide shortcuts functions for a lot of features
 
-echo "This bash contain a lot helpful function aliases to aladdin commands."
+echo "This bash shell contain a lot helpful function aliases to aladdin commands."
 echo "See scripts/bash_cmd_includes.bash in aladdin for details."
 
 source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/bash_cmd_includes.bash"
