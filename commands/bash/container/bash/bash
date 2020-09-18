@@ -18,10 +18,11 @@ function run_bash {
     # If we received a command, pass it through to the bash invocation with "-c".
     cmd=( )
     if [[ "$#" -gt 0 ]]; then
-        # We are passing the literal string '"$0" "$@"'' to bash as the script to run.
-        # The "$0" is necessary for argv alignment, as otherwise it will erroneously
-        # discard the first item in "$@", which is the actual command we wish to run.
-        cmd=( -c '"$0" "$@"' "$@" )
+        # We are passing the literal string 'with_aladdin_perms_wrapper "$0" "$@"''
+        # to bash as the script to run. The "$0" is necessary for argv alignment, as
+        # otherwise it will erroneously discard the first item in "$@", which is the
+        # actual command we wish to run.
+        cmd=( -c 'with_aladdin_perms_wrapper "$0" "$@"' "$@" )
     fi
 
     # The BASH_ENV script is only automatically sourced for non-interactive shells, while the --init-file is
