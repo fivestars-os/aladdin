@@ -7,7 +7,7 @@ set -eu -o pipefail
 # Export key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" || exit 1; pwd)"
 SCRIPT_DIR="$ALADDIN_DIR/scripts"
-PY_MAIN="$ALADDIN_DIR/aladdin/python/main.py"
+PY_MAIN="_aladdin"
 ALADDIN_PLUGIN_DIR="/root/aladdin-plugins"
 ALADDIN_CONFIG_DIR="/root/aladdin-config"
 
@@ -55,7 +55,7 @@ function exec_command_or_plugin() {
     # Execute a container command in order python command > bash command > container plugin
     local plugin_path command_path
 
-    python_command_path="$ALADDIN_DIR/aladdin/python/command/${command//-/_}.py"
+    python_command_path="$ALADDIN_DIR/aladdin/commands/${command//-/_}.py"
     bash_command_path="$ALADDIN_DIR/aladdin/bash/container/$command/$command"
     plugin_path="$ALADDIN_PLUGIN_DIR/container/$command/$command"
 

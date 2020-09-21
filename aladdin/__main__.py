@@ -20,8 +20,17 @@ def version(parser: argparse.ArgumentParser):
     )
 
 
-def main():
-    parser = argparse.ArgumentParser(prog="aladdin", add_help=False)
+def cli():
+    """
+    Entrypoint for aladdin outside the aladdin container
+    """
+
+    parser = argparse.ArgumentParser(
+        prog="aladdin",
+        description="Managing kubernetes projects",
+        epilog="If no arguments are specified, the help text is displayed",
+        add_help=False
+    )
     parser.set_defaults(handler=_aladdin_bash)
 
     subparsers = parser.add_subparsers()
