@@ -1,4 +1,4 @@
-FROM golang:1.14-buster
+FROM python:3.8.5-slim-buster
 
 # Remove the default $PS1 manipulation
 RUN rm /etc/bash.bashrc
@@ -7,23 +7,19 @@ RUN apt-get update && \
     apt-get -y --no-install-recommends install \
     bash-completion \
     bats \
-    gettext \
     groff \
     jq \
     less \
     openssl \
-    python3 \
-    python3-pip \
-    python3-dev \
-    vim-nox
+    vim-nox \
+    curl
 
 # Default to python3, update setuptools and install wheel
-RUN ln -fs /usr/bin/python3 /usr/local/bin/python && \
-    ln -fs /usr/bin/pip3 /usr/local/bin/pip && \
-    pip install --no-cache-dir setuptools==46.4.0 wheel==0.34.2
+RUN pip install --no-cache-dir setuptools==46.4.0 wheel==0.34.2
 
-# This can take a bit of time, so we do it earlier in the build process
-RUN go get -u -v sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator
+ARG AWS_IAM_AUTHENTICATOR_VERSION=1.17.9
+RUN curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/$AWS_IAM_AUTHENTICATOR_VERSION/2020-08-04/bin/linux/amd64/aws-iam-authenticator && \
+    chmod 755 /usr/local/bin/aws-iam-authenticator
 
 # Update all needed tool versions here
 
@@ -53,7 +49,7 @@ RUN curl -L -o /usr/local/bin/kops https://github.com/kubernetes/kops/releases/d
 
 ARG ISTIO_VERSION=1.6.2
 RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
-    mv /go/istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
+    mv /istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
 
 # Install edgectl
 RUN curl -fL https://metriton.datawire.io/downloads/linux/edgectl -o /usr/local/bin/edgectl && \
@@ -66,13 +62,13 @@ RUN curl -fL https://metriton.datawire.io/downloads/linux/edgectl -o /usr/local/
 ARG POETRY_VERSION=1.0.10
 RUN ["/bin/bash", "-c", "set -o pipefail && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python"]
 ENV PATH="/root/.poetry/bin:${PATH}"
-COPY poetry.toml /root/.config/pypoetry/config.toml
 
 # Add datawire helm repo
 RUN helm repo add datawire https://www.getambassador.io
 
 WORKDIR /root/aladdin
 
+ARG POETRY_VIRTUALENVS_CREATE="false"
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
 COPY lib/build-components /root/aladdin/lib/build-components
@@ -80,4 +76,3 @@ RUN poetry install --no-root
 
 # Install aladdin
 COPY . /root/aladdin
-ENV PATH="/root/.local/bin:/root:${PATH}"

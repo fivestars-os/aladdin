@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
 
-export CLUSTER_COMMAND_PATH="$ALADDIN_DIR/commands/bash/container/cluster/cluster"
+export CLUSTER_COMMAND_PATH="$ALADDIN_DIR/aladdin/bash/container/cluster/cluster"
 export S3_HELM_CHART_BUCKET=$(jq -r .publish.s3_helm_chart_bucket "$ALADDIN_CONFIG_DIR/config.json")
 TEST_REMOTE_DIR=$(dirname $0)
 
@@ -20,7 +20,7 @@ function test_remote {
 function usage {
     cat <<-EOF
 		usage: aladdin test-remote [-h]
-          
+
 		optional arguments:
 		  -h, --help            show this help message and exit
 	EOF

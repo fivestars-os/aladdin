@@ -7,7 +7,7 @@ set -eu -o pipefail
 # Export key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" || exit 1; pwd)"
 SCRIPT_DIR="$ALADDIN_DIR/scripts"
-PY_MAIN="$ALADDIN_DIR/commands/python/main.py"
+PY_MAIN="$ALADDIN_DIR/aladdin/python/main.py"
 ALADDIN_PLUGIN_DIR="/root/aladdin-plugins"
 ALADDIN_CONFIG_DIR="/root/aladdin-config"
 
@@ -55,8 +55,8 @@ function exec_command_or_plugin() {
     # Execute a container command in order python command > bash command > container plugin
     local plugin_path command_path
 
-    python_command_path="$ALADDIN_DIR/commands/python/command/${command//-/_}.py"
-    bash_command_path="$ALADDIN_DIR/commands/bash/container/$command/$command"
+    python_command_path="$ALADDIN_DIR/aladdin/python/command/${command//-/_}.py"
+    bash_command_path="$ALADDIN_DIR/aladdin/bash/container/$command/$command"
     plugin_path="$ALADDIN_PLUGIN_DIR/container/$command/$command"
 
     if [[ -f "$python_command_path" || $command == "--help" || $command == "-h" ]]; then
@@ -204,7 +204,7 @@ function _handle_aws_config() {
         # Test aws config for bastion account
         "$INIT" && _test_aws_config "$BASTION_ACCOUNT_PROFILE"
         # Alias the add assume role config command
-        add_assume_role_config="$ALADDIN_DIR/commands/bash/container/add-aws-assume-role-config/add-aws-assume-role-config"
+        add_assume_role_config="$ALADDIN_DIR/aladdin/bash/container/add-aws-assume-role-config/add-aws-assume-role-config"
         # Need to add aws configuration based on publish configuration.
         # We need to do this because the publish ECR may be a different aws account than the one
         # your cluster is provisioned in

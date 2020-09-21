@@ -249,7 +249,7 @@ function set_cluster_helper_vars() {
 function exec_host_command() {
     local command_path
 
-    command_path="$ALADDIN_DIR/commands/bash/host/$command/$command"
+    command_path="$ALADDIN_DIR/aladdin/bash/host/$command/$command"
     if [[ -x "$command_path" ]]; then
         exec "$command_path" "$@"
     fi

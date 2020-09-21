@@ -4,12 +4,11 @@ description = "Universal Command Line Environment for AWS."
 name = "awscli"
 optional = false
 python-versions = "*"
-version = "1.18.62"
+version = "1.18.142"
 
 [package.dependencies]
-botocore = "1.16.12"
+botocore = "1.18.1"
 docutils = ">=0.10,<0.16"
-rsa = ">=3.1.2,<=3.5.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
 [package.dependencies.PyYAML]
@@ -20,16 +19,20 @@ version = ">=3.10,<5.4"
 python = "<3.4.0 || >=3.5.0"
 version = ">=0.2.5,<0.4.4"
 
+[package.dependencies.rsa]
+python = "<3.4.0 || >=3.5.0"
+version = ">=3.1.2,<=4.5.0"
+
 [[package]]
 category = "main"
 description = "The AWS SDK for Python"
 name = "boto3"
 optional = false
 python-versions = "*"
-version = "1.13.12"
+version = "1.15.1"
 
 [package.dependencies]
-botocore = ">=1.16.12,<1.17.0"
+botocore = ">=1.18.1,<1.19.0"
 jmespath = ">=0.7.1,<1.0.0"
 s3transfer = ">=0.3.0,<0.4.0"
 
@@ -39,37 +42,15 @@ description = "Low-level, data-driven core of boto 3."
 name = "botocore"
 optional = false
 python-versions = "*"
-version = "1.16.12"
+version = "1.18.1"
 
 [package.dependencies]
-docutils = ">=0.10,<0.16"
 jmespath = ">=0.7.1,<1.0.0"
 python-dateutil = ">=2.1,<3.0.0"
 
 [package.dependencies.urllib3]
 python = "<3.4.0 || >=3.5.0"
 version = ">=1.20,<1.26"
-
-[[package]]
-category = "main"
-description = ""
-develop = true
-name = "build-components"
-optional = false
-python-versions = "^3.7"
-version = "0.1.0"
-
-[package.dependencies]
-PyYAML = "^5.3.1"
-coloredlogs = "^14.0"
-jinja2 = "^2.11.2"
-networkx = "^2.4"
-verboselogs = "^1.7"
-
-[package.source]
-reference = ""
-type = "directory"
-url = "lib/build-components"
 
 [[package]]
 category = "main"
@@ -159,7 +140,7 @@ description = "Google Authentication Library"
 name = "google-auth"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
-version = "1.20.0"
+version = "1.21.2"
 
 [package.dependencies]
 cachetools = ">=2.0.0,<5.0"
@@ -218,7 +199,7 @@ description = "Kubernetes python client"
 name = "kubernetes"
 optional = false
 python-versions = "*"
-version = "11.0.0b2"
+version = "11.0.0"
 
 [package.dependencies]
 certifi = ">=14.05.14"
@@ -248,14 +229,14 @@ category = "main"
 description = "Python package for creating and manipulating graphs and networks"
 name = "networkx"
 optional = false
-python-versions = ">=3.5"
-version = "2.4"
+python-versions = ">=3.6"
+version = "2.5"
 
 [package.dependencies]
 decorator = ">=4.3.0"
 
 [package.extras]
-all = ["numpy", "scipy", "pandas", "matplotlib", "pygraphviz", "pydot", "pyyaml", "gdal", "lxml", "pytest"]
+all = ["numpy", "scipy", "pandas", "matplotlib", "pygraphviz", "pydot", "pyyaml", "lxml", "pytest"]
 gdal = ["gdal"]
 lxml = ["lxml"]
 matplotlib = ["matplotlib"]
@@ -332,7 +313,7 @@ category = "main"
 description = "YAML parser and emitter for Python"
 name = "pyyaml"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+python-versions = "*"
 version = "5.3.1"
 
 [[package]]
@@ -371,10 +352,11 @@ rsa = ["oauthlib (>=3.0.0)"]
 [[package]]
 category = "main"
 description = "Pure-Python RSA implementation"
+marker = "python_version != \"3.4\""
 name = "rsa"
 optional = false
-python-versions = "*"
-version = "3.4.2"
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
+version = "4.5"
 
 [package.dependencies]
 pyasn1 = ">=0.1.3"
@@ -431,23 +413,23 @@ version = "0.57.0"
 six = "*"
 
 [metadata]
-content-hash = "9757793d81fca1b5db35f2c994f5eeb6c7fee51b697bad1aa865d4934d5933dc"
+content-hash = "97bd05e718b0611c1177929216b86f57eff71f8a17156d577dbbb6f6a00c4a93"
+lock-version = "1.0"
 python-versions = "^3.7"
 
 [metadata.files]
 awscli = [
-    {file = "awscli-1.18.62-py2.py3-none-any.whl", hash = "sha256:d1a8207bcb4d655df897639c00fa38e8a824653384e5aa6f0e388e683967fa03"},
-    {file = "awscli-1.18.62.tar.gz", hash = "sha256:e910ed1ed28bcb93e248f0d892bbd5000f313ee230658646711f7a94e538f5cd"},
+    {file = "awscli-1.18.142-py2.py3-none-any.whl", hash = "sha256:4044cb814442b9f275fd9d12400c49341acb7f055d18525b9478e0b25d73481b"},
+    {file = "awscli-1.18.142.tar.gz", hash = "sha256:0e88a97d493cfc4a4a3a621a0f63f3e292ac3f8e5d43833665cf3634f37e53c3"},
 ]
 boto3 = [
-    {file = "boto3-1.13.12-py2.py3-none-any.whl", hash = "sha256:bf1346365829525dfd8dbbafb5dbfd7383ad0872370301643d65c6190f7f5813"},
-    {file = "boto3-1.13.12.tar.gz", hash = "sha256:c46f31f085de660b95162c66057bae9ebb1658a245c9210162cee9671b0ff678"},
+    {file = "boto3-1.15.1-py2.py3-none-any.whl", hash = "sha256:888be45e289ba56c4e47cfae5d6b08f097bc981d077fbe6521a6d3dc7a4d757e"},
+    {file = "boto3-1.15.1.tar.gz", hash = "sha256:44073b1b1823ffc9edcf9027afbca908dad6bd5000f512ca73f929f6a604ae24"},
 ]
 botocore = [
-    {file = "botocore-1.16.12-py2.py3-none-any.whl", hash = "sha256:446c9279105f596765ece99b61656f76c5d5003556cd8301dd506d4f70e18940"},
-    {file = "botocore-1.16.12.tar.gz", hash = "sha256:b75a5dc97f9ac795139ea2c651c07a8522e31dc280db17243e2b20e5c210547b"},
+    {file = "botocore-1.18.1-py2.py3-none-any.whl", hash = "sha256:d6bdf51c8880aa9974e6b61d2f7d9d1debe407287e2e9e60f36c789fe8ba6790"},
+    {file = "botocore-1.18.1.tar.gz", hash = "sha256:6bdf60281c2e80360fe904851a1a07df3dcfe066fe88dc7fba2b5e626ac05c8c"},
 ]
-build-components = []
 cached-property = [
     {file = "cached-property-1.5.1.tar.gz", hash = "sha256:9217a59f14a5682da7c4b8829deadbfc194ac22e9908ccf7c8820234e80a1504"},
     {file = "cached_property-1.5.1-py2.py3-none-any.whl", hash = "sha256:3a026f1a54135677e7da5ce819b0c690f156f37976f3e30c5430740725203d7f"},
@@ -486,8 +468,8 @@ docutils = [
     {file = "docutils-0.15.2.tar.gz", hash = "sha256:a2aeea129088da402665e92e0b25b04b073c04b2dce4ab65caaa38b7ce2e1a99"},
 ]
 google-auth = [
-    {file = "google-auth-1.20.0.tar.gz", hash = "sha256:c6e9735a2ee829a75b546702e460489db5cc35567a27fabd70b7c459f11efd58"},
-    {file = "google_auth-1.20.0-py2.py3-none-any.whl", hash = "sha256:25c97cec5d4f6821f3ab67eb25b264fb00fda8fb9e2f05869bfa93dfcb8b50ee"},
+    {file = "google-auth-1.21.2.tar.gz", hash = "sha256:7084c50c03f7a8a5696ef4500e65df0c525a0f6909f3c70b9ee65900a230c755"},
+    {file = "google_auth-1.21.2-py2.py3-none-any.whl", hash = "sha256:dcf86c5adc3a8a7659be190b12bb8912ae019cfd9ee2a571ea881e289fafbe39"},
 ]
 humanfriendly = [
     {file = "humanfriendly-8.2-py2.py3-none-any.whl", hash = "sha256:e78960b31198511f45fd455534ae7645a6207d33e512d2e842c766d15d9c8080"},
@@ -506,8 +488,8 @@ jmespath = [
     {file = "jmespath-0.10.0.tar.gz", hash = "sha256:b85d0567b8666149a93172712e68920734333c0ce7e89b78b3e987f71e5ed4f9"},
 ]
 kubernetes = [
-    {file = "kubernetes-11.0.0b2-py2.py3-none-any.whl", hash = "sha256:a5e8a84a6e795aee43a0f9a70fd44361f4dd6b359cf4feb12158895bee276633"},
-    {file = "kubernetes-11.0.0b2.tar.gz", hash = "sha256:940851c9e181fba9fa6ec81db1a8359faccd7cf99e7bd28ec65fb5b12199a43b"},
+    {file = "kubernetes-11.0.0-py3-none-any.whl", hash = "sha256:4af81201520977139a143f96123fb789fa351879df37f122916b9b6ed050bbaf"},
+    {file = "kubernetes-11.0.0.tar.gz", hash = "sha256:1a2472f8b01bc6aa87e3a34781f859bded5a5c8ff791a53d889a8bd6cc550430"},
 ]
 markupsafe = [
     {file = "MarkupSafe-1.1.1-cp27-cp27m-macosx_10_6_intel.whl", hash = "sha256:09027a7803a62ca78792ad89403b1b7a73a01c8cb65909cd876f7fcebd79b161"},
@@ -545,8 +527,8 @@ markupsafe = [
     {file = "MarkupSafe-1.1.1.tar.gz", hash = "sha256:29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b"},
 ]
 networkx = [
-    {file = "networkx-2.4-py3-none-any.whl", hash = "sha256:cdfbf698749a5014bf2ed9db4a07a5295df1d3a53bf80bf3cbd61edf9df05fa1"},
-    {file = "networkx-2.4.tar.gz", hash = "sha256:f8f4ff0b6f96e4f9b16af6b84622597b5334bf9cae8cf9b2e42e7985d5c95c64"},
+    {file = "networkx-2.5-py3-none-any.whl", hash = "sha256:8c5812e9f798d37c50570d15c4a69d5710a18d77bafc903ee9c5fba7454c616c"},
+    {file = "networkx-2.5.tar.gz", hash = "sha256:7978955423fbc9639c10498878be59caf99b44dc304c2286162fd24b458c1602"},
 ]
 oauthlib = [
     {file = "oauthlib-3.1.0-py2.py3-none-any.whl", hash = "sha256:df884cd6cbe20e32633f1db1072e9356f53638e4361bef4e8b03c9127c9328ea"},
@@ -617,8 +599,8 @@ requests-oauthlib = [
     {file = "requests_oauthlib-1.3.0-py3.7.egg", hash = "sha256:fa6c47b933f01060936d87ae9327fead68768b69c6c9ea2109c48be30f2d4dbc"},
 ]
 rsa = [
-    {file = "rsa-3.4.2-py2.py3-none-any.whl", hash = "sha256:43f682fea81c452c98d09fc316aae12de6d30c4b5c84226642cf8f8fd1c93abd"},
-    {file = "rsa-3.4.2.tar.gz", hash = "sha256:25df4e10c263fb88b5ace923dd84bf9aa7f5019687b5e55382ffcdb8bede9db5"},
+    {file = "rsa-4.5-py2.py3-none-any.whl", hash = "sha256:35c5b5f6675ac02120036d97cf96f1fde4d49670543db2822ba5015e21a18032"},
+    {file = "rsa-4.5.tar.gz", hash = "sha256:4d409f5a7d78530a4a2062574c7bd80311bc3af29b364e293aa9b03eea77714f"},
 ]
 s3transfer = [
     {file = "s3transfer-0.3.3-py2.py3-none-any.whl", hash = "sha256:2482b4259524933a022d59da830f51bd746db62f047d6eb213f2f8855dcb8a13"},

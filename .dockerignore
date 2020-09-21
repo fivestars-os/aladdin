@@ -8,3 +8,5 @@ scripts/dev/*
 
 *.pyc
 *.DS_Store
+*.egg-info
+.venv
