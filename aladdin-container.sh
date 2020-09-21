@@ -7,7 +7,7 @@ set -eu -o pipefail
 # Export key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" || exit 1; pwd)"
 SCRIPT_DIR="$ALADDIN_DIR/scripts"
-PY_MAIN="_aladdin"
+PY_MAIN="aladdin"
 ALADDIN_PLUGIN_DIR="/root/aladdin-plugins"
 ALADDIN_CONFIG_DIR="/root/aladdin-config"
 

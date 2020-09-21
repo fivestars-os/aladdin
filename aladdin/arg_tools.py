@@ -25,8 +25,14 @@ def bash_wrapper():
 
 
 def container_command(func=None):
+    """
+    Decorator to wrap aladdin commands that
+    need to be run inside the aladdin container
+    """
     @functools.wraps(func)
     def _wrapper(*args, **kwargs):
+        # using `CLUSTER_CODE` as tell-tale to know
+        # if we're "in" the aladdin container
         if not os.getenv("CLUSTER_CODE"):
             return bash_wrapper()
         return func(*args, **kwargs)

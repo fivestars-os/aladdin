@@ -19,51 +19,18 @@ import textwrap
 import time
 import typing
 
-import coloredlogs
 import jinja2
 import networkx
-import verboselogs
 from orderedset import OrderedSet
 
-from .configuration import UNDEFINED, BuildConfig, ComponentConfig, ConfigurationException, UserInfo
+from .configuration import BuildConfig, ComponentConfig, ConfigurationException
 from .build_info import BuildInfo, PythonBuildInfo
 
-logger = None
+logger = logging.getLogger(__name__)
 
 
 def main():
     """Kick off the build process with data gathered from the system and environment."""
-
-    # Install some nice logging tools
-    global logger
-
-    verboselogs.install()
-    coloredlogs.install(
-        level=logging.DEBUG,
-        fmt="%(levelname)-8s %(message)s",
-        level_styles=dict(
-            spam=dict(color="green", faint=True),
-            debug=dict(color="black", bold=True),
-            verbose=dict(color="blue"),
-            info=dict(color="white"),
-            notice=dict(color="magenta"),
-            warning=dict(color="yellow"),
-            success=dict(color="green", bold=True),
-            error=dict(color="red"),
-            critical=dict(color="red", bold=True),
-        ),
-        field_styles=dict(
-            asctime=dict(color="green"),
-            hostname=dict(color="magenta"),
-            levelname=dict(color="white"),
-            name=dict(color="white", bold=True),
-            programname=dict(color="cyan"),
-            username=dict(color="yellow"),
-        ),
-    )
-
-    # This will be a VerboseLogger
-    logger = logging.getLogger(__name__)
 
     # Provide the lamp.json file data to the build process
     with open("lamp.json") as lamp_file:
@@ -115,7 +82,7 @@ def build_components(
             # Only build components that will be published
             prefix = f"{lamp['name']}-"
             components = {
-                image[image.startswith(prefix) and len(prefix) :]
+                image[image.startswith(prefix) and len(prefix):]
                 for image in lamp.get("docker_images", [])
             }
 
@@ -296,7 +263,10 @@ def build_aladdin_component(
 
         build_python_component(build_info)
     else:
-        raise ValueError(f"Unsupported language for {component} component: {language_name}")
+        raise ValueError(
+            f"Unsupported language for {component} component: "
+            f"{component_config.language_name}"
+        )
 
     if tag_hash == "local":
         # Build the editor image for development use cases
@@ -320,7 +290,7 @@ def build_python_component(build_info: PythonBuildInfo) -> None:
     language_version = build_info.language_version
     if not language_version.startswith("3"):
         raise ValueError(
-            f"Unsupported python version for {component} component: {language_version}"
+            f"Unsupported python version for {build_info.component} component: {language_version}"
         )
 
     # Load our jinja templates for python images.

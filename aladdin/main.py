@@ -8,6 +8,7 @@ import coloredlogs
 from aladdin.arg_tools import get_bash_commands, bash_wrapper
 from aladdin.commands import (
     build,
+    build_components,
     cluster_init,
     cmd,
     connect,
@@ -32,7 +33,7 @@ from aladdin.commands import (
 
 def cli():
     """
-    Entrypoint for aladdin commands inside the aladdin container
+    Entrypoint for aladdin's command line interface
     """
 
     parser = argparse.ArgumentParser(
@@ -40,9 +41,10 @@ def cli():
         description="Managing kubernetes projects",
         epilog="If no arguments are specified, the help text is displayed",
     )
-    subparsers = parser.add_subparsers(help="Brief description of argument")
+    subparsers = parser.add_subparsers(help="aladdin commands")
     subcommands = [
         build,
+        build_components,
         cluster_init,
         cmd,
         connect,
@@ -61,7 +63,7 @@ def cli():
         sync_ingress,
         tail,
         undeploy,
-        version
+        version,
     ]
 
     # We want to have python help include host commands that run in bash portion of aladdin
