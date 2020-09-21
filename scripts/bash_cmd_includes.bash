@@ -39,6 +39,8 @@ for cmd_path in `ls $ALADDIN_DIR/aladdin/commands/*.py`; do
     alias $cmd="with_aladdin_perms_wrapper $PY_MAIN $cmd"
 done
 
+alias build-components="with_aladdin_perms_wrapper $PY_MAIN build-components"
+
 for cmd in `ls $ALADDIN_DIR/aladdin/bash/container/`; do
     if [[ "$cmd" == "change-permissions" ]]; then
         alias $cmd="$ALADDIN_DIR/aladdin/bash/container/$cmd/$cmd"
