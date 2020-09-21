@@ -1,4 +1,4 @@
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.commands import stop, start
 
 
@@ -24,6 +24,7 @@ def restart_args(args):
     restart(args.namespace, args.charts, args.with_mount)
 
 
+@container_command
 def restart(namespace, charts, with_mount):
     stop.stop(namespace, charts)
     start.start(namespace, charts, False, with_mount)

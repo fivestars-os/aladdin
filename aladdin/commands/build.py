@@ -1,6 +1,7 @@
 import argparse
 
 from aladdin.lib.project_conf import ProjectConf
+from aladdin.arg_tools import container_command
 
 
 def parse_args(sub_parser):
@@ -15,6 +16,7 @@ def build_args(args):
     build(args.build_args)
 
 
+@container_command
 def build(build_args):
     pc = ProjectConf()
     pc.build_docker(env={"HASH": "local"}, build_args=build_args)

@@ -1,9 +1,11 @@
 import argparse
 import logging
-import colorlog
-import json
-import pkg_resources
+import sys
 
+import verboselogs
+import coloredlogs
+
+from aladdin.arg_tools import get_bash_commands, bash_wrapper
 from aladdin.commands import (
     build,
     cluster_init,
@@ -24,10 +26,11 @@ from aladdin.commands import (
     sync_ingress,
     tail,
     undeploy,
+    version
 )
 
 
-def _aladdin():
+def cli():
     """
     Entrypoint for aladdin commands inside the aladdin container
     """
@@ -58,6 +61,7 @@ def _aladdin():
         sync_ingress,
         tail,
         undeploy,
+        version
     ]
 
     # We want to have python help include host commands that run in bash portion of aladdin
@@ -65,21 +69,7 @@ def _aladdin():
     subcommands = [
         (subcommand.__name__.split(".")[-1], subcommand.parse_args) for subcommand in subcommands
     ]
-    # Add bash commands to above list
-    bash_cmd_helps = json.loads(
-        pkg_resources.resource_string(__name__, "bash_help.json").decode("utf-8")
-    )
-    for bash_cmd, bash_help in bash_cmd_helps.items():
-        # Use default values for bash_cmd and bash_help so they are evaluated at definition time
-        # rather than invocation time
-        subcommands.append(
-            (
-                bash_cmd,
-                lambda sub_parser, bash_cmd=bash_cmd, bash_help=bash_help: sub_parser.add_parser(
-                    bash_cmd, help=bash_help["help"]
-                ),
-            )
-        )
+    subcommands.extend(get_bash_commands())
     # Alphabetize the list
     subcommands.sort()
     # Add all subcommands in alphabetical order
@@ -104,8 +94,37 @@ def _aladdin():
     )
 
     # Initialize logging across python
-    colorlog.basicConfig(format="%(log_color)s%(levelname)s:%(message)s", level=logging.INFO)
+    verboselogs.install()
+    coloredlogs.install(
+        level=logging.INFO,
+        fmt="%(levelname)s: %(message)s",
+        level_styles=dict(
+            spam=dict(color="green", faint=True),
+            debug=dict(color="black", bold=True),
+            verbose=dict(color="blue"),
+            info=dict(color="white"),
+            notice=dict(color="magenta"),
+            warning=dict(color="yellow"),
+            success=dict(color="green", bold=True),
+            error=dict(color="red"),
+            critical=dict(color="red", bold=True),
+        ),
+        field_styles=dict(
+            asctime=dict(color="green"),
+            hostname=dict(color="magenta"),
+            levelname=dict(color="white"),
+            name=dict(color="white", bold=True),
+            programname=dict(color="cyan"),
+            username=dict(color="yellow"),
+        ),
+    )
     logging.getLogger("botocore").setLevel(logging.WARNING)
+
+    # if it's not a command we know about it might be a plugin
+    # currently the bash script handles plugins
+    subcommands = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
+    if not subcommands or subcommands[0] not in subparsers._name_parser_map:
+        return bash_wrapper()
 
     args = parser.parse_args()
     args.func(args)

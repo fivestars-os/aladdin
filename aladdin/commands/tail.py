@@ -1,6 +1,6 @@
 import logging
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.lib.k8s.kubernetes import Kubernetes
 
 
@@ -48,6 +48,7 @@ def tail_args(args):
     tail(args.container, args.color, args.deployment, args.pod, args.namespace)
 
 
+@container_command
 def tail(container_name, color, deployment_name, pod_name, namespace=None):
     k = Kubernetes(namespace=namespace)
     deployment, pod = None, None

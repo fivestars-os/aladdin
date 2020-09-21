@@ -1,6 +1,7 @@
 from aladdin.cluster_rules import cluster_rules
 from aladdin.commands import deploy
 from aladdin.lib.k8s.helm import Helm
+from aladdin.arg_tools import container_command
 
 
 def parse_args(sub_parser):
@@ -24,6 +25,7 @@ def cluster_init_args(args):
     cluster_init(args.force)
 
 
+@container_command
 def cluster_init(force=False):
     helm = Helm()
     cr = cluster_rules()

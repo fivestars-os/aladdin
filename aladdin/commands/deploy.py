@@ -3,7 +3,7 @@ import logging
 import sys
 import tempfile
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.config import load_git_configs
@@ -67,6 +67,7 @@ def deploy_args(args):
     )
 
 
+@container_command
 def deploy(
     project,
     git_ref,

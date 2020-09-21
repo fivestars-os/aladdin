@@ -1,6 +1,6 @@
 import logging
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.lib.k8s.kubernetes import Kubernetes
 
 
@@ -16,6 +16,7 @@ def scale_args(args):
     scale(args.deployment, args.replicas, args.namespace)
 
 
+@container_command
 def scale(deployment, replicas, namespace=None):
     k = Kubernetes(namespace=namespace)
 

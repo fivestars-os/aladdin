@@ -10,6 +10,7 @@ from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.utils import working_directory
 from aladdin.lib.project_conf import ProjectConf
 from aladdin.publish_rules import PublishRules
+from aladdin.arg_tools import container_command
 
 
 def parse_args(sub_parser):
@@ -62,6 +63,7 @@ def parse_args(sub_parser):
     subparser.set_defaults(func=publish_args)
 
 
+@container_command
 def publish_args(args):
     if args.build_local:
         publish(args.build_only, args.build_publish_ecr_only, args.publish_helm_only)

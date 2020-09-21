@@ -1,6 +1,6 @@
 import logging
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.lib.k8s.kubernetes import Kubernetes
 
 
@@ -15,6 +15,7 @@ def refresh_args(args):
     refresh(args.apps, args.namespace)
 
 
+@container_command
 def refresh(apps, namespace=None):
     k = Kubernetes(namespace=namespace)
     for app in apps:

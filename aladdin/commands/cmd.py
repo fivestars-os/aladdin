@@ -3,7 +3,7 @@ import logging
 import subprocess
 import sys
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.lib.k8s.kubernetes import Kubernetes
 
 
@@ -29,6 +29,7 @@ def cmd_args(args):
     cmd(args.app_name, args.command_args, args.namespace)
 
 
+@container_command
 def cmd(app_name, command_args, namespace=None):
     k = Kubernetes(namespace=namespace)
     pod_name = k.get_pod_name(f"{app_name}-commands")

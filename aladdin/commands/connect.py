@@ -1,4 +1,4 @@
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.lib.k8s.kubernetes import Kubernetes
 
 
@@ -13,6 +13,7 @@ def connect_args(args):
     connect(args.app, args.namespace)
 
 
+@container_command
 def connect(app_name, namespace=None):
     k = Kubernetes(namespace=namespace)
     pods = k.get_pods(app_name)

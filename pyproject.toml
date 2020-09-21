@@ -27,8 +27,7 @@ jinja2 = "^2.11.2"
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.scripts]
-aladdin = "aladdin.__main__:cli"
-_aladdin = "aladdin.main:_aladdin"
+aladdin = "aladdin.main:cli"
 build-components = "aladdin.lib.build_components.__main__:main"
 
 [build-system]

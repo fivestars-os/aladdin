@@ -1,6 +1,6 @@
 import logging
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.cluster_rules import cluster_rules
 from aladdin.lib.k8s.kubernetes import Kubernetes
 from aladdin.lib.k8s.ingress import build_ingress
@@ -18,6 +18,7 @@ def sync_ingress_args(args):
     sync_ingress(args.namespace)
 
 
+@container_command
 def sync_ingress(namespace):
     cr = cluster_rules(namespace=namespace)
     ingress_info = cr.ingress_info

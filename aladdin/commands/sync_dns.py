@@ -1,6 +1,6 @@
 import logging
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.cluster_rules import cluster_rules
 from aladdin.lib.aws.dns_mapping import fill_hostedzone
 from aladdin.lib.k8s.kubernetes import Kubernetes
@@ -19,6 +19,7 @@ def sync_dns_args(args):
     sync_dns(args.namespace)
 
 
+@container_command
 def sync_dns(namespace):
     cr = cluster_rules(namespace=namespace)
     if cr.is_local:

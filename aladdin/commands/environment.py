@@ -1,7 +1,7 @@
 import logging
 from argparse import RawTextHelpFormatter
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.commands import refresh
 from aladdin.lib.k8s.kubernetes import Kubernetes
 
@@ -36,6 +36,7 @@ def parse_args(sub_parser):
     subparser.set_defaults(func=environment_args)
 
 
+@container_command
 def environment_args(args):
     if args.command == "set":
         env_set(args.app, args.args, args.refresh, args.namespace)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.helm_rules import HelmRules
@@ -55,6 +55,7 @@ def start_args(args):
     )
 
 
+@container_command
 def start(
     namespace,
     charts=None,

@@ -1,4 +1,4 @@
-from aladdin.arg_tools import add_namespace_argument
+from aladdin.arg_tools import add_namespace_argument, container_command
 from aladdin.cluster_rules import cluster_rules
 from aladdin.commands import deploy
 from aladdin.lib.k8s.helm import Helm
@@ -26,6 +26,7 @@ def namespace_init_args(args):
     namespace_init(args.namespace, args.force)
 
 
+@container_command
 def namespace_init(namespace, force=False):
     helm = Helm()
     cr = cluster_rules(namespace=namespace)
