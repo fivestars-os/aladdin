@@ -33,7 +33,7 @@ function with_aladdin_perms_wrapper() {
 }
 
 # Allow aladdin python commands to be accessible directly
-for cmd_path in `ls $ALADDIN_DIR/aladdin/python/command/*.py`; do
+for cmd_path in `ls $ALADDIN_DIR/aladdin/commands/*.py`; do
     cmd=$(basename ${cmd_path%%.*});
     cmd=${cmd//_/-}
     alias $cmd="with_aladdin_perms_wrapper $PY_MAIN $cmd"
