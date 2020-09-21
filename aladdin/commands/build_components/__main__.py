@@ -9,7 +9,6 @@ A project can override this behavior and provide their own build script by speci
 """
 import contextlib
 import json
-import logging
 import os
 import pathlib
 import shutil
@@ -23,18 +22,15 @@ import jinja2
 import networkx
 from orderedset import OrderedSet
 
+from aladdin.lib import logging
 from .configuration import BuildConfig, ComponentConfig, ConfigurationException
 from .build_info import BuildInfo, PythonBuildInfo
 
-logger = None
+logger = logging.getLogger(__name__)
 
 
 def main():
     """Kick off the build process with data gathered from the system and environment."""
-
-    global logger
-    # This will be a VerboseLogger
-    logger = logging.getLogger(__name__)
 
     # Provide the lamp.json file data to the build process
     with open("lamp.json") as lamp_file:

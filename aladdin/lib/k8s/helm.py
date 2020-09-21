@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 import os
 import subprocess
-import logging
 
 from botocore.exceptions import ClientError
 from os.path import join, expanduser
+
+from aladdin.lib import logging
 
 logger = logging.getLogger(__name__)
 
