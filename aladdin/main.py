@@ -71,12 +71,14 @@ def cli():
     subcommands = [
         (subcommand.__name__.split(".")[-1], subcommand.parse_args) for subcommand in subcommands
     ]
-    subcommands.extend(get_bash_commands())
+    bash_commands = get_bash_commands()
+    bash_command_names = list(map(lambda arg: arg[0], bash_commands))
+    subcommands.extend(bash_commands)
     # Alphabetize the list
     subcommands.sort()
     # Add all subcommands in alphabetical order
-    for subcommand in subcommands:
-        subcommand[1](subparsers)
+    for subcommand in map(lambda arg: arg[1], subcommands):
+        subcommand(subparsers)
 
     # Add optional aladdin wide arguments for better help visibility
     parser.add_argument("--cluster", "-c", help="The cluster name you want to interact with")
@@ -123,9 +125,12 @@ def cli():
     logging.getLogger("botocore").setLevel(logging.WARNING)
 
     # if it's not a command we know about it might be a plugin
-    # currently the bash script handles plugins
-    subcommands = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
-    if not subcommands or subcommands[0] not in subparsers._name_parser_map:
+    # currently the bash scripts handle plugins
+    cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
+    if not cmd_args or cmd_args[0] not in subparsers._name_parser_map:
+        return bash_wrapper()
+
+    if cmd_args and cmd_args[0] in bash_command_names:
         return bash_wrapper()
 
     args = parser.parse_args()

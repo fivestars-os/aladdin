@@ -2,12 +2,11 @@ import json
 import os
 import os.path
 import re
+import subprocess
+import sys
 from collections import namedtuple
 
-import subprocess
-import logging
-
-import sys
+from aladdin.lib import logging
 
 from jmespath import search
 
@@ -61,7 +60,7 @@ class ProjectConf(object):
     @property
     def mount_path(self):
         # Under aladdin, we are using /minikube_root , but under minikube it's /
-        return re.sub(r"^/minikube_root", "", self.path)
+        return re.sub(r"^/aladdin_root", "", self.path)
 
     @property
     def build_command(self):
@@ -77,7 +76,6 @@ class ProjectConf(object):
 
         run_env = os.environ.copy()
         run_env.update(env)
-
         subprocess.run(command, check=True, cwd=self.path, env=run_env)
 
     def get_docker_images(self):

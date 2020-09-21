@@ -21,7 +21,7 @@ def add_namespace_argument(arg_parser):
 def bash_wrapper():
     _, *args = sys.argv
     handler = os.path.join(PROJECT_ROOT, "aladdin.sh")
-    return subprocess.run([handler, *args])
+    subprocess.run([handler, *args])
 
 
 def container_command(func=None):
@@ -53,10 +53,5 @@ def get_bash_commands():
         def add_command(parser, cmd=bash_cmd, help_msg=bash_help["help"]):
             sub_parser = parser.add_parser(cmd, help=help_msg)
             sub_parser.set_defaults(func=lambda args: bash_wrapper())
-        commands.append(
-            (
-                bash_cmd,
-                add_command
-            )
-        )
+        commands.append((bash_cmd, add_command))
     return commands

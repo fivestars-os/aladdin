@@ -113,7 +113,9 @@ function check_and_handle_init() {
             eval "$repo_login_command"
         fi
         local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"
-        docker pull "$aladdin_image"
+        if [[ $aladdin_image == *"/"* ]]; then
+            docker pull "$aladdin_image"
+        fi
         echo "$current_time" > "$last_launched_file"
     else
         if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
@@ -312,22 +314,20 @@ function handle_ostypes() {
 function prepare_docker_subcommands() {
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
+    MOUNTS_CMD=""
     if "$DEV"; then
-        DEV_CMD="-v $(pathnorm "$ALADDIN_DIR"):/root/aladdin"
+        MOUNTS_CMD="-v $(pathnorm "$ALADDIN_DIR"):/root/aladdin"
+    fi
+
+    if "$IS_LOCAL"; then
         if [ "$CLUSTER_CODE" = "minikube" ] ; then
-            DEV_CMD="$DEV_CMD -v /:/minikube_root" # mount the whole minikube system
-            DEV_CMD="$DEV_CMD --workdir /minikube_root$(pathnorm "$PWD")"
+            MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm ~/.minikube):/root/.minikube"
         fi
     fi
 
-    # If on minikube mount minikube credentials
-    if "$IS_LOCAL"; then
-        MINIKUBE_CMD=""
-        if [ "$CLUSTER_CODE" = "minikube" ] ; then
-            MINIKUBE_CMD="-v $(pathnorm ~/.minikube):/root/.minikube"
-            MINIKUBE_CMD="$MINIKUBE_CMD -v /:/minikube_root" # mount the whole minikube system
-            MINIKUBE_CMD="$MINIKUBE_CMD --workdir /minikube_root$(pathnorm "$PWD")"
-        fi
+    if "$DEV" || "$IS_LOCAL"; then
+        MOUNTS_CMD="$MOUNTS_CMD -v /:/aladdin_root"
+        MOUNTS_CMD="$MOUNTS_CMD --workdir /aladdin_root$(pathnorm "$PWD")"
     fi
 
     if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
@@ -389,7 +389,7 @@ function enter_docker_container() {
         `# Mount minikube parts` \
         -v /var/run/docker.sock:/var/run/docker.sock \
         `# Specific command` \
-        ${DEV_CMD:-} ${MINIKUBE_CMD:-} ${ALADDIN_PLUGIN_CMD:-} \
+        ${MOUNTS_CMD:-} ${ALADDIN_PLUGIN_CMD:-} \
         "$aladdin_image" \
         `# Finally, launch the command` \
         /root/aladdin/aladdin-container.sh "$@"
