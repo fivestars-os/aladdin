@@ -26,11 +26,15 @@ from orderedset import OrderedSet
 from .configuration import BuildConfig, ComponentConfig, ConfigurationException
 from .build_info import BuildInfo, PythonBuildInfo
 
-logger = logging.getLogger(__name__)
+logger = None
 
 
 def main():
     """Kick off the build process with data gathered from the system and environment."""
+
+    global logger
+    # This will be a VerboseLogger
+    logger = logging.getLogger(__name__)
 
     # Provide the lamp.json file data to the build process
     with open("lamp.json") as lamp_file:
@@ -41,7 +45,7 @@ def main():
         lamp=lamp,
         tag_hash=os.getenv("HASH", "local"),
         build_config=BuildConfig(),
-        components=sys.argv[1:],
+        components=sys.argv[2:],
     )
 
 
@@ -295,7 +299,10 @@ def build_python_component(build_info: PythonBuildInfo) -> None:
 
     # Load our jinja templates for python images.
     jinja_env = jinja2.Environment(
-        loader=jinja2.PackageLoader("build_components", "templates/python"), trim_blocks=True
+        loader=jinja2.PackageLoader(
+            "aladdin", "commands/build_components/templates/python"
+        ),
+        trim_blocks=True
     )
 
     # This is the top-level template for a component Dockerfile

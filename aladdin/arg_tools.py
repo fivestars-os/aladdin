@@ -21,7 +21,7 @@ def add_namespace_argument(arg_parser):
 def bash_wrapper():
     _, *args = sys.argv
     handler = os.path.join(PROJECT_ROOT, "aladdin.sh")
-    return subprocess.call([handler, *args])
+    return subprocess.run([handler, *args])
 
 
 def container_command(func=None):

@@ -38,8 +38,7 @@ RUN apt-get update && \
     vim-nox \
     curl
 
-# Default to python3, update setuptools and install wheel
-RUN pip install --no-cache-dir setuptools==46.4.0 wheel==0.34.2 pip==20.2.3
+RUN pip install --no-cache-dir pip==20.2.3
 
 ARG AWS_IAM_AUTHENTICATOR_VERSION=1.17.9
 RUN curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/$AWS_IAM_AUTHENTICATOR_VERSION/2020-08-04/bin/linux/amd64/aws-iam-authenticator && \
@@ -84,7 +83,7 @@ RUN helm repo add datawire https://www.getambassador.io
 
 WORKDIR /root/aladdin
 
-COPY --from=code /root/aladdin /root/aladdin
 COPY --from=code /root/.poetry /root/.poetry
 COPY --from=code /root/.venv /root/.venv
+COPY --from=code /root/aladdin /root/aladdin
 ENV PATH /root/.venv/bin:$PATH

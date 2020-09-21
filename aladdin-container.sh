@@ -60,7 +60,7 @@ function exec_command_or_plugin() {
     plugin_path="$ALADDIN_PLUGIN_DIR/container/$command/$command"
 
     if [[ -f "$python_command_path" || $command == "--help" || $command == "-h" ]]; then
-        exec python3 "$PY_MAIN" "$command" "$@"
+        exec "$PY_MAIN" "$command" "$@"
     fi
 
     if [[ -x "$bash_command_path" ]]; then

@@ -1,4 +1,4 @@
-import __main__
+from aladdin.commands.build_components import __main__
 
 
 def parse_args(sub_parser):
