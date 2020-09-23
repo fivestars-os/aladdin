@@ -11,16 +11,12 @@ ENV PATH /root/.venv/bin:$PATH
 # if any command in the pipeline fails.
 ARG POETRY_VERSION=1.0.10
 RUN ["/bin/bash", "-c", "set -o pipefail && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python"]
-ENV PATH="/root/.poetry/bin:${PATH}"
+ENV PATH /root/.poetry/bin:$PATH
 
 ARG POETRY_VIRTUALENVS_CREATE="false"
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root
-
-# Install aladdin
-COPY . .
-RUN poetry install
 
 FROM python:3.8.5-slim-buster
 
@@ -86,5 +82,8 @@ WORKDIR /root/aladdin
 
 COPY --from=code /root/.poetry /root/.poetry
 COPY --from=code /root/.venv /root/.venv
-COPY --from=code /root/aladdin /root/aladdin
-ENV PATH /root/.venv/bin:$PATH
+ENV PATH /root/.venv/bin:/root/.poetry/bin:$PATH
+# Install aladdin
+COPY . .
+ARG POETRY_VIRTUALENVS_CREATE="false"
+RUN poetry install && rm -rf aladdin.egg-info
