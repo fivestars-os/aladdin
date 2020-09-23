@@ -31,6 +31,7 @@ RUN apt-get update && \
     apt-get -y --no-install-recommends install \
     bash-completion \
     bats \
+    git \
     groff \
     jq \
     less \
