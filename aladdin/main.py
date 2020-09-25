@@ -124,6 +124,9 @@ def cli():
     )
     logging.getLogger("botocore").setLevel(logging.WARNING)
 
+    if not sys.argv[1:] or sys.argv[1] in ["-h", "--help"]:
+        return parser.print_help()
+
     # if it's not a command we know about it might be a plugin
     # currently the bash scripts handle plugins
     cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
