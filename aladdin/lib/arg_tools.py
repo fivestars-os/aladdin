@@ -5,6 +5,7 @@ import subprocess
 import sys
 import pkg_resources
 
+import aladdin
 from aladdin.config import PROJECT_ROOT
 
 
@@ -44,7 +45,7 @@ def container_command(func=None):
 def get_bash_commands():
     commands = []
     bash_cmd_helps = json.loads(
-        pkg_resources.resource_string(__name__, "bash_help.json").decode("utf-8")
+        pkg_resources.resource_string("aladdin", "bash_help.json").decode("utf-8")
     )
 
     for bash_cmd, bash_help in bash_cmd_helps.items():
