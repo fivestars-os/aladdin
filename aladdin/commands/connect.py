@@ -1,4 +1,4 @@
-from aladdin.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.arg_tools import add_namespace_argument, container_command
 from aladdin.lib.k8s.kubernetes import Kubernetes
 
 

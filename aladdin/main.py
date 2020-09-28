@@ -5,7 +5,7 @@ import sys
 import verboselogs
 import coloredlogs
 
-from aladdin.arg_tools import get_bash_commands, bash_wrapper
+from aladdin.lib.arg_tools import get_bash_commands, bash_wrapper
 from aladdin.commands import (
     build,
     build_components,

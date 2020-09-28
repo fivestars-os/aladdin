@@ -1,7 +1,7 @@
 import logging
 from argparse import RawTextHelpFormatter
 
-from aladdin.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.arg_tools import add_namespace_argument, container_command
 from aladdin.commands import refresh
 from aladdin.lib.k8s.kubernetes import Kubernetes
 

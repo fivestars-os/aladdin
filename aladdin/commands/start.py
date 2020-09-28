@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 import os
 
-from aladdin.arg_tools import add_namespace_argument, container_command
-from aladdin.cluster_rules import cluster_rules
+from aladdin.lib.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
-from aladdin.helm_rules import HelmRules
+from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.project_conf import ProjectConf
 

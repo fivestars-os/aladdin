@@ -3,14 +3,14 @@ import logging
 import sys
 import tempfile
 
-from aladdin.arg_tools import add_namespace_argument, container_command
-from aladdin.cluster_rules import cluster_rules
+from aladdin.lib.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.config import load_git_configs
-from aladdin.helm_rules import HelmRules
+from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.git import Git
 from aladdin.lib.k8s.helm import Helm
-from aladdin.publish_rules import PublishRules
+from aladdin.lib.publish_rules import PublishRules
 
 
 def parse_args(sub_parser):

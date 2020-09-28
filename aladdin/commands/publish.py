@@ -9,8 +9,8 @@ from aladdin.lib.git import Git
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.utils import working_directory
 from aladdin.lib.project_conf import ProjectConf
-from aladdin.publish_rules import PublishRules
-from aladdin.arg_tools import container_command
+from aladdin.lib.publish_rules import PublishRules
+from aladdin.lib.arg_tools import container_command
 
 
 def parse_args(sub_parser):

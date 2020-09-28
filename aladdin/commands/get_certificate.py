@@ -1,5 +1,5 @@
-from aladdin.cluster_rules import cluster_rules
-from aladdin.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.cluster_rules import cluster_rules
+from aladdin.lib.arg_tools import add_namespace_argument, container_command
 
 
 def parse_args(sub_parser):

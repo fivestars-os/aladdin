@@ -1,7 +1,7 @@
 import logging
 
-from aladdin.arg_tools import add_namespace_argument, container_command
-from aladdin.cluster_rules import cluster_rules
+from aladdin.lib.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.lib.k8s.kubernetes import Kubernetes
 from aladdin.lib.k8s.ingress import build_ingress
 

@@ -1,7 +1,7 @@
 import argparse
 
 from aladdin.lib.project_conf import ProjectConf
-from aladdin.arg_tools import container_command
+from aladdin.lib.arg_tools import container_command
 
 
 def parse_args(sub_parser):

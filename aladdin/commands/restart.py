@@ -1,4 +1,4 @@
-from aladdin.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.arg_tools import add_namespace_argument, container_command
 from aladdin.commands import stop, start
 
 
