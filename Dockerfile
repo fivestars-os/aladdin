@@ -1,4 +1,4 @@
-FROM python:3.8.5-buster as code
+FROM python:3.8.5-buster as build
 
 WORKDIR /root/aladdin
 
@@ -80,8 +80,8 @@ RUN helm repo add datawire https://www.getambassador.io
 
 WORKDIR /root/aladdin
 
-COPY --from=code /root/.poetry /root/.poetry
-COPY --from=code /root/.venv /root/.venv
+COPY --from=build /root/.poetry /root/.poetry
+COPY --from=build /root/.venv /root/.venv
 ENV PATH /root/.venv/bin:/root/.poetry/bin:$PATH
 # Install aladdin
 COPY . .
