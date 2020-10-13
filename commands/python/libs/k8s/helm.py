@@ -14,13 +14,19 @@ class Helm(object):
     PACKAGE_DIR_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/"
     PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{chart_name}.{git_ref}.tgz"
 
+
+    def __init__(self, helm2):
+        self.helm = "helm2" if helm2 else "helm"
+
     @property
     def helm_home(self):
         return join(expanduser("~"), ".helm")
 
     def init(self):
-        # We need to have local helm initialized for it to works
-        subprocess.check_call(["helm", "init", "--client-only"])
+        # Only need to init on helm2. Helm2 Doesn't use tiller and therefore needs no init
+        if self.helm == "helm2":
+            # We need to have local helm2 initialized for helm2 to work
+            subprocess.check_call([self.helm, "init", "--client-only"])
 
     def publish(self, project_name, publish_rules, chart_path, hash):
 
@@ -29,11 +35,18 @@ class Helm(object):
         version = "0.0.0"
 
         logger.info("Building package")
+
         self.init()
 
         charts_dir, chart_name = os.path.split(chart_path)
 
-        subprocess.check_call(["helm", "package", "--version", version, chart_name], cwd=charts_dir)
+        subprocess.check_call([
+            self.helm,
+            "package",
+            "--version",
+            version,
+            chart_name
+        ], cwd=charts_dir)
 
         try:
             package_path = join(charts_dir, "{}-{}.tgz".format(chart_name, version))
@@ -107,12 +120,18 @@ class Helm(object):
 
         return values
 
-    def stop(self, helm_rules):
+    def stop(self, helm_rules, namespace):
         release_name = helm_rules.release_name
 
-        command = ["helm", "delete", "--purge", release_name]
+        command = [self.helm, "delete", release_name]
 
-        if self.release_exists(release_name):
+        # Helm2 needs --purge but not --namespace, whereas helm3 needs --namespace but not --purge
+        if self.helm == "helm2":
+            command.append("--purge")
+        else:
+            command.extend(["--namespace", namespace])
+
+        if self.release_exists(release_name, namespace):
             subprocess.run(command, check=True)
             logger.info("Successfully removed release {}".format(release_name))
         else:
@@ -120,8 +139,13 @@ class Helm(object):
                 "Could not remove release {} because it doesn't exist".format(release_name)
             )
 
-    def release_exists(self, release_name):
-        command = ["helm", "status", release_name]
+    def release_exists(self, release_name, namespace):
+        command = [self.helm, "status", release_name]
+
+        # Helm3 requires --namespace flag, which helm2 doesn't use
+        if self.helm == "helm":
+            command.extend(["--namespace", namespace])
+
         ret_code = subprocess.run(
             command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
         ).returncode
@@ -131,23 +155,36 @@ class Helm(object):
         else:
             return False
 
-    def rollback_relative(self, helm_rules, num_versions):
+    def rollback_relative(self, helm_rules, num_versions, namespace):
         release_name = helm_rules.release_name
 
         # Some ugly logic to get the current revision - probably can be better
-        output = subprocess.Popen(("helm", "list"), stdout=subprocess.PIPE)
+        helm_list_command = [self.helm, "list"]
+        # Helm3 requires --namespace flag, which helm2 doesn't use
+        if self.helm == "helm":
+            helm_list_command.extend(["--namespace", namespace])
+        output = subprocess.Popen(helm_list_command, stdout=subprocess.PIPE)
         output = subprocess.check_output(("grep", release_name), stdin=output.stdout)
-        current_revision = int(output.decode("utf-8").replace(" ", "").split("\t")[1])
+        data = output.decode("utf-8").replace(" ", "").split("\t")
+
+        # For helm2, this is the 2nd column. For helm3 it is the third column
+        if self.helm == "helm2":
+            current_revision = int(data[1])
+        else:
+            current_revision = int(data[2])
 
         if num_versions > current_revision:
             logger.warning("Can't rollback that far")
             return
 
-        self.rollback(helm_rules, current_revision - num_versions)
+        self.rollback(helm_rules, current_revision - num_versions, namespace)
 
-    def rollback(self, helm_rules, revision):
+    def rollback(self, helm_rules, revision, namespace):
         release_name = helm_rules.release_name
-        command = ["helm", "rollback", release_name, str(revision)]
+        command = [self.helm, "rollback", release_name, str(revision)]
+        # Helm3 requires --namespace flag, which helm2 doesn't use
+        if self.helm == "helm":
+            command.extend(["--namespace", namespace])
         subprocess.run(command, check=True)
 
     def start(
@@ -173,7 +210,7 @@ class Helm(object):
         release_name = helm_rules.release_name
 
         command = [
-            "helm",
+            self.helm,
             "upgrade",
             release_name,
             chart_path,
