@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
+import json
 import os
 import subprocess
 import logging
-
 import yaml
+
 from botocore.exceptions import ClientError
 from os.path import join, expanduser
 
@@ -15,18 +16,9 @@ class Helm(object):
     PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{chart_name}.{git_ref}.tgz"
 
 
-    def __init__(self, helm2):
-        self.helm = "helm2" if helm2 else "helm"
-
     @property
     def helm_home(self):
         return join(expanduser("~"), ".helm")
-
-    def init(self):
-        # Only need to init on helm2. Helm2 Doesn't use tiller and therefore needs no init
-        if self.helm == "helm2":
-            # We need to have local helm2 initialized for helm2 to work
-            subprocess.check_call([self.helm, "init", "--client-only"])
 
     def publish(self, project_name, publish_rules, chart_path, hash):
 
@@ -36,12 +28,10 @@ class Helm(object):
 
         logger.info("Building package")
 
-        self.init()
-
         charts_dir, chart_name = os.path.split(chart_path)
 
         subprocess.check_call([
-            self.helm,
+            "helm",
             "package",
             "--version",
             version,
@@ -123,13 +113,7 @@ class Helm(object):
     def stop(self, helm_rules, namespace):
         release_name = helm_rules.release_name
 
-        command = [self.helm, "delete", release_name]
-
-        # Helm2 needs --purge but not --namespace, whereas helm3 needs --namespace but not --purge
-        if self.helm == "helm2":
-            command.append("--purge")
-        else:
-            command.extend(["--namespace", namespace])
+        command = ["helm", "delete", release_name, "--namespace", namespace]
 
         if self.release_exists(release_name, namespace):
             subprocess.run(command, check=True)
@@ -140,11 +124,7 @@ class Helm(object):
             )
 
     def release_exists(self, release_name, namespace):
-        command = [self.helm, "status", release_name]
-
-        # Helm3 requires --namespace flag, which helm2 doesn't use
-        if self.helm == "helm":
-            command.extend(["--namespace", namespace])
+        command = ["helm", "status", release_name, "--namespace", namespace]
 
         ret_code = subprocess.run(
             command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
@@ -158,20 +138,9 @@ class Helm(object):
     def rollback_relative(self, helm_rules, num_versions, namespace):
         release_name = helm_rules.release_name
 
-        # Some ugly logic to get the current revision - probably can be better
-        helm_list_command = [self.helm, "list"]
-        # Helm3 requires --namespace flag, which helm2 doesn't use
-        if self.helm == "helm":
-            helm_list_command.extend(["--namespace", namespace])
-        output = subprocess.Popen(helm_list_command, stdout=subprocess.PIPE)
-        output = subprocess.check_output(("grep", release_name), stdin=output.stdout)
-        data = output.decode("utf-8").replace(" ", "").split("\t")
-
-        # For helm2, this is the 2nd column. For helm3 it is the third column
-        if self.helm == "helm2":
-            current_revision = int(data[1])
-        else:
-            current_revision = int(data[2])
+        helm_list_command = ["helm", "list", "--namespace", namespace, "-o", "json"]
+        output = json.loads(subprocess.run(helm_list_command, capture_output=True).stdout)
+        current_revision = int([k["revision"] for k in output if k["name"] == release_name][0])
 
         if num_versions > current_revision:
             logger.warning("Can't rollback that far")
@@ -181,10 +150,7 @@ class Helm(object):
 
     def rollback(self, helm_rules, revision, namespace):
         release_name = helm_rules.release_name
-        command = [self.helm, "rollback", release_name, str(revision)]
-        # Helm3 requires --namespace flag, which helm2 doesn't use
-        if self.helm == "helm":
-            command.extend(["--namespace", namespace])
+        command = ["helm", "rollback", release_name, str(revision), "--namespace", namespace]
         subprocess.run(command, check=True)
 
     def start(
@@ -210,7 +176,7 @@ class Helm(object):
         release_name = helm_rules.release_name
 
         command = [
-            self.helm,
+            "helm",
             "upgrade",
             release_name,
             chart_path,

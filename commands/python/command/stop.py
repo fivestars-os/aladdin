@@ -19,20 +19,15 @@ def parse_args(sub_parser):
         dest="charts",
         help="Stop only these charts (may be specified multiple times)",
     )
-    subparser.add_argument(
-        "--helm2",
-        action="store_true",
-        help="Use helm2 instead of helm3",
-    )
 
 
 def stop_args(args):
-    stop(args.namespace, args.charts, args.helm2)
+    stop(args.namespace, args.charts)
 
 
-def stop(namespace, charts, helm2=False):
+def stop(namespace, charts):
     pc = ProjectConf()
-    helm = Helm(helm2)
+    helm = Helm()
 
     cr = cluster_rules(namespace=namespace)
 
