@@ -19,16 +19,21 @@ def parse_args(sub_parser):
         dest="charts",
         help="Stop only these charts (may be specified multiple times)",
     )
+    subparser.add_argument(
+        "--helm2",
+        action="store_true",
+        help="Use helm2 instead of helm3",
+    )
 
 
 def stop_args(args):
-    stop(args.namespace, args.charts)
+    stop(args.namespace, args.charts, args.helm2)
 
 
 @container_command
-def stop(namespace, charts):
+def stop(namespace, charts, helm2=False):
     pc = ProjectConf()
-    helm = Helm()
+    helm = Helm(helm2)
 
     cr = cluster_rules(namespace=namespace)
 
@@ -42,7 +47,7 @@ def stop(namespace, charts):
             chart_name = os.path.basename(chart_path)
             if chart_name in charts:
                 hr = HelmRules(cr, chart_name)
-                helm.stop(hr)
+                helm.stop(hr, namespace)
                 sync_required = True
     finally:
         # Sync if any helm.stop() call succeeded, even if a subsequent one failed

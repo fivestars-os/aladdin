@@ -37,6 +37,11 @@ def parse_args(sub_parser):
         help="Have helm force resource update through delete/recreate if needed",
     )
     subparser.add_argument(
+        "--helm2",
+        action="store_true",
+        help="Use helm2 instead of helm3",
+    )
+    subparser.add_argument(
         "--set-override-values",
         default=[],
         nargs="+",
@@ -51,6 +56,7 @@ def start_args(args):
         args.dry_run,
         args.with_mount,
         args.force_helm,
+        args.helm2,
         args.set_override_values,
     )
 
@@ -62,12 +68,13 @@ def start(
     dry_run=False,
     with_mount=False,
     force_helm=False,
+    helm2=False,
     set_override_values=None,
 ):
     if set_override_values is None:
         set_override_values = []
     pc = ProjectConf()
-    helm = Helm()
+    helm = Helm(helm2)
 
     cr = cluster_rules(namespace=namespace)
 

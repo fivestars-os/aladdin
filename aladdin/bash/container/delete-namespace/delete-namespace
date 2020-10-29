@@ -2,7 +2,7 @@
 set -eu -o pipefail
 
 function delete_namespace {
-    helm delete --purge $(helm list | awk '{print $1}' | grep -E "\-$1\b")
+    helm delete -n $1 $(helm list --short -n $1)
     kubectl delete namespace $1
 }
 

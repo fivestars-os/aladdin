@@ -95,7 +95,7 @@ function environment_init() {
     # It will only get set to true if the cluster is ready and it is enabled in aladdin-config
     export AUTHENTICATION_ENABLED=false
 
-    # Make sure we are on local or that cluster has been created before initializing helm, creating namespaces, etc
+    # Make sure we are on local or that cluster has been created before creating namespaces, etc
     if _is_cluster_ready; then
 
         if "$IS_LOCAL"; then
@@ -115,7 +115,6 @@ function environment_init() {
 
         if $INIT; then
             kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
-            _initialize_helm
             _replace_aws_secret || true
             $PY_MAIN namespace-init --force
         fi
@@ -128,17 +127,6 @@ function environment_init() {
 function _is_cluster_ready() {
     # Cluster is ready if we are on LOCAL or if we can pull kube config via kops
     "$IS_LOCAL" || kops export kubecfg --name $CLUSTER_NAME
-}
-
-function _initialize_helm() {
-    local rbac_enabled="$(_extract_cluster_config_value rbac_enabled)"
-    if $rbac_enabled; then
-        kubectl -n kube-system create serviceaccount tiller || true
-        kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || true
-        helm init --service-account=tiller --upgrade --wait || true
-    else
-        helm init --upgrade --wait || true
-    fi
 }
 
 function _handle_authentication_config() {

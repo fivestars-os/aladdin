@@ -20,7 +20,7 @@ VERSION_DOCKER="18.09.7"
 #- from : https://github.com/kubernetes/kubernetes/releases
 VERSION_KUBECTL="1.15.6"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="2.16.1"
+VERSION_HELM="3.3.4"
 FULL_VERSION_VIRTUALBOX="6.0.14r133895"
 
 VERSION_VIRTUALBOX="$(echo "$FULL_VERSION_VIRTUALBOX" | cut -dr -f1)"
@@ -375,21 +375,21 @@ function install_kubectl_ubuntu(){
 }
 
 
-function check_helm(){ version "$ALADDIN_BIN/helm version --client" "Client.*v$VERSION_HELM" ; }
+function check_helm(){ version "$ALADDIN_BIN/helm version" "$VERSION_HELM" ; }
 function install_helm_win(){
-    typeset url="https://storage.googleapis.com/kubernetes-helm/helm-v${VERSION_HELM}-windows-amd64.tar.gz"
-    install_url_tgz "helm.exe" "windows-amd64/helm.exe" "$url"
+    typeset url="https://get.helm.sh/helm-v${VERSION_HELM}-windows-amd64.zip"
+    install_url_zip "helm.exe" "windows-amd64/helm.exe" "$url"
 }
 function install_helm_mac(){
-    typeset url="https://storage.googleapis.com/kubernetes-helm/helm-v${VERSION_HELM}-darwin-amd64.tar.gz"
+    typeset url="https://get.helm.sh/helm-v${VERSION_HELM}-darwin-amd64.tar.gz"
     install_url_tgz "helm" "darwin-amd64/helm" "$url"
 }
 function install_helm_alpine(){
-    typeset url="https://storage.googleapis.com/kubernetes-helm/helm-v${VERSION_HELM}-linux-amd64.tar.gz"
+    typeset url="https://get.helm.sh/helm-v${VERSION_HELM}-linux-amd64.tar.gz"
     install_url_tgz "helm" "linux-amd64/helm" "$url"
 }
 function install_helm_ubuntu(){
-    typeset url="https://storage.googleapis.com/kubernetes-helm/helm-v${VERSION_HELM}-linux-amd64.tar.gz"
+    typeset url="https://get.helm.sh/helm-v${VERSION_HELM}-linux-amd64.tar.gz"
     install_url_tgz "helm" "linux-amd64/helm" "$url"
 }
 
