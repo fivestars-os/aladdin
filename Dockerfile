@@ -36,16 +36,16 @@ ARG KUBE_VERSION=1.15.6
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/amd64/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
-ARG HELM_VERSION=2.16.1
-RUN curl -L -o- https://storage.googleapis.com/kubernetes-helm/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar -zxvf - && \
-    cp linux-amd64/helm /usr/local/bin/helm && \
-    chmod 755 /usr/local/bin/helm && \
-    helm init --client-only
+ARG HELM2_VERSION=2.16.1
+RUN curl -L -o- https://storage.googleapis.com/kubernetes-helm/helm-v$HELM2_VERSION-linux-amd64.tar.gz | tar -zxvf - && \
+    cp linux-amd64/helm /usr/local/bin/helm2 && \
+    chmod 755 /usr/local/bin/helm2 && \
+    helm2 init --client-only
 
-ARG HELM3_VERSION=3.3.0
-RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 && \
-    chmod 700 get_helm.sh && \
-    BINARY_NAME=helm3 ./get_helm.sh --version v$HELM3_VERSION
+ARG HELM_VERSION=3.3.4
+RUN curl -L -o- https://get.helm.sh/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar -zxvf - && \
+    cp linux-amd64/helm /usr/local/bin/helm && \
+    chmod 755 /usr/local/bin/helm
 
 ARG KOPS_VERSION=1.15.0
 RUN curl -L -o /usr/local/bin/kops https://github.com/kubernetes/kops/releases/download/$KOPS_VERSION/kops-linux-amd64 && \

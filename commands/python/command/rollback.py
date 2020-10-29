@@ -17,19 +17,24 @@ def parse_args(sub_parser):
     subparser.add_argument(
         "--num-versions", type=int, default=1, help="how many versions to rollback, defaults to 1"
     )
+    subparser.add_argument(
+        "--helm2",
+        action="store_true",
+        help="Use helm2 instead of helm3",
+    )
 
 
 def rollback_args(args):
-    rollback(args.project, args.num_versions, args.namespace, args.chart)
+    rollback(args.project, args.num_versions, args.namespace, args.chart, args.helm2)
 
 
-def rollback(project, num_versions, namespace, chart=None):
-    helm = Helm()
+def rollback(project, num_versions, namespace, chart=None, helm2=False):
+    helm = Helm(helm2)
 
     cr = cluster_rules(namespace=namespace)
     hr = HelmRules(cr, chart or project)
 
-    helm.rollback_relative(hr, num_versions)
+    helm.rollback_relative(hr, num_versions, namespace)
 
     sync_ingress.sync_ingress(namespace)
     sync_dns.sync_dns(namespace)
