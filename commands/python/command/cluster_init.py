@@ -39,7 +39,9 @@ def cluster_init(force=False, helm2=False):
         ref = project["ref"]
         project_namespace = project["namespace"]
         repo = project.get("repo") or project_name
-        if not force and helm.release_exists(f"{project_name}-{project_namespace}"):
+        if not force and helm.release_exists(
+            f"{project_name}-{project_namespace}", project_namespace
+        ):
             continue
         deploy.deploy(
             project_name,
