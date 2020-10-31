@@ -40,7 +40,7 @@ def namespace_init(namespace, force=False, helm2=False):
         project_name = project["project"]
         ref = project["ref"]
         repo = project.get("repo") or project_name
-        if not force and helm.release_exists(f"{project_name}-{namespace}"):
+        if not force and helm.release_exists(f"{project_name}-{namespace}", namespace):
             continue
         deploy.deploy(
             project_name,
