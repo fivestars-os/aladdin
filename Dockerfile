@@ -36,12 +36,6 @@ ARG KUBE_VERSION=1.15.6
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/amd64/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
-ARG HELM2_VERSION=2.16.1
-RUN curl -L -o- https://storage.googleapis.com/kubernetes-helm/helm-v$HELM2_VERSION-linux-amd64.tar.gz | tar -zxvf - && \
-    cp linux-amd64/helm /usr/local/bin/helm2 && \
-    chmod 755 /usr/local/bin/helm2 && \
-    helm2 init --client-only
-
 ARG HELM_VERSION=3.3.4
 RUN curl -L -o- https://get.helm.sh/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar -zxvf - && \
     cp linux-amd64/helm /usr/local/bin/helm && \

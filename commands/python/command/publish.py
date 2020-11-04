@@ -56,11 +56,6 @@ def parse_args(sub_parser):
         action="store_true",
         help="recursively initialize and update all submodules included in the project",
     )
-    subparser.add_argument(
-        "--helm2",
-        action="store_true",
-        help="Use helm2 instead of helm3",
-    )
 
     clean_options_groups.add_argument_group(remote_options_group)
 
@@ -69,7 +64,7 @@ def parse_args(sub_parser):
 
 def publish_args(args):
     if args.build_local:
-        publish(args.build_only, args.build_publish_ecr_only, args.publish_helm_only, args.helm2)
+        publish(args.build_only, args.build_publish_ecr_only, args.publish_helm_only)
     else:
         publish_clean(
             args.build_only,
@@ -77,16 +72,15 @@ def publish_args(args):
             args.publish_helm_only,
             args.repo,
             args.git_ref,
-            args.init_submodules,
-            args.helm2
+            args.init_submodules
         )
 
 
-def publish(build_only, build_publish_ecr_only, publish_helm_only, helm2=False):
+def publish(build_only, build_publish_ecr_only, publish_helm_only):
     pc = ProjectConf()
     pr = PublishRules()
     d = DockerCommands()
-    h = Helm(helm2)
+    h = Helm()
 
     # tags is a list in case we want to add other tags in the future
     tags = [Git.get_hash()]
@@ -112,7 +106,7 @@ def publish(build_only, build_publish_ecr_only, publish_helm_only, helm2=False):
 
 
 def publish_clean(
-    build_only, build_publish_ecr_only, publish_helm_only, repo, git_ref, init_submodules, helm2=False
+    build_only, build_publish_ecr_only, publish_helm_only, repo, git_ref, init_submodules
 ):
     g = Git()
     git_account = load_git_configs()["account"]
@@ -142,4 +136,4 @@ def publish_clean(
                 )
                 return
         with working_directory(tmpdirname):
-            publish(build_only, build_publish_ecr_only, publish_helm_only, helm2)
+            publish(build_only, build_publish_ecr_only, publish_helm_only)
