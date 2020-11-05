@@ -43,6 +43,8 @@ The recommended way to install aladdin is using the [install script](./install-a
 
     $ ./install-aladdin
 
+This script will install [pipx](https://github.com/pipxproject/pipx) and then use it to install aladdin in its own virtual environment.
+
 You may also want to add `~/.aladdin/bin` to your path:
 
     $ export PATH=$PATH:~/.aladdin/bin
