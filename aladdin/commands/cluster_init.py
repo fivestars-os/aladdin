@@ -18,21 +18,16 @@ def parse_args(sub_parser):
         action="store_true",
         help="don't check if cluster init projects are already installed before installing",
     )
-    subparser.add_argument(
-        "--helm2",
-        action="store_true",
-        help="Use helm2 instead of helm3",
-    )
     subparser.set_defaults(func=cluster_init_args)
 
 
 def cluster_init_args(args):
-    cluster_init(args.force, args.helm2)
+    cluster_init(args.force)
 
 
 @container_command
-def cluster_init(force=False, helm2=False):
-    helm = Helm(helm2)
+def cluster_init(force=False):
+    helm = Helm()
     cr = cluster_rules()
     cluster_init_projects = cr.cluster_init
     for project in cluster_init_projects:
@@ -40,7 +35,9 @@ def cluster_init(force=False, helm2=False):
         ref = project["ref"]
         project_namespace = project["namespace"]
         repo = project.get("repo") or project_name
-        if not force and helm.release_exists(f"{project_name}-{project_namespace}"):
+        if not force and helm.release_exists(
+            f"{project_name}-{project_namespace}", project_namespace
+        ):
             continue
         deploy.deploy(
             project_name,

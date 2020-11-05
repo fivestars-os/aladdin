@@ -46,11 +46,6 @@ def parse_args(sub_parser):
         help="which git repo to pull from, which should be used if it differs from chart name",
     )
     subparser.add_argument(
-        "--helm2",
-        action="store_true",
-        help="Use helm2 instead of helm3",
-    )
-    subparser.add_argument(
         "--set-override-values",
         default=[],
         nargs="+",
@@ -68,7 +63,6 @@ def deploy_args(args):
         args.force,
         args.force_helm,
         args.repo,
-        args.helm2,
         args.set_override_values
     )
 
@@ -83,14 +77,13 @@ def deploy(
     force=False,
     force_helm=False,
     repo=None,
-    helm2=False,
     set_override_values=None
 ):
     if set_override_values is None:
         set_override_values = []
     with tempfile.TemporaryDirectory() as tmpdirname:
         pr = PublishRules()
-        helm = Helm(helm2)
+        helm = Helm()
         cr = cluster_rules(namespace=namespace)
         helm_chart_path = "{}/{}".format(tmpdirname, chart or project)
         hr = HelmRules(cr, chart or project)

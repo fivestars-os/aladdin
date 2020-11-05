@@ -16,20 +16,15 @@ def parse_args(sub_parser):
         "--chart",
         help="which chart in the project to undeploy, defaults to the project name"
     )
-    subparser.add_argument(
-        "--helm2",
-        action="store_true",
-        help="Use helm2 instead of helm3",
-    )
 
 
 def undeploy_args(args):
-    undeploy(args.project, args.namespace, args.chart, args.helm2)
+    undeploy(args.project, args.namespace, args.chart)
 
 
 @container_command
-def undeploy(project, namespace, chart=None, helm2=False):
-    helm = Helm(helm2)
+def undeploy(project, namespace, chart=None):
+    helm = Helm()
 
     cr = cluster_rules(namespace=namespace)
     hr = HelmRules(cr, chart or project)
