@@ -3,8 +3,14 @@ scripts/infra_k8s_check_files/*
 scripts/infra_k8s_check
 scripts/dev/*
 .git/
+.githooks
 
 **.idea/
 
 *.pyc
 *.DS_Store
+*.egg-info
+.venv
+diagram
+docs
+config-example
