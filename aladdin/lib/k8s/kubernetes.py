@@ -263,6 +263,11 @@ class Kubernetes(object):
     def update_ingress(self, name, body):
         self.extensions_v1_beta1_api.patch_namespaced_ingress(name, self.namespace, body)
 
+    def delete_ingress(self, name):
+        self.extensions_v1_beta1_api.delete_namespaced_ingress(
+            name, self.namespace, body=client.V1DeleteOptions()
+        )
+
     def scale(self, deployment, replicas, wait_for=False):
         apps_v1_beta1_client = client.AppsV1beta1Api()
         # create scale object

@@ -325,13 +325,13 @@ function prepare_docker_subcommands() {
         fi
     fi
 
-    if "$DEV" || "$IS_LOCAL"; then
-        MOUNTS_CMD="$MOUNTS_CMD -v /:/aladdin_root"
-        MOUNTS_CMD="$MOUNTS_CMD --workdir /aladdin_root$(pathnorm "$PWD")"
+    if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
+        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
-    if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
-        ALADDIN_PLUGIN_CMD="-v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
+    if "$DEV" || "$IS_LOCAL"; then
+        MOUNTS_CMD="$MOUNTS_CMD -v /:/aladdin_root"
+        MOUNTS_CMD="$MOUNTS_CMD -w /aladdin_root$(pathnorm "$PWD")"
     fi
 }
 
@@ -389,7 +389,7 @@ function enter_docker_container() {
         `# Mount minikube parts` \
         -v /var/run/docker.sock:/var/run/docker.sock \
         `# Specific command` \
-        ${MOUNTS_CMD:-} ${ALADDIN_PLUGIN_CMD:-} \
+        ${MOUNTS_CMD} \
         "$aladdin_image" \
         `# Finally, launch the command` \
         /root/aladdin/aladdin-container.sh "$@"

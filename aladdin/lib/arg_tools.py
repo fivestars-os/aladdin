@@ -5,7 +5,6 @@ import subprocess
 import sys
 import pkg_resources
 
-import aladdin
 from aladdin.config import PROJECT_ROOT
 
 

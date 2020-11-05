@@ -33,7 +33,11 @@ def sync_ingress(namespace):
         )
         if any(i for i in ingress_list if i.metadata.name == ingress.metadata.name):
             # update existing ingress
-            k.update_ingress(ingress.metadata.name, ingress)
+            if cr.is_local:
+                k.delete_ingress(ingress.metadata.name)
+                k.create_ingress(ingress)
+            else:
+                k.update_ingress(ingress.metadata.name, ingress)
             logging.info("Successfully updated ingress")
         else:
             # create new ingress

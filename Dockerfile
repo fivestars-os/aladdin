@@ -80,4 +80,4 @@ ENV PATH /root/.venv/bin:/root/.poetry/bin:$PATH
 # Install aladdin
 COPY . .
 ARG POETRY_VIRTUALENVS_CREATE="false"
-RUN poetry install && rm -rf aladdin.egg-info
+RUN poetry install
