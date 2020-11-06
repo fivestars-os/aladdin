@@ -39,9 +39,11 @@ To set up, just clone the Aladdin GitHub repository to get started:
 
 The `infra_k8s_check.sh` script checks to see if all of aladdin's dependencies are installed. Depending on the dependency, it will warn if it is missing or install it in `~/.aladdin/bin` if possible. This script is also run every time you run aladdin.
 
-You may want to add aladdin to your path:
+The recommended way to install aladdin is using the [install script](./install-aladdin):
 
-    $ eval $(./aladdin.sh env)
+    $ ./install-aladdin
+
+This script will install [pipx](https://github.com/pipxproject/pipx) and then use it to install aladdin in its own virtual environment.
 
 You may also want to add `~/.aladdin/bin` to your path:
 
@@ -73,7 +75,7 @@ aladdin uses minikube to get access to docker functionality.
 It also sets up minikube (file sharing etc) so that you can deploy to minikube.
 
 But you may not need that if this applies to your situation:
-1. You already have docker installed (say using docker.app on mac for example) 
+1. You already have docker installed (say using docker.app on mac for example)
 1. You are using an alternative to minikube (like docker-desktop or kind, etc) for local cluster or
 1. You are using aladdin to connect to a remote cluster (like staging, prod etc)
 
