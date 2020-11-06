@@ -33,7 +33,8 @@ RUN apt-get update && \
     less \
     openssl \
     vim-nox \
-    curl
+    curl \
+    ssh
 
 RUN pip install --no-cache-dir pip==20.2.3
 
