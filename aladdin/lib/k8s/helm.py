@@ -204,11 +204,13 @@ class Helm(object):
         # Values and overrides are defined/specified in helm args in a specific order
         # 1. project values.yaml (picked up by helm automatically)
         # 2. project cluster values.yaml
-        # 3. site.yaml file (on local)
-        # 4. aladdin-config cluster `values.yaml`
-        # 5. aladdin-config cluster namespace `values.yaml`
-        # 6. aladdin-config config.json "values" key
-        # 7. user passed overrides
+        # 3. project cluster namespace values.yaml
+        # 4. site.yaml file (on local)
+        # 5. aladdin-config cluster `values.yaml`
+        # 6. aladdin-config cluster namespace `values.yaml`
+        # 7. aladdin-config cluster config.json "values" key
+        # 8. aladdin-config cluster namespace config.json "values" key
+        # 9. user passed overrides
 
         for path in self.find_values(chart_path, cluster_name, namespace):
             command.append("--values={}".format(path))
