@@ -90,19 +90,18 @@ class Helm(object):
 
         # Find all possible values yaml files for override in increasing priority
         cluster_values_path = join(chart_path, "values", "values.{}.yaml".format(cluster_name))
-        cluster_namespace_values_path = join(
-            chart_path, "values", "values.{}.{}.yaml".format(cluster_name, namespace)
-        )
-        site_values_path = join(chart_path, "values", "site.yaml")  # Only usable on LOCAL
-
         if os.path.isfile(cluster_values_path):
             logger.info("Found cluster values file")
             values.append(cluster_values_path)
 
+        cluster_namespace_values_path = join(
+            chart_path, "values", "values.{}.{}.yaml".format(cluster_name, namespace)
+        )
         if os.path.isfile(cluster_namespace_values_path):
             logger.info("Found cluster namespace values file")
             values.append(cluster_namespace_values_path)
 
+        site_values_path = join(chart_path, "values", "site.yaml")  # Only usable on LOCAL
         if cluster_name == "LOCAL" and os.path.isfile(site_values_path):
             logger.info("Found site values file")
             values.append(site_values_path)
@@ -115,6 +114,7 @@ class Helm(object):
         if os.path.isfile(cluster_config_values_path):
             logger.info("Found cluster config values file")
             values.append(cluster_config_values_path)
+
         cluster_namespace_config_values_path = os.path.join(
             os.environ["ALADDIN_CONFIG_DIR"],
             cluster_name,
@@ -200,6 +200,15 @@ class Helm(object):
             "--install",
             "--namespace={}".format(namespace),
         ]
+
+        # Values and overrides are defined/specified in helm args in a specific order
+        # 1. project values.yaml (picked up by helm automatically)
+        # 2. project cluster values.yaml
+        # 3. site.yaml file (on local)
+        # 4. aladdin-config cluster `values.yaml`
+        # 5. aladdin-config cluster namespace `values.yaml`
+        # 6. aladdin-config config.json "values" key
+        # 7. user passed overrides
 
         for path in self.find_values(chart_path, cluster_name, namespace):
             command.append("--values={}".format(path))
