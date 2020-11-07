@@ -115,6 +115,15 @@ class Helm(object):
         if os.path.isfile(cluster_config_values_path):
             logger.info("Found cluster config values file")
             values.append(cluster_config_values_path)
+        cluster_namespace_config_values_path = os.path.join(
+            os.environ["ALADDIN_CONFIG_DIR"],
+            cluster_name,
+            namespace,
+            "values.yaml"
+        )
+        if os.path.isfile(cluster_namespace_config_values_path):
+            logger.info("Found cluster namespace config values file")
+            values.append(cluster_namespace_config_values_path)
 
         return values
 
