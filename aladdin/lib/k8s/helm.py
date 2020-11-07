@@ -107,6 +107,15 @@ class Helm(object):
             logger.info("Found site values file")
             values.append(site_values_path)
 
+        cluster_config_values_path = os.path.join(
+            os.environ["ALADDIN_CONFIG_DIR"],
+            cluster_name,
+            "values.yaml"
+        )
+        if os.path.isfile(cluster_config_values_path):
+            logger.info("Found cluster config values file")
+            values.append(cluster_config_values_path)
+
         return values
 
     def stop(self, helm_rules, namespace):
