@@ -413,7 +413,7 @@ version = "0.57.0"
 six = "*"
 
 [metadata]
-content-hash = "a86dfce5812f1a7f21331dc1c7ecc15a43ad73e12fa54c04027597c4d0657d1d"
+content-hash = "349616e0f9a4dfc515d1c53445b610760aa32604810d648f0c2acb6556cca58a"
 lock-version = "1.0"
 python-versions = "^3.7"
 
