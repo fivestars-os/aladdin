@@ -106,6 +106,15 @@ class Helm(object):
             logger.info("Found site values file")
             values.append(site_values_path)
 
+        aladdin_config_values_path = os.path.join(
+            os.environ["ALADDIN_CONFIG_DIR"],
+            "default",
+            "values.yaml"
+        )
+        if os.path.isfile(aladdin_config_values_path):
+            logger.info("Found aladdin config values file")
+            values.append(aladdin_config_values_path)
+
         cluster_config_values_path = os.path.join(
             os.environ["ALADDIN_CONFIG_DIR"],
             cluster_name,
@@ -206,11 +215,10 @@ class Helm(object):
         # 2. project cluster values.yaml
         # 3. project cluster namespace values.yaml
         # 4. site.yaml file (on local)
-        # 5. aladdin-config cluster `values.yaml`
-        # 6. aladdin-config cluster namespace `values.yaml`
-        # 7. aladdin-config cluster config.json "values" key
-        # 8. aladdin-config cluster namespace config.json "values" key
-        # 9. user passed overrides
+        # 5. aladdin-config default `values.yaml`
+        # 6. aladdin-config cluster `values.yaml`
+        # 7. aladdin-config cluster namespace `values.yaml`
+        # 8. user passed overrides
 
         for path in self.find_values(chart_path, cluster_name, namespace):
             command.append("--values={}".format(path))

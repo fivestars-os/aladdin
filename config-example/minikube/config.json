@@ -5,12 +5,6 @@
     "allowed_namespaces": [
         "*"
     ],
-    "values": {
-        "service.publicServiceType": "NodePort",
-        "deploy.ecr": "",
-        "deploy.imagePullPolicy": "IfNotPresent",
-        "service.certificateArn": "no-certificate-on-minikube"
-    },
     "cluster_init": [
     ]
 }
