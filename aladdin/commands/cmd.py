@@ -15,6 +15,12 @@ def parse_args(sub_parser):
         "app_name", type=str, metavar="app_name", help="app to run commands against"
     )
     subparser.add_argument(
+        "--vault_enabled",
+        help="Loads Vault env to access secrets",
+        default=False,
+        action="store_true"
+    )
+    subparser.add_argument(
         "command_args",
         type=str,
         metavar="comm_args",
@@ -26,11 +32,11 @@ def parse_args(sub_parser):
 
 
 def cmd_args(args):
-    cmd(args.app_name, args.command_args, args.namespace)
+    cmd(args.app_name, args.command_args, args.namespace, args.vault_enabled)
 
 
 @container_command
-def cmd(app_name, command_args, namespace=None):
+def cmd(app_name, command_args, namespace=None, vault_enabled=False):
     k = Kubernetes(namespace=namespace)
     pod_name = k.get_pod_name(f"{app_name}-commands")
 
@@ -42,7 +48,7 @@ def cmd(app_name, command_args, namespace=None):
             k.kub_exec(
                 pod_name,
                 f"{app_name}-commands",
-                "/bin/bash",
+                "/vault/vault-env" if vault_enabled else "/bin/bash",
                 "-c",
                 "command -v aladdin_command",
                 return_output=True,
