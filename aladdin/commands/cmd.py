@@ -48,7 +48,7 @@ def cmd(app_name, command_args, namespace=None, vault_enabled=False):
             k.kub_exec(
                 pod_name,
                 f"{app_name}-commands",
-                "/vault/vault-env" if vault_enabled else "/bin/bash",
+                "/bin/bash",
                 "-c",
                 "command -v aladdin_command",
                 return_output=True,
@@ -76,4 +76,7 @@ def cmd(app_name, command_args, namespace=None, vault_enabled=False):
             executable = "python"
 
     logging.info("Command output below...")
-    k.kub_exec(pod_name, f"{app_name}-commands", executable, *command_args)
+    if vault_enabled:
+        k.kub_exec(pod_name, f"{app_name}-commands", "/vault/vault-env", "executable, *command_args")
+    else:
+        k.kub_exec(pod_name, f"{app_name}-commands", executable, *command_args)
