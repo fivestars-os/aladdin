@@ -14,13 +14,13 @@ set -eu -o pipefail
 
 
 #- from : https://github.com/kubernetes/minikube/releases
-VERSION_MINIKUBE="1.9.2"
+VERSION_MINIKUBE="1.17.1"
 #- from : https://github.com/docker/docker-ce/releases
-VERSION_DOCKER="18.09.7"
+VERSION_DOCKER="20.10.2"
 #- from : https://github.com/kubernetes/kubernetes/releases
-VERSION_KUBECTL="1.15.6"
+VERSION_KUBECTL="1.19.7"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="3.3.4"
+VERSION_HELM="3.5.2"
 FULL_VERSION_VIRTUALBOX="6.0.14r133895"
 
 VERSION_VIRTUALBOX="$(echo "$FULL_VERSION_VIRTUALBOX" | cut -dr -f1)"

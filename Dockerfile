@@ -44,23 +44,24 @@ RUN curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2
 
 # Update all needed tool versions here
 
-ARG DOCKER_VERSION=18.09.7
+ARG DOCKER_VERSION=20.10.2
 RUN curl -L -o- https://download.docker.com/linux/static/stable/x86_64/docker-$DOCKER_VERSION.tgz | tar -zxvf - && \
     cp docker/docker /usr/local/bin/docker && \
     chmod 755 /usr/local/bin/docker
 
-ARG KUBE_VERSION=1.15.6
+ARG KUBE_VERSION=1.19.7
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/amd64/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
-ARG HELM_VERSION=3.3.4
+ARG HELM_VERSION=3.5.2
 RUN curl -L -o- https://get.helm.sh/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar -zxvf - && \
     cp linux-amd64/helm /usr/local/bin/helm && \
     chmod 755 /usr/local/bin/helm
 
-ARG KOPS_VERSION=1.15.0
-RUN curl -L -o /usr/local/bin/kops https://github.com/kubernetes/kops/releases/download/$KOPS_VERSION/kops-linux-amd64 && \
-    chmod 755 /usr/local/bin/kops
+ARG KOPS_VERSION=1.19.0
+RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VERSION/kops-linux-amd64 && \
+    chmod +x ./kops && \
+    mv ./kops /usr/local/bin/
 
 ARG ISTIO_VERSION=1.6.2
 RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
