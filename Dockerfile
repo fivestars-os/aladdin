@@ -38,11 +38,11 @@ RUN apt-get update && \
 
 RUN pip install --no-cache-dir pip==20.2.3
 
+# Update all needed tool versions here
+
 ARG AWS_IAM_AUTHENTICATOR_VERSION=1.17.9
 RUN curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/$AWS_IAM_AUTHENTICATOR_VERSION/2020-08-04/bin/linux/amd64/aws-iam-authenticator && \
     chmod 755 /usr/local/bin/aws-iam-authenticator
-
-# Update all needed tool versions here
 
 ARG DOCKER_VERSION=20.10.2
 RUN curl -L -o- https://download.docker.com/linux/static/stable/x86_64/docker-$DOCKER_VERSION.tgz | tar -zxvf - && \
@@ -58,7 +58,7 @@ RUN curl -L -o- https://get.helm.sh/helm-v$HELM_VERSION-linux-amd64.tar.gz | tar
     cp linux-amd64/helm /usr/local/bin/helm && \
     chmod 755 /usr/local/bin/helm
 
-ARG KOPS_VERSION=1.19.0
+ARG KOPS_VERSION=1.19.1
 RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VERSION/kops-linux-amd64 && \
     chmod +x ./kops && \
     mv ./kops /usr/local/bin/

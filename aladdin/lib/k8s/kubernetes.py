@@ -39,8 +39,8 @@ class Kubernetes(object):
                 raise KubernetesException("Could not configure kubernetes python client")
         configuration.assert_hostname = False
         self.core_v1_api = client.CoreV1Api()
-        self.apps_v1_beta1_api = client.AppsV1beta1Api()
-        self.extensions_v1_beta1_api = client.ExtensionsV1beta1Api()
+        self.apps_v1_api = client.AppsV1Api()
+        self.networking_v1_beta1_api = client.NetworkingV1beta1Api()
 
     def _kub_cmd(self, *args):
         # For commands that use kubectl - only exec is left
@@ -105,9 +105,9 @@ class Kubernetes(object):
         # Ingress and Deployment are the only k8s objs we care about not in the core_v1_api for
         # some reason, so we use other appropriate clients here
         if obj_type == "deployment":
-            get_func = getattr(self.apps_v1_beta1_api, get_func_name)
+            get_func = getattr(self.apps_v1_api, get_func_name)
         elif obj_type == "ingress":
-            get_func = getattr(self.extensions_v1_beta1_api, get_func_name)
+            get_func = getattr(self.networking_v1_beta1_api, get_func_name)
         else:
             get_func = getattr(self.core_v1_api, get_func_name)
         # Create a label selector filter if label_val was specified
@@ -241,7 +241,7 @@ class Kubernetes(object):
         self.core_v1_api.replace_namespaced_config_map(name, self.namespace, body)
 
     def update_deployment(self, name, body):
-        self.apps_v1_beta1_api.patch_namespaced_deployment(name, self.namespace, body)
+        self.apps_v1_api.patch_namespaced_deployment(name, self.namespace, body)
 
     # Submit a dummy patch to the deployment to trigger a rolling update on the deployment
     def rolling_update_no_change(self, deployment_name):
@@ -258,27 +258,26 @@ class Kubernetes(object):
         return (self.get_ingresses(label_val, label_key) + [default])[0]
 
     def create_ingress(self, body):
-        self.extensions_v1_beta1_api.create_namespaced_ingress(self.namespace, body)
+        self.networking_v1_beta1_api.create_namespaced_ingress(self.namespace, body)
 
     def update_ingress(self, name, body):
-        self.extensions_v1_beta1_api.patch_namespaced_ingress(name, self.namespace, body)
+        self.networking_v1_beta1_api.patch_namespaced_ingress(name, self.namespace, body)
 
     def delete_ingress(self, name):
-        self.extensions_v1_beta1_api.delete_namespaced_ingress(
+        self.networking_v1_beta1_api.delete_namespaced_ingress(
             name, self.namespace, body=client.V1DeleteOptions()
         )
 
     def scale(self, deployment, replicas, wait_for=False):
-        apps_v1_beta1_client = client.AppsV1beta1Api()
         # create scale object
-        scale_obj = client.AppsV1beta1Scale()
+        scale_obj = client.V1Scale()
         scale_obj.metadata = client.V1ObjectMeta()
         scale_obj.metadata.name = deployment
         scale_obj.metadata.namespace = self.namespace
-        scale_obj.spec = client.AppsV1beta1ScaleSpec()
+        scale_obj.spec = client.V1ScaleSpec()
         scale_obj.spec.replicas = replicas
 
-        apps_v1_beta1_client.replace_namespaced_deployment_scale(
+        self.apps_v1_api.replace_namespaced_deployment_scale(
             deployment, self.namespace, body=scale_obj
         )
 
