@@ -139,12 +139,23 @@ def cluster_rules(cluster=None, namespace="default"):
         pass
 
     rules = dict(default_cluster_config)
-    rules.update(rules, cluster_config)
+    _update_rules(rules, cluster_config)
     if namespace_override_config:
-        rules.update(namespace_override_config)
+        _update_rules(rules, namespace_override_config)
 
     allowed_namespaces = rules["allowed_namespaces"]
     if allowed_namespaces != ["*"] and namespace not in allowed_namespaces:
         raise KeyError(f"Namespace {namespace} is not allowed on cluster {cluster}")
 
     return ClusterRules(rules, namespace)
+
+
+def _update_rules(rules, override):
+    # Update values separately and save it in values variable since it's an inner dictionary
+    values = rules.get("values", {})
+    values.update(override.get("values", {}))
+
+    rules.update(override)
+
+    # Put back updated values
+    rules["values"] = values
