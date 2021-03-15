@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "aladdin"
-version = "1.15.6.16"
+# NOTE: Also update version in "aladdin/__init__.py"
+version = "1.19.7.1"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
 include = [
