@@ -1,10 +1,5 @@
 {
     "aws_profile": "abcdefgh",
-    "values": {
-        "service.publicServiceType": "LoadBalancer",
-        "service.privateServiceType": "ClusterIP",
-        "deploy.imagePullPolicy": "Always"
-    },
     "allowed_namespaces": [
         "default", "kube-system"
     ],
