@@ -1,3 +1,4 @@
-VERSION = (1, 19, 7, 3)
-__version__ = ".".join(map(str, VERSION))
-# NOTE: Also update version in "pyproject.toml"
+import importlib.metadata
+
+__version__ = importlib.metadata.version("aladdin")
+VERSION = tuple(__version__.split("."))
