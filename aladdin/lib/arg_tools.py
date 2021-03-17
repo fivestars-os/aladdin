@@ -1,3 +1,4 @@
+import argparse
 import functools
 import json
 import os
@@ -55,3 +56,34 @@ def get_bash_commands():
             sub_parser.set_defaults(func=lambda args: bash_wrapper())
         commands.append((bash_cmd, add_command))
     return commands
+
+
+HELM_OPTION_PARSER = argparse.ArgumentParser(add_help=False)
+HELM_OPTION_PARSER.add_argument(
+    "--chart", help="which chart in the project to use, defaults to the project name"
+)
+HELM_OPTION_PARSER.add_argument(
+    "--dry-run",
+    "-d",
+    action="store_true",
+    help="Run the helm as test and don't actually run it",
+)
+HELM_OPTION_PARSER.add_argument(
+    "--force-helm",
+    action="store_true",
+    help="Have helm force resource update through delete/recreate if needed",
+)
+HELM_OPTION_PARSER.add_argument(
+    "--set-override-values",
+    default=[],
+    nargs="+",
+    help="override values in the values file. Syntax: --set key1=value1 key2=value2 ...",
+)
+
+COMMON_OPTION_PARSER = argparse.ArgumentParser(add_help=False)
+COMMON_OPTION_PARSER.add_argument(
+    "--namespace",
+    "-n",
+    default=os.getenv("NAMESPACE", "default"),
+    help="namespace name, defaults current: [{}]".format(os.getenv("NAMESPACE", "default")),
+)

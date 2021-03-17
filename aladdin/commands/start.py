@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 
-from aladdin.lib.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, HELM_OPTION_PARSER, container_command
 from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.lib.helm_rules import HelmRules
@@ -10,44 +10,23 @@ from aladdin.lib.project_conf import ProjectConf
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser("start", help="Start the helm chart in local")
+    subparser = sub_parser.add_parser(
+        "start", help="Start the helm chart in local",
+        parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER]
+    )
     subparser.set_defaults(func=start_args)
-    add_namespace_argument(subparser)
-    subparser.add_argument(
-        "--chart",
-        action="append",
-        dest="charts",
-        help="Only start these charts (may be specified multiple times)",
-    )
-    subparser.add_argument(
-        "--dry-run",
-        "-d",
-        action="store_true",
-        help="Run the helm as test and don't actually run it",
-    )
     subparser.add_argument(
         "--with-mount",
         "-m",
         action="store_true",
         help="Mount user's host's project repo onto container",
     )
-    subparser.add_argument(
-        "--force-helm",
-        action="store_true",
-        help="Have helm force resource update through delete/recreate if needed",
-    )
-    subparser.add_argument(
-        "--set-override-values",
-        default=[],
-        nargs="+",
-        help="override values in the values file. Syntax: --set key1=value1 key2=value2 ...",
-    )
 
 
 def start_args(args):
     start(
         args.namespace,
-        args.charts,
+        args.chart,
         args.dry_run,
         args.with_mount,
         args.force_helm,
@@ -58,7 +37,7 @@ def start_args(args):
 @container_command
 def start(
     namespace,
-    charts=None,
+    chart=None,
     dry_run=False,
     with_mount=False,
     force_helm=False,
@@ -71,9 +50,11 @@ def start(
 
     cr = cluster_rules(namespace=namespace)
 
-    if charts is None:
+    if not chart:
         # Start each of the project's charts
         charts = [os.path.basename(chart_path) for chart_path in pc.get_helm_chart_paths()]
+    else:
+        charts = [chart]
 
     # Values precedence is command < cluster rules < --set-override-values
     # Start command values
@@ -92,8 +73,16 @@ def start(
     }
     # Update with cluster rule values
     values.update(cr.values)
+    # Update with user-specified values file
+    values_files = [
+        f"--values={file_name}" for file_name in set_override_values
+        if "=" not in file_name
+    ]
     # Update with --set-override-values
-    value_overrides = {k: v for k, v in (value.split("=") for value in set_override_values)}
+    value_overrides = {
+        k: v for k, v in
+        (value.split("=") for value in set_override_values if "=" in value)
+    }
     values.update(value_overrides)
 
     sync_required = False
@@ -103,9 +92,15 @@ def start(
             if chart_name in charts:
                 hr = HelmRules(cr, chart_name)
                 if dry_run:
-                    helm.dry_run(hr, chart_path, cr.cluster_name, namespace, **values)
+                    helm.dry_run(
+                        hr, chart_path, cr.cluster_name, namespace,
+                        helm_args=values_files, **values
+                    )
                 else:
-                    helm.start(hr, chart_path, cr.cluster_name, namespace, force_helm, **values)
+                    helm.start(
+                        hr, chart_path, cr.cluster_name, namespace,
+                        force=force_helm, helm_args=values_files, **values
+                    )
                     sync_required = True
     finally:
         # Sync if any helm.start() call succeeded, even if a subsequent one failed

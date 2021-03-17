@@ -3,7 +3,7 @@ import logging
 import sys
 import tempfile
 
-from aladdin.lib.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, HELM_OPTION_PARSER, container_command
 from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.config import load_git_configs
@@ -15,21 +15,12 @@ from aladdin.lib.publish_rules import PublishRules
 
 def parse_args(sub_parser):
     subparser = sub_parser.add_parser(
-        "deploy", help="Start the helm chart in non local environments"
+        "deploy", help="Start the helm chart in non local environments",
+        parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER]
     )
     subparser.set_defaults(func=deploy_args)
-    add_namespace_argument(subparser)
     subparser.add_argument("project", help="which project to deploy")
     subparser.add_argument("git_ref", help="which git hash or tag or branch to deploy")
-    subparser.add_argument(
-        "--chart", help="which chart in the project to deploy, defaults to the project name"
-    )
-    subparser.add_argument(
-        "--dry-run",
-        "-d",
-        action="store_true",
-        help="Run the helm as test and don't actually run it",
-    )
     subparser.add_argument(
         "--force",
         "-f",
@@ -37,19 +28,8 @@ def parse_args(sub_parser):
         help="Skip git branch verification if check_branch is enabled on the cluster",
     )
     subparser.add_argument(
-        "--force-helm",
-        action="store_true",
-        help="Have helm force resource update through delete/recreate if needed",
-    )
-    subparser.add_argument(
         "--repo",
         help="which git repo to pull from, which should be used if it differs from chart name",
-    )
-    subparser.add_argument(
-        "--set-override-values",
-        default=[],
-        nargs="+",
-        help="override values in the values file. Syntax: --set key1=value1 key2=value2 ...",
     )
 
 
@@ -120,8 +100,16 @@ def deploy(
         }
         # Update with cluster rule values
         values.update(cr.values)
+        # Update with user-specified values file
+        values_files = [
+            f"--values={file_name}" for file_name in set_override_values
+            if "=" not in file_name
+        ]
         # Update with --set-override-values
-        value_overrides = {k: v for k, v in (value.split("=") for value in set_override_values)}
+        value_overrides = {
+            k: v for k, v in
+            (value.split("=") for value in set_override_values if "=" in value)
+        }
         values.update(value_overrides)
 
         if dry_run:
@@ -130,7 +118,7 @@ def deploy(
                 helm_chart_path,
                 cr.cluster_name,
                 namespace,
-                helm_args=helm_args,
+                helm_args=values_files + helm_args,
                 **values
             )
         else:
@@ -140,7 +128,7 @@ def deploy(
                 cr.cluster_name,
                 namespace,
                 force_helm,
-                helm_args=helm_args,
+                helm_args=values_files + helm_args,
                 **values,
             )
             sync_ingress.sync_ingress(namespace)
