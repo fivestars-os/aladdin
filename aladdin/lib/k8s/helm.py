@@ -69,6 +69,9 @@ class Helm(object):
             if obj.key.endswith(f".{git_ref}.tgz")
         ]
 
+        if not package_keys:
+            logger.error(f"No published charts found for: {project_name} at {git_ref}")
+
         # Download the chart archives and extract the contents into their own chart sub-directories
         for package_key in package_keys:
             downloaded_package = join(extract_dir, os.path.basename(package_key))
