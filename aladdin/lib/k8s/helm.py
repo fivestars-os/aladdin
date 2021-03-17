@@ -86,16 +86,27 @@ class Helm(object):
                     pass
 
     def find_values(self, chart_path, cluster_name, namespace):
+        """
+        Find all possible values yaml files for override in increasing priority
+        Values and overrides are defined/specified in helm args in a specific order
+        1. project values.yaml (picked up by helm automatically)
+        2. project cluster values.yaml
+        3. project cluster namespace values.yaml
+        4. site.yaml file (on local)
+        5. aladdin-config default `values.yaml`
+        6. aladdin-config cluster `values.yaml`
+        7. aladdin-config cluster namespace `values.yaml`
+        8. user passed overrides
+        """
         values = []
 
-        # Find all possible values yaml files for override in increasing priority
-        cluster_values_path = join(chart_path, "values", "values.{}.yaml".format(cluster_name))
+        cluster_values_path = join(chart_path, "values", f"values.{cluster_name}.yaml")
         if os.path.isfile(cluster_values_path):
             logger.info("Found cluster values file")
             values.append(cluster_values_path)
 
         cluster_namespace_values_path = join(
-            chart_path, "values", "values.{}.{}.yaml".format(cluster_name, namespace)
+            chart_path, "values", f"values.{cluster_name}.{namespace}.yaml"
         )
         if os.path.isfile(cluster_namespace_values_path):
             logger.info("Found cluster namespace values file")
@@ -105,6 +116,15 @@ class Helm(object):
         if cluster_name == "LOCAL" and os.path.isfile(site_values_path):
             logger.info("Found site values file")
             values.append(site_values_path)
+
+        aladdin_config_values_path = os.path.join(
+            os.environ["ALADDIN_CONFIG_DIR"],
+            "default",
+            "values.yaml"
+        )
+        if os.path.isfile(aladdin_config_values_path):
+            logger.info("Found aladdin config values file")
+            values.append(aladdin_config_values_path)
 
         cluster_config_values_path = os.path.join(
             os.environ["ALADDIN_CONFIG_DIR"],
@@ -200,17 +220,6 @@ class Helm(object):
             "--install",
             "--namespace={}".format(namespace),
         ]
-
-        # Values and overrides are defined/specified in helm args in a specific order
-        # 1. project values.yaml (picked up by helm automatically)
-        # 2. project cluster values.yaml
-        # 3. project cluster namespace values.yaml
-        # 4. site.yaml file (on local)
-        # 5. aladdin-config cluster `values.yaml`
-        # 6. aladdin-config cluster namespace `values.yaml`
-        # 7. aladdin-config cluster config.json "values" key
-        # 8. aladdin-config cluster namespace config.json "values" key
-        # 9. user passed overrides
 
         for path in self.find_values(chart_path, cluster_name, namespace):
             command.append("--values={}".format(path))

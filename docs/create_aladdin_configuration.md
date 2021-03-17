@@ -103,17 +103,12 @@ Most these variables are just used by kops when creating the cluster, which is w
 ## Cluster config.json file
 The config.json file in each of your subdirectories in your config folder will contain cluster-specific configuration for your aladdin installation. Here is an example config.json file for a specific cluster:
 
-```
+```json
 {
     "aws_profile": "abcdefgh",
     "cluster_name": "CLUSTERDEV",
     "root_dns": "clusterdev.exampledev.info",
     "service_dns_suffix": "exampletest.com",
-    "values": {
-        "service.publicServiceType": "LoadBalancer",
-        "service.privateServiceType": "ClusterIP",
-        "deploy.imagePullPolicy": "Always"
-    },
     "allowed_namespaces": [
         "default", "kube-system"
     ],
@@ -127,7 +122,6 @@ The config.json file in each of your subdirectories in your config folder will c
 - cluster_name section: the name of your cluster. This will match the name of the subdirectory in most cases.
 - root_dns section: the dns for your cluster. This should match the DNS_ZONE from your env.sh file in most cases. This is used by aladdin when it maps dns for each of your externally accessible services.
 - service_dns_suffix section: aladdin maps your services to `{service name}.{namespace}.{root_dns}`, and thus, will request a certificate for `*.{namespace}.{root_dns}`. By setting this, it will instead request a certificate for `*.{service_dns_suffix}`. Note that you will still need manually to map your service from `{service name}.{service_dns_suffix}` to `{service name}.{namespace}.{root_dns}`.
- - values section: which values to set for all helm charts in this cluster when running `aladdin deploy` or `aladdin start`. Additionally you can use a `values.yaml` file in the same directory as your `config.json`.
 - allowed_namespaces section: which namespaces you are allowed to interact with in this cluster
 - check_branch section (not shown in example): which branch on your remote repo to check against before deploying (e.g. set this to master for your production cluster)
 - cluster_init section: which projects to install when running `aladdin cluster init`. You must specify the project, ref, and namespace.
@@ -137,3 +131,18 @@ The config.json file in each of your subdirectories in your config folder will c
 Note: Aladdin also supports a `default/` folder which can have a `config.json` file that other clusters will inherit from.
 
 Note: Aladdin allows you to override configuration on a namespace level as well. To do this, create a namespace-overrides folder in your cluster subdirectory folder, and create a folder for each namespace you want to override config for. Then create a `config.json` file with any overrides. See the `config-example/CLUSTERDEV/namespace-overrides/test/config.json` file for an example.
+
+## Cluster values.yaml file
+The values.yaml file in each of your subdirectories in your config folder will contain cluster-specific values which will be set for all helm charts in this cluster when running `aladdin deploy` or `aladdin start`. Here is an example values.yaml file for a minikube cluster:
+
+```yaml
+service:
+  publicServiceType: "NodePort"
+  certificateArn: "no-certificate-on-minikube"
+
+deploy:
+  ecr:
+  imagePullPolicy: "IfNotPresent"
+```
+
+Note: Aladdin supports a `values.yaml` file in the "default" directory as well as in namespace-override sub-directories.
