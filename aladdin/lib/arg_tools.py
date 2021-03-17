@@ -77,7 +77,10 @@ HELM_OPTION_PARSER.add_argument(
     "--set-override-values",
     default=[],
     nargs="+",
-    help="override values in the values file. Syntax: --set key1=value1 key2=value2 ...",
+    help=(
+        "override values in the values file. "
+        "Syntax: --set-override-values key1=value1 key2=value2 customValues.yaml ..."
+    ),
 )
 
 COMMON_OPTION_PARSER = argparse.ArgumentParser(add_help=False)

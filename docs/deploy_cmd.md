@@ -27,8 +27,7 @@ optional arguments:
                         than a single chart in the lamp.json file, defaults
                         to the project name
   --set-override-values SET_OVERRIDE_VALUES [SET_OVERRIDE_VALUES ...]
-                        override values in the values file. Syntax: --set
-                        key1=value1 key2=value2 ...
+                        override values in the values file. Syntax: --set-override-values key1=value1 key2=value2 customValues.yaml ...
 ```
 - Example: `aladdin -c DEV -n test deploy aladdin-demo 8d2j8f30bd`
 - Example: `aladdin -c PROD deploy aladdin-demo master`
