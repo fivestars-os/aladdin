@@ -126,7 +126,7 @@ function environment_init() {
 
 function _is_cluster_ready() {
     # Cluster is ready if we are on LOCAL or if we can pull kube config via kops
-    "$IS_LOCAL" || kops export kubecfg --name $CLUSTER_NAME
+    "$IS_LOCAL" || kops export kubecfg --name $CLUSTER_NAME --admin
 }
 
 function _handle_authentication_config() {
