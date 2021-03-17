@@ -20,7 +20,7 @@ class Helm(object):
     def helm_home(self):
         return join(expanduser("~"), ".helm")
 
-    def publish(self, project_name, publish_rules, chart_path, hash):
+    def publish(self, project_name, publish_rules, chart_path, git_hash):
 
         # HelmContext = namedtuple('HelmContext', ['chart_home', 'values_files', 'name'])
 
@@ -35,6 +35,8 @@ class Helm(object):
             "package",
             "--version",
             version,
+            "--app-version",
+            git_hash,
             chart_name
         ], cwd=charts_dir)
 

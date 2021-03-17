@@ -84,8 +84,9 @@ def publish(build_only, build_publish_ecr_only, publish_helm_only):
     d = DockerCommands()
     h = Helm()
 
+    git_hash = Git.get_hash()
     # tags is a list in case we want to add other tags in the future
-    tags = [Git.get_hash()]
+    tags = [git_hash]
 
     if not publish_helm_only:
         for tag in tags:
@@ -101,10 +102,9 @@ def publish(build_only, build_publish_ecr_only, publish_helm_only):
                 asso[image_tag] = res
 
     if not build_only and not build_publish_ecr_only:
-        hash = tags[0]
         for path in pc.get_helm_chart_paths():
-            h.publish(pc.name, pr, path, hash)
-    logging.info(f"Ran publish on {pc.name} with git hash: {tags[0]}")
+            h.publish(pc.name, pr, path, git_hash)
+    logging.info(f"Ran publish on {pc.name} with git hash: {git_hash}")
 
 
 def publish_clean(
