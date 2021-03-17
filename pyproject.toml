@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "aladdin"
-version = "1.15.6.18"
+# NOTE: Also update version in "aladdin/__init__.py"
+version = "1.19.7.3"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
 include = [
@@ -15,7 +16,7 @@ awscli = "1.18.175"
 boto3 = "1.16.15"
 cached-property = "1.5.1"
 jmespath = "0.10.0"
-kubernetes = "11.0.0"
+kubernetes = "12.0.01"
 orderedset = "^2.0.3"
 coloredlogs = "^14.0"
 verboselogs = "^1.7"
