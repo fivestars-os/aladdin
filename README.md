@@ -279,11 +279,10 @@ Aladdin supports an ingress per namespace feature. This is off by default. We re
     }
 ```
 The "namespace_init" field tells aladdin to install the ingress-nginx project on namespace creation. This will be needed on remote clusters, but not on minikube, since we enable the ingress minikube addon.
-The "ingress_info" field tells aladdin how to sync your ingress. Services installed on a cluster with this feature will want to have their service type set to `NodePort` rather than `LoadBalancer`. This is most easily done by setting it in the values field in your cluster's config.json file, i.e. adding this:
-```
-    "values": {
-        "service.publicServiceType": "NodePort",
-    }
+The "ingress_info" field tells aladdin how to sync your ingress. Services installed on a cluster with this feature will want to have their service type set to `NodePort` rather than `LoadBalancer`. This is most easily done by setting it in the values.yaml in your cluster's directory in aladdin config, i.e. adding this:
+```yaml
+  service:
+    publicServiceType: "NodePort"
 ```
 and then referencing `{{ service.publicServiceType }}` in your service yaml file.
 

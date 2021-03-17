@@ -1,0 +1,7 @@
+service:
+  publicServiceType: "NodePort"
+  certificateArn: "no-certificate-on-minikube"
+
+deploy:
+  ecr:
+  imagePullPolicy: "IfNotPresent"

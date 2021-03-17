@@ -316,7 +316,9 @@ function prepare_docker_subcommands() {
     # config maps and other settings can be customized by developers
     MOUNTS_CMD=""
     if "$DEV"; then
-        MOUNTS_CMD="-v $(pathnorm "$ALADDIN_DIR"):/root/aladdin"
+        MOUNTS_CMD="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
+        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
+        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
     fi
 
     if "$IS_LOCAL"; then

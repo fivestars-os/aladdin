@@ -9,7 +9,7 @@ ENV PATH /root/.venv/bin:$PATH
 # We use the "exec" form of RUN to delegate this command to bash instead.
 # This is all because we have a pipe in this command and we wish to fail the build
 # if any command in the pipeline fails.
-ARG POETRY_VERSION=1.0.10
+ARG POETRY_VERSION=1.1.5
 RUN ["/bin/bash", "-c", "set -o pipefail && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python"]
 ENV PATH /root/.poetry/bin:$PATH
 

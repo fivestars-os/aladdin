@@ -1,0 +1,6 @@
+service:
+  publicServiceType: "LoadBalancer"
+  privateServiceType: "ClusterIP"
+
+deploy:
+  imagePullPolicy: "Always"
