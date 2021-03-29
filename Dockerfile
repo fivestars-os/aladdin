@@ -63,7 +63,7 @@ RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VE
     chmod +x ./kops && \
     mv ./kops /usr/local/bin/
 
-ARG ISTIO_VERSION=1.6.2
+ARG ISTIO_VERSION=1.9.2
 RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
     mv /istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
 
