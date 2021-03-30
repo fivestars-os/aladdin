@@ -1,8 +1,6 @@
 import argparse
 import logging
-import os
 import sys
-from distutils.util import strtobool
 
 import verboselogs
 import coloredlogs
@@ -88,12 +86,6 @@ def cli():
     parser.add_argument("--cluster", "-c", help="The cluster name you want to interact with")
     parser.add_argument("--namespace", "-n", help="The namespace name you want to interact with")
     parser.add_argument("-i", "--init", action="store_true", help="Force initialization logic")
-    parser.add_argument(
-        "--dev",
-        action="store_true",
-        help="Mount host's aladdin directory onto aladdin container",
-        default=bool(strtobool(os.getenv("ALADDIN_DEV", "false")))
-    )
     parser.add_argument("--image", help="Use the specified aladdin image (if building it yourself)")
     parser.add_argument(
         "--skip-prompts",
@@ -146,6 +138,5 @@ def cli():
         return bash_wrapper()
 
     args = parser.parse_args()
-    if not args.dev:
-        check_latest_version()
+    check_latest_version()
     args.func(args)

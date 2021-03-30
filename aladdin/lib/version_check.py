@@ -5,7 +5,7 @@ import sys
 from aladdin import __version__
 from aladdin.lib import in_aladdin_container, utils
 from aladdin.lib.git import Git
-from aladdin.config import load_config, PROJECT_ROOT
+from aladdin.config import load_config, ALADDIN_DEV, PROJECT_ROOT
 
 
 def check_latest_version():
@@ -14,7 +14,10 @@ def check_latest_version():
     config = load_config()
     repo = config["aladdin"]["repo"]
     tag = config["aladdin"]["tag"]
-    enforce_version = config["aladdin"].get("enforce_version", False)
+    enforce_version = (
+        config["aladdin"].get("enforce_version", False)
+        and not ALADDIN_DEV
+    )
     git_url = f"git@github.com:{repo}.git"
 
     _aladdin_version_check(tag, git_url, enforce_version=enforce_version)

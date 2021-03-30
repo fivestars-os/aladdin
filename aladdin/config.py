@@ -2,10 +2,12 @@ import json
 import logging
 import os
 import sys
-
+from distutils.util import strtobool
 from pathlib import Path
 
+
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+ALADDIN_DEV = bool(strtobool(os.getenv("ALADDIN_DEV", "false")))
 
 
 def load_cluster_configs():
