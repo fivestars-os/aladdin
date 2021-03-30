@@ -13,11 +13,13 @@ optional arguments:
                         [default]
   --dry-run, -d         Run the helm as test and don't actually run it
   --with-mount, -m      Mount user's host's project repo onto container
-  --chart CHART_NAME    Start only these charts (can be specified multiple times)
+  --chart CHART_NAME    Start only this chart
   --force-helm          Have helm force resource update through
                         delete/recreate if needed
   --set-override-values SET_OVERRIDE_VALUES [SET_OVERRIDE_VALUES ...]
-                        override values in the values file. Syntax: --set-override-values key1=value1 key2=value2 customValues.yaml ...
+                        override values in the values file. Syntax: --set-override-values key1=value1 key2=value2 ...
+  --values-file         Override values file to be passed to helm.
+                        Syntax: --values-file my-values.yaml (can be specified multiple times)
 ```
 Note that for `--with-mount` to work as expected, you will have to set up the necessary volume and volumeMounts as described in the aladdin demo project [here](https://github.com/fivestars-os/aladdin-demo/blob/master/docs/code_mounting.md).
 

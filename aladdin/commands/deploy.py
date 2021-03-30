@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import os
 import sys
 import tempfile
 
@@ -43,7 +44,8 @@ def deploy_args(args):
         args.force,
         args.force_helm,
         args.repo,
-        args.set_override_values
+        args.set_override_values,
+        args.values_files
     )
 
 
@@ -57,7 +59,8 @@ def deploy(
     force=False,
     force_helm=False,
     repo=None,
-    set_override_values=None
+    set_override_values=None,
+    values_files=None
 ):
     if set_override_values is None:
         set_override_values = []
@@ -100,17 +103,14 @@ def deploy(
         }
         # Update with cluster rule values
         values.update(cr.values)
-        # Update with user-specified values file
-        values_files = [
-            f"--values={file_name}" for file_name in set_override_values
-            if "=" not in file_name
-        ]
+        # Add user-specified values files
+        if values_files:
+            helm_args.extend([
+                f"--values={os.path.abspath(file_name.name)}"
+                for file_name in values_files
+            ])
         # Update with --set-override-values
-        value_overrides = {
-            k: v for k, v in
-            (value.split("=") for value in set_override_values if "=" in value)
-        }
-        values.update(value_overrides)
+        values.update(dict(value.split("=") for value in set_override_values))
 
         if dry_run:
             helm.dry_run(
@@ -118,7 +118,7 @@ def deploy(
                 helm_chart_path,
                 cr.cluster_name,
                 namespace,
-                helm_args=values_files + helm_args,
+                helm_args=helm_args,
                 **values
             )
         else:
@@ -128,7 +128,7 @@ def deploy(
                 cr.cluster_name,
                 namespace,
                 force_helm,
-                helm_args=values_files + helm_args,
+                helm_args=helm_args,
                 **values,
             )
             sync_ingress.sync_ingress(namespace)

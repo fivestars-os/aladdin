@@ -79,7 +79,18 @@ HELM_OPTION_PARSER.add_argument(
     nargs="+",
     help=(
         "override values in the values file. "
-        "Syntax: --set-override-values key1=value1 key2=value2 customValues.yaml ..."
+        "Syntax: --set-override-values key1=value1 key2=value2 ..."
+    ),
+)
+HELM_OPTION_PARSER.add_argument(
+    "--values-file",
+    default=[],
+    dest="values_files",
+    action="append",
+    type=argparse.FileType("r", encoding="utf-8"),
+    help=(
+        "override values in the values file. "
+        "Syntax: --values-file my-values.yaml ..."
     ),
 )
 
