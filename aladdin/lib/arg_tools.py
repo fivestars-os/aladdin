@@ -87,7 +87,7 @@ HELM_OPTION_PARSER.add_argument(
     default=[],
     dest="values_files",
     action="append",
-    type=argparse.FileType("r", encoding="utf-8"),
+    type=str,
     help=(
         "override values in the values file. "
         "Syntax: --values-file my-values.yaml ..."

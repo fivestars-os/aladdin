@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import logging
 import os
+import sys
 
 from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, HELM_OPTION_PARSER, container_command
 from aladdin.lib.cluster_rules import cluster_rules
@@ -77,11 +79,21 @@ def start(
     values.update(cr.values)
     # Add user-specified values files
     helm_args = []
+    # Add user-specified values files
     if values_files:
-        helm_args = [
-            f"--values={os.path.abspath(file_name.name)}"
-            for file_name in values_files
-        ]
+        for file_path in values_files:
+            if os.path.exists(file_path):
+                helm_args.append(f"--values={file_path}")
+            else:
+                aladdin_root_adjusted = "/aladdin_root" + file_path
+                if os.path.isabs(file_path) and os.path.exists(aladdin_root_adjusted):
+                    helm_args.append(f"--values={aladdin_root_adjusted}")
+                else:
+                    logging.error(
+                        f"argument --values-file: can't open '{file_path}': "
+                        f"[Errno 2] No such file"
+                    )
+                    sys.exit(1)
     # Update with --set-override-values
     values.update(dict(value.split("=") for value in set_override_values))
 
