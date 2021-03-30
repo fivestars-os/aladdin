@@ -21,56 +21,43 @@ def check_latest_version():
     git_url = f"git@github.com:{repo}.git"
 
     _aladdin_version_check(tag, git_url, enforce_version=enforce_version)
-    _config_version_check(tag, git_url, enforce_version=enforce_version)
+    _config_version_check(tag, enforce_version=enforce_version)
+    _plugins_version_check(tag, enforce_version=enforce_version)
 
 
 def _aladdin_version_check(tag, git_url, enforce_version=False):
     live = Git.get_hash_ls_remote(tag, git_url, "--tags")
-    current = Git.get_hash_ls_remote(__version__, git_url, "--tags")
+    expected = Git.get_hash_ls_remote(__version__, git_url, "--tags")
 
-    if not live or not current:
-        if enforce_version:
-            logging.warning("Unable to check for latest aladdin version")
-        return
-
-    if live != current:
-        logging.warning("There is a newer version version of aladdin available")
-        if enforce_version:
-            logging.error("Please update aladdin to continue")
-            sys.exit(1)
+    _check_hashes("aladdin", current, expected, enforce_version=enforce_version)
 
 
-def _config_version_check(tag, git_url, enforce_version=False):
+def _config_version_check(tag, enforce_version=False):
     with utils.working_directory(os.environ["ALADDIN_CONFIG_DIR"]):
         current = Git.get_full_hash()
-        live = Git.get_hash_show_ref(tag)
+        expected = Git.get_hash_show_ref(tag)
 
-    if not live or not current:
-        if enforce_version:
-            logging.warning("Unable to check for latest aladdin config version")
-        return
-
-    if live != current:
-        logging.warning("There is a newer version version of aladdin config available")
-        if enforce_version:
-            logging.error("Please update aladdin config to continue")
-            sys.exit(1)
+    _check_hashes("aladdin config", current, expected, enforce_version=enforce_version)
 
 
-def _plugins_version_check(tag, git_url, enforce_version=False):
+def _plugins_version_check(tag, enforce_version=False):
     if not os.path.exists(os.environ["ALADDIN_PLUGIN_DIR"]):
         return
     with utils.working_directory(os.environ["ALADDIN_PLUGIN_DIR"]):
         current = Git.get_full_hash()
-        live = Git.get_hash_show_ref(tag)
+        expected = Git.get_hash_show_ref(tag)
 
-    if not live or not current:
+    _check_hashes("aladdin plugins", current, expected, enforce_version=enforce_version)
+
+
+def _check_hashes(kind, current, expected, enforce_version=False):
+    if not expected or not current:
         if enforce_version:
-            logging.warning("Unable to check for latest aladdin config version")
+            logging.warning("Unable to check for latest version of: %s", kind)
         return
 
     if live != current:
-        logging.warning("There is a newer version version of aladdin plugins available")
+        logging.warning("There is a newer version of %s available", kind)
         if enforce_version:
-            logging.error("Please update aladdin config to continue")
+            logging.error("Please update %s to continue", kind)
             sys.exit(1)
