@@ -21,7 +21,7 @@ MANAGE_SOFTWARE_DEPENDENCIES=true
 # Set key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" ; pwd)"
 SCRIPT_DIR="$ALADDIN_DIR/scripts"
-ALADDIN_PLUGIN_DIR=
+ALADDIN_CONFIG_FILE="$ALADDIN_CONFIG_DIR/config.json"
 
 ALADDIN_BIN="$HOME/.aladdin/bin"
 PATH="$ALADDIN_BIN":"$PATH"
@@ -39,27 +39,6 @@ source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
 function minikube() {
     if "$MANAGE_MINIKUBE"; then
       command minikube "$@"
-    fi
-}
-function get_config_path() {
-    if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
-        echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
-        exit 1
-    fi
-    ALADDIN_CONFIG_DIR=$(jq -r .config_dir $HOME/.aladdin/config/config.json)
-    if [[ "$ALADDIN_CONFIG_DIR" == null ]]; then
-        echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
-        exit 1
-    fi
-    ALADDIN_CONFIG_FILE="$ALADDIN_CONFIG_DIR/config.json"
-}
-
-function get_plugin_dir() {
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        ALADDIN_PLUGIN_DIR=$(jq -r .plugin_dir $HOME/.aladdin/config/config.json)
-        if [[ "$ALADDIN_PLUGIN_DIR" == null ]]; then
-            ALADDIN_PLUGIN_DIR=
-        fi
     fi
 }
 
@@ -434,8 +413,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 exec_host_command "$@"
-get_config_path
-get_plugin_dir
 get_manage_minikube
 get_manage_software_dependencies
 exec_host_plugin "$@"

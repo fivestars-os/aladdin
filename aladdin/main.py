@@ -6,6 +6,7 @@ import verboselogs
 import coloredlogs
 
 from aladdin.lib.arg_tools import get_bash_commands, bash_wrapper
+from aladdin.lib.version_check import check_latest_version
 from aladdin.commands import (
     build,
     build_components,
@@ -29,6 +30,7 @@ from aladdin.commands import (
     undeploy,
     version
 )
+from aladdin.config import configure_aladdin_dirs
 
 
 def cli():
@@ -127,6 +129,8 @@ def cli():
     if not sys.argv[1:] or sys.argv[1] in ["-h", "--help"]:
         return parser.print_help()
 
+    configure_aladdin_dirs()
+
     # if it's not a command we know about it might be a plugin
     # currently the bash scripts handle plugins
     cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
@@ -137,4 +141,6 @@ def cli():
         return bash_wrapper()
 
     args = parser.parse_args()
+    if not args.dev:
+        check_latest_version()
     args.func(args)

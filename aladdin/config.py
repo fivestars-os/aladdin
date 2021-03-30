@@ -1,5 +1,9 @@
 import json
+import logging
 import os
+import sys
+
+from pathlib import Path
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 
@@ -39,3 +43,30 @@ def load_config_from_file(file):
 
 def load_config():
     return load_config_from_file(f'{os.environ["ALADDIN_CONFIG_DIR"]}/config.json')
+
+
+def configure_aladdin_dirs():
+    user_config_path = Path.home() / ".aladdin" / "config" / "config.json"
+    error_str = (
+        "Unable to find config directory. "
+        "Please use 'aladdin config set config_dir <config path location>' "
+        "to set config directory"
+    )
+
+    try:
+        user_config = load_config_from_file(user_config_path)
+    except FileNotFoundError:
+        logging.error(error_str)
+        sys.exit(1)
+
+    try:
+        os.environ["ALADDIN_CONFIG_DIR"] = user_config["config_dir"]
+    except KeyError:
+        logging.error(error_str)
+        sys.exit(1)
+
+    if not os.path.exists(user_config["config_dir"]):
+        logging.error(error_str)
+        sys.exit(1)
+
+    os.environ["ALADDIN_PLUGIN_DIR"] = user_config.get("plugin_dir") or ""

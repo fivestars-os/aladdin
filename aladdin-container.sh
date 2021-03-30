@@ -10,6 +10,7 @@ SCRIPT_DIR="$ALADDIN_DIR/scripts"
 PY_MAIN="aladdin"
 ALADDIN_PLUGIN_DIR="/root/aladdin-plugins"
 ALADDIN_CONFIG_DIR="/root/aladdin-config"
+ALADDIN_CONTAINER="true"
 
 # Export dirs/paths that are used by plugins/commands
 export ALADDIN_DIR
