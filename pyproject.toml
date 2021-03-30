@@ -8,6 +8,8 @@ include = [
     "aladdin-container.sh",
     "scripts/*",
 ]
+repository = "https://github.com/fivestars-os/aladdin"
+homepage = "https://github.com/fivestars-os/aladdin"
 
 [tool.poetry.dependencies]
 python = "^3.7"

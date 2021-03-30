@@ -1,6 +1,11 @@
 import logging
 import os
 import sys
+try:
+    from importlib import metadata
+except ImportError:
+    # Running on pre-3.8 Python; use importlib-metadata package
+    import importlib_metadata as metadata
 
 from aladdin import __version__
 from aladdin.lib import in_aladdin_container, utils
@@ -12,20 +17,27 @@ def check_latest_version():
     if in_aladdin_container():
         return
     config = load_config()
-    repo = config["aladdin"]["repo"]
     tag = config["aladdin"]["tag"]
     enforce_version = (
         config["aladdin"].get("enforce_version", False)
         and not ALADDIN_DEV
     )
-    git_url = f"git@github.com:{repo}.git"
 
-    _aladdin_version_check(tag, git_url, enforce_version=enforce_version)
+    _aladdin_version_check(tag, enforce_version=enforce_version)
     _config_version_check(tag, enforce_version=enforce_version)
     _plugins_version_check(tag, enforce_version=enforce_version)
 
 
-def _aladdin_version_check(tag, git_url, enforce_version=False):
+def _aladdin_version_check(tag, enforce_version=False):
+    # should look like: 'Repository, https://github.com/fivestars-os/aladdin'
+    project_url_meta = metadata.metadata("aladdin")["Project-URL"]
+    if not project_url_meta:
+        return logging.warning("Unable to get the aladdin git url from package metadata")
+    project_url_parts = project_url_meta.split(", ")
+    if len(project_url_parts) != 2:
+        return logging.warning("Unable to parse the aladdin git url from package metadata")
+
+    git_url = project_url_parts[1]
     live = Git.get_hash_ls_remote(tag, git_url, "--tags")
     expected = Git.get_hash_ls_remote(__version__, git_url, "--tags")
 
