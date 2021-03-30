@@ -127,7 +127,7 @@ def cli():
         return parser.print_help()
 
     configure_aladdin_env()
-
+    check_latest_version()
     # if it's not a command we know about it might be a plugin
     # currently the bash scripts handle plugins
     cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
@@ -138,5 +138,4 @@ def cli():
         return bash_wrapper()
 
     args = parser.parse_args()
-    check_latest_version()
     args.func(args)
