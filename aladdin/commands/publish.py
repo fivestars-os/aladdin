@@ -85,16 +85,13 @@ def publish(build_only, build_publish_ecr_only, publish_helm_only):
     h = Helm()
 
     git_hash = Git.get_hash()
-    # tags is a list in case we want to add other tags in the future
-    tags = [git_hash]
 
     if not publish_helm_only:
-        for tag in tags:
-            env = {"HASH": tag}
-            pc.build_docker(env)
+        env = {"HASH": git_hash}
+        pc.build_docker(env)
         if not build_only:
             images = pc.get_docker_images()
-            image_tags = [Tag(image, tag) for image, tag in product(images, tags)]
+            image_tags = [Tag(image, git_hash) for image in images]
             asso = {}
             d.login(pr)
             for image_tag in image_tags:
