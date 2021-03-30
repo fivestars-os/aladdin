@@ -45,7 +45,7 @@ def load_config():
     return load_config_from_file(f'{os.environ["ALADDIN_CONFIG_DIR"]}/config.json')
 
 
-def configure_aladdin_dirs():
+def configure_aladdin_env():
     user_config_path = Path.home() / ".aladdin" / "config" / "config.json"
     error_str = (
         "Unable to find config directory. "

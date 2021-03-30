@@ -1,6 +1,8 @@
 import argparse
 import logging
+import os
 import sys
+from distutils.util import strtobool
 
 import verboselogs
 import coloredlogs
@@ -30,7 +32,7 @@ from aladdin.commands import (
     undeploy,
     version
 )
-from aladdin.config import configure_aladdin_dirs
+from aladdin.config import configure_aladdin_env
 
 
 def cli():
@@ -87,7 +89,10 @@ def cli():
     parser.add_argument("--namespace", "-n", help="The namespace name you want to interact with")
     parser.add_argument("-i", "--init", action="store_true", help="Force initialization logic")
     parser.add_argument(
-        "--dev", action="store_true", help="Mount host's aladdin directory onto aladdin container"
+        "--dev",
+        action="store_true",
+        help="Mount host's aladdin directory onto aladdin container",
+        default=bool(strtobool(os.getenv("ALADDIN_DEV", "false")))
     )
     parser.add_argument("--image", help="Use the specified aladdin image (if building it yourself)")
     parser.add_argument(
@@ -129,7 +134,7 @@ def cli():
     if not sys.argv[1:] or sys.argv[1] in ["-h", "--help"]:
         return parser.print_help()
 
-    configure_aladdin_dirs()
+    configure_aladdin_env()
 
     # if it's not a command we know about it might be a plugin
     # currently the bash scripts handle plugins

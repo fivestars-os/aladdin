@@ -8,7 +8,7 @@ function ctrl_trap(){ exit 1 ; }
 trap ctrl_trap INT
 
 # Set defaults on command line args
-DEV=false
+ALADDIN_DEV=${ALADDIN_DEV:-false}
 INIT=false
 CLUSTER_CODE=minikube
 NAMESPACE=default
@@ -294,7 +294,7 @@ function prepare_docker_subcommands() {
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
     MOUNTS_CMD=""
-    if "$DEV"; then
+    if "$ALADDIN_DEV"; then
         MOUNTS_CMD="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
         MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
         MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
@@ -310,7 +310,7 @@ function prepare_docker_subcommands() {
         MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
-    if "$DEV" || "$IS_LOCAL"; then
+    if "$ALADDIN_DEV" || "$IS_LOCAL"; then
         MOUNTS_CMD="$MOUNTS_CMD -v /:/aladdin_root"
         MOUNTS_CMD="$MOUNTS_CMD -w /aladdin_root$(pathnorm "$PWD")"
     fi
@@ -349,7 +349,7 @@ function enter_docker_container() {
 
     docker run $FLAGS \
         `# Environment` \
-        -e "DEV=$DEV" \
+        -e "ALADDIN_DEV=$ALADDIN_DEV" \
         -e "INIT=$INIT" \
         -e "CLUSTER_CODE=$CLUSTER_CODE" \
         -e "NAMESPACE=$NAMESPACE" \
@@ -395,7 +395,7 @@ while [[ $# -gt 0 ]]; do
             INIT=true
         ;;
         --dev)
-            DEV=true
+            ALADDIN_DEV=true
         ;;
         --non-terminal)
             IS_TERMINAL=false
