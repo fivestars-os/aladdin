@@ -60,9 +60,6 @@ def get_bash_commands():
 
 HELM_OPTION_PARSER = argparse.ArgumentParser(add_help=False)
 HELM_OPTION_PARSER.add_argument(
-    "--chart", help="which chart in the project to use, defaults to the project name"
-)
-HELM_OPTION_PARSER.add_argument(
     "--dry-run",
     "-d",
     action="store_true",
@@ -91,6 +88,22 @@ HELM_OPTION_PARSER.add_argument(
     help=(
         "override values in the values file. "
         "Syntax: --values-file my-values.yaml ..."
+    ),
+)
+
+CHART_OPTION_PARSER = argparse.ArgumentParser(add_help=False)
+CHART_OPTION_PARSER.add_argument(
+    "--chart", help="which chart in the project to use, defaults to the project name"
+)
+
+CHARTS_OPTION_PARSER = argparse.ArgumentParser(add_help=False)
+CHARTS_OPTION_PARSER.add_argument(
+    "--chart",
+    action="append",
+    dest="charts",
+    help=(
+        "which chart in the project to use, defaults to all the project charts "
+        "(may be specified multiple times)"
     ),
 )
 

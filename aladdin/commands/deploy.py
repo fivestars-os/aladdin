@@ -4,7 +4,9 @@ import os
 import sys
 import tempfile
 
-from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, HELM_OPTION_PARSER, container_command
+from aladdin.lib.arg_tools import (
+    COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHART_OPTION_PARSER, container_command
+)
 from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.config import load_git_configs
@@ -17,7 +19,7 @@ from aladdin.lib.publish_rules import PublishRules
 def parse_args(sub_parser):
     subparser = sub_parser.add_parser(
         "deploy", help="Start the helm chart in non local environments",
-        parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER]
+        parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHART_OPTION_PARSER]
     )
     subparser.set_defaults(func=deploy_args)
     subparser.add_argument("project", help="which project to deploy")

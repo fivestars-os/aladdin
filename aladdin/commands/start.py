@@ -3,7 +3,9 @@ import logging
 import os
 import sys
 
-from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, HELM_OPTION_PARSER, container_command
+from aladdin.lib.arg_tools import (
+    COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHARTS_OPTION_PARSER, container_command
+)
 from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.lib.helm_rules import HelmRules
@@ -14,7 +16,7 @@ from aladdin.lib.project_conf import ProjectConf
 def parse_args(sub_parser):
     subparser = sub_parser.add_parser(
         "start", help="Start the helm chart in local",
-        parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER]
+        parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHARTS_OPTION_PARSER]
     )
     subparser.set_defaults(func=start_args)
     subparser.add_argument(
@@ -28,7 +30,7 @@ def parse_args(sub_parser):
 def start_args(args):
     start(
         args.namespace,
-        args.chart,
+        args.charts,
         args.dry_run,
         args.with_mount,
         args.force_helm,
@@ -40,7 +42,7 @@ def start_args(args):
 @container_command
 def start(
     namespace,
-    chart=None,
+    charts=None,
     dry_run=False,
     with_mount=False,
     force_helm=False,
