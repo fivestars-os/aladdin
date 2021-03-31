@@ -13,7 +13,7 @@ optional arguments:
                         [default]
   --dry-run, -d         Run the helm as test and don't actually run it
   --with-mount, -m      Mount user's host's project repo onto container
-  --chart CHART_NAME    Start only this chart
+  --chart CHART_NAME    Start only these charts (can be specified multiple times)
   --force-helm          Have helm force resource update through
                         delete/recreate if needed
   --set-override-values SET_OVERRIDE_VALUES [SET_OVERRIDE_VALUES ...]

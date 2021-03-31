@@ -56,11 +56,9 @@ def start(
 
     cr = cluster_rules(namespace=namespace)
 
-    if not chart:
+    if not charts:
         # Start each of the project's charts
         charts = [os.path.basename(chart_path) for chart_path in pc.get_helm_chart_paths()]
-    else:
-        charts = [chart]
 
     # Values precedence is command < cluster rules < --set-override-values
     # Start command values
