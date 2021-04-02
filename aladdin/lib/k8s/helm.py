@@ -2,6 +2,7 @@
 import json
 import os
 import subprocess
+import sys
 
 from botocore.exceptions import ClientError
 from os.path import join, expanduser
@@ -19,7 +20,7 @@ class Helm(object):
     def helm_home(self):
         return join(expanduser("~"), ".helm")
 
-    def publish(self, project_name, publish_rules, chart_path, hash):
+    def publish(self, project_name, publish_rules, chart_path, git_hash):
 
         # HelmContext = namedtuple('HelmContext', ['chart_home', 'values_files', 'name'])
 
@@ -34,6 +35,8 @@ class Helm(object):
             "package",
             "--version",
             version,
+            "--app-version",
+            git_hash,
             chart_name
         ], cwd=charts_dir)
 
@@ -68,6 +71,10 @@ class Helm(object):
             )
             if obj.key.endswith(f".{git_ref}.tgz")
         ]
+
+        if not package_keys:
+            logger.error(f"No published charts found for: {project_name} at {git_ref}")
+            sys.exit(1)
 
         # Download the chart archives and extract the contents into their own chart sub-directories
         for package_key in package_keys:
