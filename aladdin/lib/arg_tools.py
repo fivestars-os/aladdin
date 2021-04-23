@@ -6,6 +6,7 @@ import sys
 import pkg_resources
 
 from aladdin.config import PROJECT_ROOT
+from aladdin.lib import in_aladdin_container
 
 
 def add_namespace_argument(arg_parser):
@@ -33,7 +34,7 @@ def container_command(func=None):
     def _wrapper(*args, **kwargs):
         # using `CLUSTER_CODE` as tell-tale to know
         # if we're "in" the aladdin container
-        if not os.getenv("CLUSTER_CODE"):
+        if not in_aladdin_container():
             return bash_wrapper()
         return func(*args, **kwargs)
     if not func:

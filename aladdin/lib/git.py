@@ -42,7 +42,7 @@ class Git(object):
             # There is no way to check anything
             return value
 
-        ls_remote_res = cls._get_hash_ls_remote(value, git_url)
+        ls_remote_res = cls.get_hash_ls_remote(value, git_url)
         if ls_remote_res:
             return cls._full_hash_to_short_hash(str(ls_remote_res))
 
@@ -50,7 +50,22 @@ class Git(object):
         return cls._full_hash_to_short_hash(value)
 
     @classmethod
-    def _get_hash_ls_remote(cls, ref, url):
+    def get_hash_show_ref(cls, ref):
+        try:
+            output = (
+                subprocess.check_output(
+                    ["git", "show-ref", "--tags", ref],
+                    stderr=subprocess.DEVNULL,
+                    encoding="utf-8"
+                )
+                .split()
+            )
+            return output[0] if output else None
+        except subprocess.CalledProcessError:
+            return None
+
+    @classmethod
+    def get_hash_ls_remote(cls, ref, url, *args):
         """
         This get the info from remote without having to download project/data
         :param ref:
@@ -58,8 +73,11 @@ class Git(object):
         """
         try:
             output = (
-                subprocess.check_output(["git", "ls-remote", url, ref], stderr=subprocess.DEVNULL)
-                .decode("utf-8")
+                subprocess.check_output(
+                    ["git", "ls-remote", url, ref, *args],
+                    stderr=subprocess.DEVNULL,
+                    encoding="utf-8"
+                )
                 .split()
             )
             return output[0] if output else None

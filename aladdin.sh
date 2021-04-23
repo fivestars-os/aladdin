@@ -8,7 +8,7 @@ function ctrl_trap(){ exit 1 ; }
 trap ctrl_trap INT
 
 # Set defaults on command line args
-DEV=false
+ALADDIN_DEV=${ALADDIN_DEV:-false}
 INIT=false
 CLUSTER_CODE=minikube
 NAMESPACE=default
@@ -21,7 +21,7 @@ MANAGE_SOFTWARE_DEPENDENCIES=true
 # Set key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" ; pwd)"
 SCRIPT_DIR="$ALADDIN_DIR/scripts"
-ALADDIN_PLUGIN_DIR=
+ALADDIN_CONFIG_FILE="$ALADDIN_CONFIG_DIR/config.json"
 
 ALADDIN_BIN="$HOME/.aladdin/bin"
 PATH="$ALADDIN_BIN":"$PATH"
@@ -39,27 +39,6 @@ source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
 function minikube() {
     if "$MANAGE_MINIKUBE"; then
       command minikube "$@"
-    fi
-}
-function get_config_path() {
-    if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
-        echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
-        exit 1
-    fi
-    ALADDIN_CONFIG_DIR=$(jq -r .config_dir $HOME/.aladdin/config/config.json)
-    if [[ "$ALADDIN_CONFIG_DIR" == null ]]; then
-        echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
-        exit 1
-    fi
-    ALADDIN_CONFIG_FILE="$ALADDIN_CONFIG_DIR/config.json"
-}
-
-function get_plugin_dir() {
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        ALADDIN_PLUGIN_DIR=$(jq -r .plugin_dir $HOME/.aladdin/config/config.json)
-        if [[ "$ALADDIN_PLUGIN_DIR" == null ]]; then
-            ALADDIN_PLUGIN_DIR=
-        fi
     fi
 }
 
@@ -315,7 +294,7 @@ function prepare_docker_subcommands() {
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
     MOUNTS_CMD=""
-    if "$DEV"; then
+    if "$ALADDIN_DEV"; then
         MOUNTS_CMD="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
         MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
         MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
@@ -331,7 +310,7 @@ function prepare_docker_subcommands() {
         MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
-    if "$DEV" || "$IS_LOCAL"; then
+    if "$ALADDIN_DEV" || "$IS_LOCAL"; then
         MOUNTS_CMD="$MOUNTS_CMD -v /:/aladdin_root"
         MOUNTS_CMD="$MOUNTS_CMD -w /aladdin_root$(pathnorm "$PWD")"
     fi
@@ -370,7 +349,7 @@ function enter_docker_container() {
 
     docker run $FLAGS \
         `# Environment` \
-        -e "DEV=$DEV" \
+        -e "ALADDIN_DEV=$ALADDIN_DEV" \
         -e "INIT=$INIT" \
         -e "CLUSTER_CODE=$CLUSTER_CODE" \
         -e "NAMESPACE=$NAMESPACE" \
@@ -416,7 +395,7 @@ while [[ $# -gt 0 ]]; do
             INIT=true
         ;;
         --dev)
-            DEV=true
+            ALADDIN_DEV=true
         ;;
         --non-terminal)
             IS_TERMINAL=false
@@ -434,8 +413,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 exec_host_command "$@"
-get_config_path
-get_plugin_dir
 get_manage_minikube
 get_manage_software_dependencies
 exec_host_plugin "$@"
