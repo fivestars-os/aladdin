@@ -6,9 +6,6 @@ case "$OSTYPE" in
         mount_dir="/c/Users"
         ;;
     linux*)
-        # We should prefer more hardened Linux conventions if we're to use NFS.
-        # In fact, we're better off not using NFS with its security hazards!
-        # - Daniel Rollings
         if [ -d "/srv/nfs/home" ]; then
             export_dir="/srv/nfs/home"
         elif [ -d "/srv/home" ]; then
