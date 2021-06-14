@@ -14,6 +14,7 @@ case "$OSTYPE" in
             export_dir="/home"
         fi
         mount_dir="/home"
+        echo "### ALERT: $0 using export_dir ${export_dir}, mount_dir ${mount_dir}"
         ;;
     *)
         export_dir="/Users"
@@ -45,3 +46,4 @@ minikube ssh -- "mount | grep '${mount_dir}'"
 echo -e "\\nTesting directory"
 echo "== ${mount_dir} ================="
 minikube ssh -- "ls -al ${mount_dir}"
+
