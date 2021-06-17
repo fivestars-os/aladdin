@@ -147,7 +147,7 @@ function _start_minikube() {
         local minikube_cmd="minikube start"
 
         if test "$OSTYPE" = "linux-gnu"; then
-            if test $(minikube config get driver) = "none"; then
+            if [ "$(minikube config get driver)" == "none"]; then
                 # If we're running on native docker on a linux host, minikube start must happen as root
                 # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
                 # to switch users to $SUDO_USER (the user that called sudo) before writing out
