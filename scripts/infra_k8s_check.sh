@@ -6,34 +6,24 @@ set -eu -o pipefail
 # The minimum dependency for windows is cygwin with wget.
 # No minimum dependency found for mac
 
-# There is a problem with virtualbox that doesn't mount the right path.
-# To correct it, set the mounted volume as "c:/Users" => "/c/Users" and this should correct it.
-# After setting that, you have to restart the minikube : minikube stop && minikube start
-
 # To force the script to do the full check, use the parameter '--force'
 
-
-#- from : https://github.com/kubernetes/minikube/releases
-VERSION_MINIKUBE="1.17.1"
+#- from : https://github.com/rancher/k3d/releases
+VERSION_K3D="4.4.4"
 #- from : https://github.com/docker/docker-ce/releases
 VERSION_DOCKER="20.10.2"
 #- from : https://github.com/kubernetes/kubernetes/releases
 VERSION_KUBECTL="1.19.7"
 #- from : https://github.com/kubernetes/helm/releases
 VERSION_HELM="3.5.2"
-FULL_VERSION_VIRTUALBOX="6.0.14r133895"
-
-VERSION_VIRTUALBOX="$(echo "$FULL_VERSION_VIRTUALBOX" | cut -dr -f1)"
-VERSION_R_VIRTUALBOX="$(echo "$FULL_VERSION_VIRTUALBOX" | cut -dr -f2-)"
 
 
 # This script is meant to check and test the necessary tools for using the infra tools.
 #
-# To run minikube :
-# - minikube
+# To run k3d :
+# - k3d
 # - kubectl
 # - docker client
-# - virtualbox
 # - helm
 
 # To launch the bash script
@@ -308,24 +298,23 @@ function install_wget_mac(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 function install_wget_ubuntu(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 
 
-function check_minikube(){ version "$ALADDIN_BIN/minikube version" "$VERSION_MINIKUBE" ;}
+function check_k3d(){ version "$ALADDIN_BIN/k3d version" "$VERSION_K3D" ;}
 
-function install_minikube_win(){
-    typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-windows-amd64.exe"
-    install_url_exe "minikube.exe" "$url"
+function install_k3d() {
+    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | K3D_INSTALL_DIR=$ALADDIN_BIN TAG=v${VERSION_K3D} bash
 }
-function install_minikube_mac(){
-    typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-darwin-amd64"
-    install_url_cmd "minikube" "$url"
+
+function install_k3d_win(){
+    install_k3d
 }
-function install_minikube_alpine(){
-    typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-linux-amd64"
-#    install_url_cmd "minikube" "$url"
-# do not install minikube on alpine, it does not work
+function install_k3d_mac(){
+    install_k3d
 }
-function install_minikube_ubuntu(){
-    typeset url="https://storage.googleapis.com/minikube/releases/v${VERSION_MINIKUBE}/minikube-linux-amd64"
-    install_url_cmd "minikube" "$url"
+function install_k3d_alpine(){
+    install_k3d
+}
+function install_k3d_ubuntu(){
+    install_k3d
 }
 
 
@@ -393,113 +382,6 @@ function install_helm_ubuntu(){
     install_url_tgz "helm" "linux-amd64/helm" "$url"
 }
 
-
-function install_virtualbox_win(){
-    #http://download.virtualbox.org/virtualbox/5.1.18/VirtualBox-5.1.18-114002-Win.exe
-
-    typeset url="http://download.virtualbox.org/virtualbox/$VERSION_VIRTUALBOX/VirtualBox-$VERSION_VIRTUALBOX-$VERSION_R_VIRTUALBOX-Win.exe"
-    typeset file_path="$(tmp_dir)/virtual-box-install.exe"
-
-    # Just make sure minikube is stopped if already exists
-    minikube stop >/dev/null 2>/dev/null
-
-    WGET "$url" "$file_path"
-    chmod a+x "$file_path" ; cygstart --action=runas "$file_path" # run the virtualbox as admin
-    # Wait for the installation to be done
-    while ! check_virtualbox ; do
-        sleep 10
-    done
-    clean_tmp_dir
-
-    echo "Installing extetion"
-    install_virtualbox_extension_win
-}
-
-function install_virtualbox_mac(){
-    # Just make sure minikube is stopped if already exists
-    minikube stop >/dev/null 2>/dev/null
-    typeset root_file_name="VirtualBox-${VERSION_VIRTUALBOX}-${VERSION_R_VIRTUALBOX}-OSX"
-
-    typeset url="http://download.virtualbox.org/virtualbox/$VERSION_VIRTUALBOX/$root_file_name.dmg"
-    typeset v_path="$HOME/Downloads/$root_file_name.dmg"
-    WGET "$url" "$v_path"
-    hdiutil attach "$v_path" >/dev/null
-    # Now it's going to ask for the sudo password
-    alias CAN_IN_RUN_SUDO="sudo -n uptime 2>&1 | grep load"
-    if ! sudo -n uptime 2>&1 | grep load >/dev/null ; then
-        printf '\n sudo '
-    fi
-    sudo installer -package /Volumes/VirtualBox/VirtualBox.pkg -target /
-    while ! check_virtualbox ; do
-        sleep 10
-    done
-    hdiutil detach "/Volumes/VirtualBox" >/dev/null
-    clean_tmp_dir
-
-    install_virtualbox_extension_mac
-}
-
-function install_virtualbox_alpine(){
-    # Just make sure minikube is stopped if already exists
-    minikube stop >/dev/null 2>/dev/null
-    typeset root_file_name="VirtualBox-${VERSION_VIRTUALBOX}-${VERSION_R_VIRTUALBOX}-Linux_amd64.run"
-    typeset url="http://download.virtualbox.org/virtualbox/$VERSION_VIRTUALBOX/$root_file_name"
-    typeset v_path="$(tmp_dir)/$root_file_name"
-    echo "Downloading to $v_path"
-    WGET "$url" "$v_path"
-    chmod +x ${v_path}
-    # Now it's going to ask for the sudo password
-    if ! sudo -n uptime 2>&1 | grep load >/dev/null ; then
-        printf '\n sudo '
-    fi
-    sudo ${v_path} install >/dev/null
-
-    clean_tmp_dir
-
-    install_virtualbox_extension_mac
-}
-function install_virtualbox_ubuntu(){
-    # Just make sure minikube is stopped if already exists
-    minikube stop >/dev/null 2>/dev/null
-    typeset root_file_name="VirtualBox-${VERSION_VIRTUALBOX}-${VERSION_R_VIRTUALBOX}-Linux_amd64.run"
-    typeset url="http://download.virtualbox.org/virtualbox/$VERSION_VIRTUALBOX/$root_file_name"
-    typeset v_path="$(tmp_dir)/$root_file_name"
-    echo "Downloading to $v_path"
-    WGET "$url" "$v_path"
-    chmod +x ${v_path}
-    # Now it's going to ask for the sudo password
-    if ! sudo -n uptime 2>&1 | grep load >/dev/null ; then
-        printf '\n sudo '
-    fi
-    sudo ${v_path} install >/dev/null
-
-    clean_tmp_dir
-
-    install_virtualbox_extension_mac
-}
-
-function install_virtualbox_extension_win(){
-    typeset file_name="Oracle_VM_VirtualBox_Extension_Pack-$VERSION_VIRTUALBOX-$VERSION_R_VIRTUALBOX.vbox-extpack"
-    typeset url="http://download.virtualbox.org/virtualbox/${VERSION_VIRTUALBOX}/$file_name"
-    typeset file_path="$(tmp_dir)/$file_name"
-
-    WGET "$url" "$file_path"
-    VBoxManage extpack install "$(cygpath -w "$file_path")" --replace
-    clean_tmp_dir
-}
-
-function install_virtualbox_extension_mac(){
-    typeset file_name="Oracle_VM_VirtualBox_Extension_Pack-$VERSION_VIRTUALBOX-$VERSION_R_VIRTUALBOX.vbox-extpack"
-    typeset url="http://download.virtualbox.org/virtualbox/${VERSION_VIRTUALBOX}/$file_name"
-    typeset file_path="$(tmp_dir)/$file_name"
-
-    WGET "$url" "$file_path"
-    VBoxManage extpack install "$file_path" --replace
-    clean_tmp_dir
-}
-
-function check_virtualbox(){ has_prog vboxmanage ; }
-
 function install_jq_win(){ eval $install_cmd jq >/dev/null 2>/dev/null ; }
 function install_jq_mac(){ eval $install_cmd jq >/dev/null 2>/dev/null ; }
 function install_jq_alpine(){ eval $install_cmd jq >/dev/null 2>/dev/null ; }
@@ -547,13 +429,11 @@ function main(){
             win)
                 check_and_warn "apt-cyg            " aptcyg
                 check_and_warn "unzip              " unzip
-
                 check_and_warn "wget               " wget
-                check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
+                check_and_install "k3d ($VERSION_K3D)   " k3d
                 check_and_warn "docker ($VERSION_DOCKER)" docker
                 check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
                 check_and_install "helm ($VERSION_HELM)       " helm
-                check_and_warn "virtualbox         " virtualbox
                 check_and_warn "jq                 " jq
                 #check_and_warn "git                " git
                 check_and_warn "python3            " python3
@@ -566,11 +446,10 @@ function main(){
             mac)
               check_and_warn "brew               " brew
               check_and_warn "wget               " wget
-              check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
-              check_and_install "docker ($VERSION_DOCKER)" docker
+              check_and_install "k3d ($VERSION_K3D)        " k3d
+              check_and_install "docker ($VERSION_DOCKER)   " docker
               check_and_install "kubectl ($VERSION_KUBECTL)   " kubectl
-              check_and_install "helm ($VERSION_HELM)      " helm
-              check_and_warn "virtualbox         " virtualbox
+              check_and_install "helm ($VERSION_HELM)       " helm
               check_and_warn "jq                 " jq
               #check_and_warn "git                " git
               check_and_warn "python3            " python3
@@ -582,11 +461,10 @@ function main(){
             alpine)
               check_and_warn "openssl               " openssl
               check_and_warn "wget                " wget
-              check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
+              check_and_install "k3d ($VERSION_K3D)  " k3d
               check_and_install "docker ($VERSION_DOCKER)" docker
               check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
-              #check_and_install "virtualbox      " virtualbox
               check_and_warn "jq                 " jq
               #check_and_warn "git                " git
               check_and_warn "python3            " python3
@@ -599,18 +477,15 @@ function main(){
             ubuntu)
               #check_and_install "openssl               " openssl
               check_and_warn "wget                " wget
-              check_and_install "minikube ($VERSION_MINIKUBE)  " minikube
+              check_and_install "k3d ($VERSION_K3D)  " k3d
               check_and_install "docker ($VERSION_DOCKER)" docker
               check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
-              #check_and_install "virtualbox        " virtualbox
               check_and_warn "jq                 " jq
               #check_and_warn "git                " git
               check_and_warn "python-pip         " pip
               check_and_warn "python3            " python3
               check_and_warn "aws-cli            " awscli
-
-              check_and_warn "socat (optional; needed if minikube.vm_driver = none)" socat || :
 
               # Only validate the script install at the end
               echo "$SCRIPT_HASH" > "$ALREADY_INSTALLED_FILE"

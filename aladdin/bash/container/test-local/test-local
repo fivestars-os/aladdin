@@ -38,7 +38,7 @@ if [[ $# -eq 0 ]]; then
     if $IS_LOCAL && $IS_TESTING; then
         test_local
     else
-        echo >&2 "aladdin test-local should only be called on a local testing minikube cluster"
+        echo >&2 "aladdin test-local should only be called on a local testing k3d cluster"
     fi
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
     usage

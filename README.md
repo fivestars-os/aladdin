@@ -2,7 +2,7 @@
 
 ## What is Aladdin?
 
-Inspired by the Genie of the Lamp, Aladdin is a command line tool built by Fivestars to simplify kubernetes operations for clusters management and application development. We have done this by combining several command line tools including kops, minikube, docker, kubectl, helm, awscli, and git.
+Inspired by the Genie of the Lamp, Aladdin is a command line tool built by Fivestars to simplify kubernetes operations for clusters management and application development. We have done this by combining several command line tools including kops, k3d, docker, kubectl, helm, awscli, and git.
 
 Use aladdin to:
 - Create and manage an aws kubernetes cluster
@@ -17,9 +17,9 @@ The host component is responsible for:
 - Parsing command line options
 - Running any commands to be executed on the host machine
 - Checking and warning about any missing dependencies or installing the dependency in `~/.aladdin/bin` if possible
-- Starting minikube
+- Starting k3d
 - Pulling the aladdin image
-- Running the aladdin docker container (the container component) within minikube
+- Running the aladdin docker container (the container component)
 
 The container component is responsible for
 - Running commands to manage your aws kubernetes cluster
@@ -70,69 +70,11 @@ Then run:
 aladdin config set manage.software_dependencies false
 ```
 
-#### minikube
-aladdin uses minikube to get access to docker functionality.
-It also sets up minikube (file sharing etc) so that you can deploy to minikube.
+#### k3d
+aladdin uses k3d to support local development
 
-But you may not need that if this applies to your situation:
-1. You already have docker installed (say using docker.app on mac for example)
-1. You are using an alternative to minikube (like docker-desktop or kind, etc) for local cluster or
-1. You are using aladdin to connect to a remote cluster (like staging, prod etc)
-
-Then run:
-
-```
-aladdin config set manage.minikube false
-```
-
-### VM Configuration
-Currently, the following parameters are configurable:
- * memory: By default, we create a minikube vm with 4096MB (4GB) of memory.  To change the size of the vm we create to e.g. 8GB, you may run:
-   ```
-   aladdin config set minikube.memory 8192
-   ```
- * vm\_driver: By default, we use the `virtualbox` virtualization backend.  Currently, we support only this and the `none` backend, which runs containers directly on the underlying OS without virtualization (only supported on
-   linux).  If your host is running linux, and you wish to use the 'none' backend (and avoid running in a VM), you may run,
-   ```
-   aladdin config set minikube.vm_driver none
-   ```
- * disk\_size: The size of the VM disk, if applicable.  Defaults to the minikube default (20000M, as of this writing).
-   ```
-   aladdin config set minikube.disk_size 25000M
-   ```
- * cpus: The number of vCPUs to provision the VM with, if applicable.  Defaults to the minikube default (2 as of this writing).
-   ```
-   aladdin config set minikube.cpus 4
-   ```
-
-Note that these commands only take effect when the minikube cluster is first set up --- in order for them to take effect, you will need to first delete your existing minikube cluster (if present) and then (re-)run `aladdin --init`.
-
-### NFS mounts
-
-Aladdin uses minikube for local development which is a VirtualBox-based VM. Internally minikube mounts your `/Users` (or `/cygdrive/c/Users` for Cygwin users) directory to the root of the minikube filesystem. We have discovered that the `vboxsf` mounts are not as performant as NFS mounts and furthermore are not as reliable when it comes to detecting file changes made from the host. To address this, we replace the `vboxsf` mounts within minikube with NFS mounts. However, this requires a bit of manual setup on the host machine before it can be enabled.
-
-Once you have configured your host as an NFS server, instruct `aladdin` to replace the default `vboxsf` mounts with NFS mounts by setting this config value and then restarting your minikube instance:
-
-```
-aladdin config set nfs 1
-minikube stop
-aladdin
-```
-
-#### NFS Host Setup
-
-1. Install an NFS service on your host
-    1. **macOS** You should already have it available.
-    1. **Windows**
-        We used to advise that one should install the `unfsd` package, but recent updates to that package have introduced seemingly insurmountable instabilities. We cannot recommend that one install `unfsd` for NFS capabilities.
-        There are other options such as [Allegro NFS](https://nfsforwindows.com/home) that have been shown to work, but setting that up is outside the scope of this documentation.
-1. Add entries to your `/etc/exports` file
-    1. **macOS**
-    ```
-    echo "/Users -alldirs -mapall="$(id -u)":"$(id -g)" $(minikube ip)" | sudo tee -a /etc/exports
-    ```
-    1. **Windows**
-    *Possible, but unsupported*
+### Local Cluster Resource Configuration
+Currently, you can configure cpu, memory, and disk by going to your docker desktop UI, going to preferences, and then going to resources. The recommended configuration is 2 CPUs, 8GB memory, and 60GB disk.
 
 ## Creating and managing an aws kubernetes cluster
 This is all encapsulated in the [aladdin cluster command](./docs/cluster_cmd.md)
@@ -166,7 +108,7 @@ We have several aladdin commands used for development and deployment. Note that 
 - `cd {project repo name}`
 - `git checkout -b {feature branch}`
 - `aladdin build`
-- `aladdin start --with-mount`
+- `aladdin start`
 - do some development
 - commit code and push to remote
 - `aladdin publish` (publishes current hash, remember what that hash is)
@@ -185,13 +127,12 @@ We have several aladdin commands used for development and deployment. Note that 
 - `aladdin create-namespace` create the namespace you pass in.
 - `aladdin delete-namespace` delete the namespace you pass in _after_ removing all the helm packages on that namespace.
 - `aladdin get-dashboard-url` will output the url of your cluster's dashboard assuming it is installed.
-- `aladdin get-minikube-endpoints` show endpoints for all minikube services, essentially wrapping `minikube service list`.
-- `aladdin host` give instructions to update your local /etc/hosts file for minikube ingress compatibility.
+- `aladdin host` give instructions to update your local /etc/hosts file for k3d ingress compatibility.
 - For a complete list of aladdin commands, run `aladdin -h`.
 
 ## Optional arguments to aladdin
 - `-h/--help` show help.
-- `-c/--cluster` which cluster to connect to, defaults to `minikube`.
+- `-c/--cluster` which cluster to connect to, defaults to `LOCAL`.
 - `-n/--namespace` which namespace to connect to, defaults to `default`.
 - `--init` force initialization logic (i.e. pull latest aladdin image, test aws config, initialize helm, etc...). This is forced every hour for each cluster/namespace combo.
 - `--dev` mount host's aladdin directory onto aladdin container. Useful when developing aladdin.
@@ -207,18 +148,18 @@ $ aladdin bash
 Launching bash shell. Press CTRL+D to come back to this menu.
 This bash contain a lot of functions to help
 Don't forget to checkout scripts/bash_profile.bash in aladdin
-minikube:default> build
+LOCAL:default> build
 Building aladdin-demo docker image (~30 seconds)
 docker build -t aladdin-demo:local -f app/Dockerfile .
 Sending build context to Docker daemon  28.16kB
      . . .
 Successfully tagged aladdin-demo-commands:local
-minikube:default> start --with-mount
+LOCAL:default> start
 INFO:Found cluster values file
      . . .
-minikube:default> refresh aladdin-demo-server
+LOCAL:default> refresh aladdin-demo-server
 INFO:Refreshing deployment aladdin-demo-server
-minikube:default>
+LOCAL:default>
 ```
 
 ## Tests
@@ -278,7 +219,7 @@ Aladdin supports an ingress per namespace feature. This is off by default. We re
         "ingress_name": "ingress"
     }
 ```
-The "namespace_init" field tells aladdin to install the ingress-nginx project on namespace creation. This will be needed on remote clusters, but not on minikube, since we enable the ingress minikube addon.
+The "namespace_init" field tells aladdin to install the ingress-nginx project on namespace creation. This will be needed on remote clusters, but not on LOCAL, since k3d comes with that out of the box.
 The "ingress_info" field tells aladdin how to sync your ingress. Services installed on a cluster with this feature will want to have their service type set to `NodePort` rather than `LoadBalancer`. This is most easily done by setting it in the values.yaml in your cluster's directory in aladdin config, i.e. adding this:
 ```yaml
   service:
