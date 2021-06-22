@@ -164,7 +164,8 @@ function _start_minikube() {
             fi
         fi
 
-        bash -c "$minikube_cmd"
+        # If we're using something other than NFS or hosthome, this shouldn't abort the remaining execution.
+        bash -c "$minikube_cmd" || true
     fi
 }
 
