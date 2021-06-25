@@ -301,7 +301,7 @@ function install_wget_ubuntu(){ eval $install_cmd wget >/dev/null 2>/dev/null ; 
 function check_k3d(){ version "$ALADDIN_BIN/k3d version" "$VERSION_K3D" ;}
 
 function install_k3d() {
-    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | K3D_INSTALL_DIR=$ALADDIN_BIN TAG=v${VERSION_K3D} bash
+    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | K3D_INSTALL_DIR=$ALADDIN_BIN TAG=v${VERSION_K3D} USE_SUDO=false bash
 }
 
 function install_k3d_win(){
