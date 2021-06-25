@@ -112,7 +112,7 @@ function environment_init() {
         _handle_authentication_config
 
         if $INIT; then
-            kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
+            kubectl create namespace $NAMESPACE || true
             _replace_aws_secret || true
             $PY_MAIN namespace-init --force
         fi
