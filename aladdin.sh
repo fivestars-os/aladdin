@@ -65,7 +65,15 @@ function check_cluster_alias() {
     fi
 }
 
-function get_k3d_ports() {
+function get_config_variables() {
+    # Get host directory that will be mounted onto the docker container
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        HOST_DIR=$(jq -r .host_dir $HOME/.aladdin/config/config.json)
+        if [[ "$HOST_DIR" == null ]]; then
+            # defaults to osx
+            HOST_DIR="/Users"
+        fi
+    fi
     # Get k3d service port
     K3D_SERVICE_PORT=8081 # default value
     if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
@@ -82,6 +90,13 @@ function get_k3d_ports() {
             K3D_API_PORT=6550
         fi
     fi 
+}
+
+function get_host_addr() {
+    case "$OSTYPE" in
+        linux*) HOST_ADDR="172.17.0.1" ;;
+        *)      HOST_ADDR="host.docker.internal" ;;
+    esac
 }
 
 function check_and_handle_init() {
@@ -122,7 +137,7 @@ function check_and_handle_init() {
 function _start_k3d() {
     # start k3d cluster
     k3d cluster create LOCAL --api-port "$K3D_API_PORT" -p "$K3D_SERVICE_PORT:80@loadbalancer" \
-        --k3s-server-arg "--tls-san=host.docker.internal" --image "rancher/k3s:v$KUBERNETES_VERSION-k3s1"
+        --k3s-server-arg "--tls-san=$HOST_ADDR" --image "rancher/k3s:v$KUBERNETES_VERSION-k3s1"
 }
 
 function check_or_start_k3d() {
@@ -233,7 +248,7 @@ function prepare_docker_subcommands() {
     fi
 
     if "$DEV" || "$IS_LOCAL"; then
-        MOUNTS_CMD="$MOUNTS_CMD -v /Users:/aladdin_root/Users"
+        MOUNTS_CMD="$MOUNTS_CMD -v $HOST_DIR:/aladdin_root$HOST_DIR"
         MOUNTS_CMD="$MOUNTS_CMD -w /aladdin_root$(pathnorm "$PWD")"
     fi
 }
@@ -268,6 +283,7 @@ function enter_docker_container() {
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
         -e "K3D_API_PORT=$K3D_API_PORT" \
+        -e "HOST_ADDR=$HOST_ADDR" \
         -e "command=$command" \
         `# Mount host credentials` \
         `# Mount destination for aws creds will not be /root/.aws because we will possibly make` \
@@ -324,10 +340,11 @@ done
 exec_host_command "$@"
 get_config_path
 get_plugin_dir
+get_host_addr
 get_manage_software_dependencies
 exec_host_plugin "$@"
 check_cluster_alias
-get_k3d_ports
+get_config_variables
 check_and_handle_init
 set_cluster_helper_vars
 handle_ostypes
