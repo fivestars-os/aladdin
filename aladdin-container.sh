@@ -74,16 +74,6 @@ function exec_command_or_plugin() {
     echo "Error: unknown command $command for aladdin"
 }
 
-function _replace_aws_secret() {
-    local creds username password server
-    creds=$(aws ecr get-login)
-    username=$(echo $creds | cut -d ' ' -f4)
-    password=$(echo $creds | cut -d ' ' -f6)
-    server=$(echo $creds | cut -d ' ' -f9)
-    kubectl delete secret aws || true
-    kubectl create secret docker-registry aws --docker-username="$username" --docker-password="$password" --docker-server="$server" --docker-email="can be anything"
-}
-
 function environment_init() {
     echo "START ENVIRONMENT CONFIGURATION============================================="
     echo "CLUSTER_CODE = $CLUSTER_CODE"
@@ -113,7 +103,6 @@ function environment_init() {
 
         if $INIT; then
             kubectl create namespace $NAMESPACE || true
-            _replace_aws_secret || true
             $PY_MAIN namespace-init --force
         fi
     fi
