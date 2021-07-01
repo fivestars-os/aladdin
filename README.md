@@ -17,7 +17,7 @@ The host component is responsible for:
 - Parsing command line options
 - Running any commands to be executed on the host machine
 - Checking and warning about any missing dependencies or installing the dependency in `~/.aladdin/bin` if possible
-- Starting k3d
+- Starting k3d (make sure your docker engine is running before running aladdin!)
 - Pulling the aladdin image
 - Running the aladdin docker container (the container component)
 

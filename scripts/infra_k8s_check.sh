@@ -10,8 +10,6 @@ set -eu -o pipefail
 
 #- from : https://github.com/rancher/k3d/releases
 VERSION_K3D="4.4.4"
-#- from : https://github.com/docker/docker-ce/releases
-VERSION_DOCKER="20.10.2"
 #- from : https://github.com/kubernetes/kubernetes/releases
 VERSION_KUBECTL="1.19.7"
 #- from : https://github.com/kubernetes/helm/releases
@@ -23,7 +21,6 @@ VERSION_HELM="3.5.2"
 # To run k3d :
 # - k3d
 # - kubectl
-# - docker client
 # - helm
 
 # To launch the bash script
@@ -317,34 +314,6 @@ function install_k3d_ubuntu(){
     install_k3d
 }
 
-
-function check_docker(){
-    case "$OSTYPE" in
-        cygwin)
-            has_prog docker;
-            ;;
-        *)
-            version "$ALADDIN_BIN/docker --version" "$VERSION_DOCKER" ;
-            ;;
-    esac
-}
-function install_docker_win(){
-    typeset url="https://download.docker.com/win/static/stable/x86_64/docker-${VERSION_DOCKER}.zip"
-    install_url_zip "docker.exe" "docker/docker.exe" "$url"
-}
-function install_docker_mac(){
-    typeset url="https://download.docker.com/mac/static/stable/x86_64/docker-${VERSION_DOCKER}.tgz"
-    install_url_tgz "docker" "docker/docker" "$url"
-}
-function install_docker_alpine(){
-    typeset url="https://download.docker.com/linux/static/stable/x86_64/docker-${VERSION_DOCKER}.tgz"
-    install_url_tgz "docker" "docker/docker" "$url"
-}
-function install_docker_ubuntu(){
-    typeset url="https://download.docker.com/linux/static/stable/x86_64/docker-${VERSION_DOCKER}.tgz"
-    install_url_tgz "docker" "docker/docker" "$url"
-}
-
 function check_kubectl(){ version "$ALADDIN_BIN/kubectl version --client" "Client.*v$VERSION_KUBECTL" ; }
 function install_kubectl_win(){
     typeset url="https://dl.k8s.io/v${VERSION_KUBECTL}/kubernetes-client-windows-amd64.tar.gz"
@@ -431,7 +400,6 @@ function main(){
                 check_and_warn "unzip              " unzip
                 check_and_warn "wget               " wget
                 check_and_install "k3d ($VERSION_K3D)   " k3d
-                check_and_warn "docker ($VERSION_DOCKER)" docker
                 check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
                 check_and_install "helm ($VERSION_HELM)       " helm
                 check_and_warn "jq                 " jq
@@ -447,7 +415,6 @@ function main(){
               check_and_warn "brew               " brew
               check_and_warn "wget               " wget
               check_and_install "k3d ($VERSION_K3D)        " k3d
-              check_and_install "docker ($VERSION_DOCKER)   " docker
               check_and_install "kubectl ($VERSION_KUBECTL)   " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
               check_and_warn "jq                 " jq
@@ -462,7 +429,6 @@ function main(){
               check_and_warn "openssl               " openssl
               check_and_warn "wget                " wget
               check_and_install "k3d ($VERSION_K3D)  " k3d
-              check_and_install "docker ($VERSION_DOCKER)" docker
               check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
               check_and_warn "jq                 " jq
@@ -478,7 +444,6 @@ function main(){
               #check_and_install "openssl               " openssl
               check_and_warn "wget                " wget
               check_and_install "k3d ($VERSION_K3D)  " k3d
-              check_and_install "docker ($VERSION_DOCKER)" docker
               check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
               check_and_warn "jq                 " jq
