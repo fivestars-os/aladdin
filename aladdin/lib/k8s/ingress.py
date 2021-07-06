@@ -34,6 +34,10 @@ def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress
     ingress.spec = client.NetworkingV1beta1IngressSpec()
     ingress.spec.rules = []
     service_tuples = _create_ingress_service_tuples(services, dual_dns_prefix_annotation_name)
+    # A little bit of a hack to have the ingress put the port:443 entries before the port:80 entries,
+    # so that the port:80 entries take precedence if the service name is the same. Without this
+    # we get ssl errors when accessing services behind the ingress locally because of k3d internals
+    service_tuples = sorted(service_tuples, key = lambda x: x[1], reverse=True)
     for dns_prefix, port, service in service_tuples:
         ingress_rule = client.NetworkingV1beta1IngressRule()
         ingress_rule.host = "%s.%s" % (dns_prefix, dns_suffix)

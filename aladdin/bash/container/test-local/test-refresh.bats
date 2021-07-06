@@ -6,5 +6,5 @@ set -o pipefail
     $PY_MAIN refresh aladdin-test-server
     node_port=$(kubectl get svc aladdin-test-server -o json | jq -r '.spec.ports[] | select (.name == "http").nodePort')
     sleep 60
-    [ $(curl "$MINIKUBE_IP:$node_port/ping") == "aladdin-test-message2" ]
+    [ $(curl "127.0.0.1:$node_port/ping") == "aladdin-test-message2" ]
 }

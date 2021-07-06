@@ -13,7 +13,7 @@ export NODE_COUNT=
 # aws ec2 describe-availability-zones
 export ZONES=
 
-export DNS_ZONE=minikube
+export DNS_ZONE=LOCAL
 export CLUSTER_NAME=$DNS_ZONE
 export KOPS_STATE_STORE=s3://$DNS_ZONE
 

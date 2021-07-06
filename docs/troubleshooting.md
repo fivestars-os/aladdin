@@ -1,11 +1,10 @@
 # Troubleshooting
 You may want to first try:
 - Rerunning your aladdin command with `--init` flag
-- Restarting minikube via `minikube stop && minikube start` and then rerunning your command
-- Restarting minikube via `minikube delete && minikube start` and then rerunning your command (You will lose your local images and need to rebuild in this scenario)
+- Restarting your LOCAL cluster via `k3d cluster delete LOCAL && aladdin --init` and then rerunning your command
 ## Specific Issues
 ### InvalidSignatureException
-Fix this by restarting minikube via `minikube stop && minikube start` and then rerunning your command
+Fix this by restarting your LOCAL cluster via `k3d cluster delete LOCAL && aladdin --init` and then rerunning your command
 ### Problems with git processing during aladdin deploy or publish
 If your error is something like this:
 ```

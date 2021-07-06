@@ -1,7 +1,7 @@
 {
     "is_local": true,
-    "cluster_name": "minikube",
-    "root_dns": "minikube",
+    "cluster_name": "LOCAL",
+    "root_dns": "LOCAL",
     "allowed_namespaces": [
         "*"
     ],

@@ -7,7 +7,7 @@ aladdin-config/
   config.json
   default/
     config.json
-  minikube/
+  LOCAL/
     config.json
     env.sh
   REMOTE-CLUSTER-1/
@@ -98,7 +98,7 @@ export ADMIN_ACCESS=
 export IMAGE=
 ```
 
-Most these variables are just used by kops when creating the cluster, which is wrapped by aladdin. If you need more info, check [here](https://github.com/kubernetes/kops/blob/master/docs/cli/kops_create_cluster.md). Note that the env.sh in your minikube folder will be mostly empty since you are not actually creating a cluster in that scenario.
+Most these variables are just used by kops when creating the cluster, which is wrapped by aladdin. If you need more info, check [here](https://github.com/kubernetes/kops/blob/master/docs/cli/kops_create_cluster.md). Note that the env.sh in your LOCAL folder will be mostly empty since you are not actually creating a cluster in that scenario.
 
 ## Cluster config.json file
 The config.json file in each of your subdirectories in your config folder will contain cluster-specific configuration for your aladdin installation. Here is an example config.json file for a specific cluster:
@@ -133,12 +133,12 @@ Note: Aladdin also supports a `default/` folder which can have a `config.json` f
 Note: Aladdin allows you to override configuration on a namespace level as well. To do this, create a namespace-overrides folder in your cluster subdirectory folder, and create a folder for each namespace you want to override config for. Then create a `config.json` file with any overrides. See the `config-example/CLUSTERDEV/namespace-overrides/test/config.json` file for an example.
 
 ## Cluster values.yaml file
-The values.yaml file in each of your subdirectories in your config folder will contain cluster-specific values which will be set for all helm charts in this cluster when running `aladdin deploy` or `aladdin start`. Here is an example values.yaml file for a minikube cluster:
+The values.yaml file in each of your subdirectories in your config folder will contain cluster-specific values which will be set for all helm charts in this cluster when running `aladdin deploy` or `aladdin start`. Here is an example values.yaml file for a LOCAL cluster:
 
 ```yaml
 service:
   publicServiceType: "NodePort"
-  certificateArn: "no-certificate-on-minikube"
+  certificateArn: "no-certificate-on-local"
 
 deploy:
   ecr:
