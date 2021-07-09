@@ -24,4 +24,5 @@ def build(build_args):
     pc = ProjectConf()
     pc.build_docker(env={"HASH": tag}, build_args=build_args)
     images = pc.get_docker_images()
-    k3d.import_images([f"{image}:{tag}" for image in images])
+    if images:
+        k3d.import_images([f"{image}:{tag}" for image in images])
