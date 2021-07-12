@@ -89,7 +89,7 @@ function get_config_variables() {
         if [[ "$K3D_API_PORT" == null ]]; then
             K3D_API_PORT=6550
         fi
-    fi 
+    fi
 }
 
 function get_host_addr() {
@@ -233,23 +233,43 @@ function handle_ostypes() {
     esac
 }
 
-function prepare_docker_subcommands() {
+function prepare_volume_mount_options() {
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
-    MOUNTS_CMD=""
+    VOLUME_MOUNTS_OPTIONS=""
     if "$DEV"; then
-        MOUNTS_CMD="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
-        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
-        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
+        VOLUME_MOUNTS_OPTIONS="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
     fi
 
     if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
-        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
     if "$DEV" || "$IS_LOCAL"; then
-        MOUNTS_CMD="$MOUNTS_CMD -v $HOST_DIR:/aladdin_root$HOST_DIR"
-        MOUNTS_CMD="$MOUNTS_CMD -w /aladdin_root$(pathnorm "$PWD")"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $HOST_DIR:/aladdin_root$HOST_DIR"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -w /aladdin_root$(pathnorm "$PWD")"
+    fi
+}
+
+function prepare_ssh_options() {
+    local ssh_src
+
+    if $(jq -r '.ssh.forward // false' $HOME/.aladdin/config/config.json ); then
+        # Give the container access to the agent socket and tell it where to find it
+        if [[ -z ${SSH_AUTH_SOCK:-} ]]; then
+            echo >&2 "Aladdin is configured to use ssh agent forwarding (ssh.forward == true) but SSH_AUTH_SOCK is empty."
+            exit 1
+        fi
+        SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AUTH_SOCK} -v ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
+    else
+        # Default behavior is to attempt to mount the host's .ssh directory into root's home.
+        case "$OSTYPE" in
+            cygwin*) ssh_src="/.ssh" ;;
+            *)       ssh_src="$(pathnorm ~/.ssh)" ;;
+        esac
+        SSH_OPTIONS="-v ${ssh_src}:/root/.ssh"
     fi
 }
 
@@ -265,12 +285,6 @@ function enter_docker_container() {
     fi
 
     local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"}"
-    local ssh_src
-
-    case "$OSTYPE" in
-        cygwin*) ssh_src="/.ssh" ;;
-        *)       ssh_src="$(pathnorm ~/.ssh)" ;;
-    esac
 
     docker run $FLAGS \
         `# Environment` \
@@ -289,13 +303,12 @@ function enter_docker_container() {
         `# Mount destination for aws creds will not be /root/.aws because we will possibly make` \
         `# changes there that we don't want propagated on the host's ~/.aws` \
         -v "$(pathnorm ~/.aws):/root/tmp/.aws" \
-        -v "${ssh_src}:/root/.ssh" \
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        `# Specific command` \
-        ${MOUNTS_CMD} \
+        ${VOLUME_MOUNTS_OPTIONS} \
+        ${SSH_OPTIONS} \
         "$aladdin_image" \
         `# Finally, launch the command` \
         /root/aladdin/aladdin-container.sh "$@"
@@ -348,5 +361,6 @@ get_config_variables
 check_and_handle_init
 set_cluster_helper_vars
 handle_ostypes
-prepare_docker_subcommands
+prepare_volume_mount_options
+prepare_ssh_options
 enter_docker_container "$@"
