@@ -256,10 +256,10 @@ function prepare_volume_mount_options() {
 function prepare_ssh_options() {
     local ssh_src
 
-    if $(jq -r '.ssh.forward // false' $HOME/.aladdin/config/config.json ); then
+    if $(jq -r '.ssh.agent // false' $HOME/.aladdin/config/config.json ); then
         # Give the container access to the agent socket and tell it where to find it
         if [[ -z ${SSH_AUTH_SOCK:-} ]]; then
-            echo >&2 "Aladdin is configured to use ssh agent forwarding (ssh.forward == true) but SSH_AUTH_SOCK is empty."
+            echo >&2 "Aladdin is configured to use the host's ssh agent (ssh.agent == true) but SSH_AUTH_SOCK is empty."
             exit 1
         fi
         SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AUTH_SOCK} -v ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
