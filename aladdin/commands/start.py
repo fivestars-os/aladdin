@@ -19,17 +19,6 @@ def parse_args(sub_parser):
         parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHARTS_OPTION_PARSER]
     )
     subparser.set_defaults(func=start_args)
-    subparser.add_argument(
-        "--force-helm",
-        action="store_true",
-        help="Have helm force resource update through delete/recreate if needed",
-    )
-    subparser.add_argument(
-        "--set-override-values",
-        default=[],
-        nargs="+",
-        help="override values in the values file. Syntax: --set key1=value1 key2=value2 ...",
-    )
 
 
 def start_args(args):
