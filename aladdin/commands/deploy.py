@@ -108,18 +108,7 @@ def deploy(
         # Add user-specified values files
         if values_files:
             for file_path in values_files:
-                if os.path.exists(file_path):
-                    helm_args.append(f"--values={file_path}")
-                else:
-                    aladdin_root_adjusted = "/aladdin_root" + file_path
-                    if os.path.isabs(file_path) and os.path.exists(aladdin_root_adjusted):
-                        helm_args.append(f"--values={aladdin_root_adjusted}")
-                    else:
-                        logging.error(
-                            f"argument --values-file: can't open '{file_path}': "
-                            f"[Errno 2] No such file"
-                        )
-                        sys.exit(1)
+                helm_args.append(f"--values={os.path.join(helm_chart_path, 'values', file_path)}")
         # Update with --set-override-values
         values.update(dict(value.split("=") for value in set_override_values))
 

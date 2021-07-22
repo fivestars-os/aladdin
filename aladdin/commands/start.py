@@ -78,23 +78,7 @@ def start(
     }
     # Update with cluster rule values
     values.update(cr.values)
-    # Add user-specified values files
     helm_args = []
-    # Add user-specified values files
-    if values_files:
-        for file_path in values_files:
-            if os.path.exists(file_path):
-                helm_args.append(f"--values={file_path}")
-            else:
-                aladdin_root_adjusted = "/aladdin_root" + file_path
-                if os.path.isabs(file_path) and os.path.exists(aladdin_root_adjusted):
-                    helm_args.append(f"--values={aladdin_root_adjusted}")
-                else:
-                    logging.error(
-                        f"argument --values-file: can't open '{file_path}': "
-                        f"[Errno 2] No such file"
-                    )
-                    sys.exit(1)
     # Update with --set-override-values
     values.update(dict(value.split("=") for value in set_override_values))
 
@@ -102,6 +86,10 @@ def start(
     try:
         for chart_path in pc.get_helm_chart_paths():
             chart_name = os.path.basename(chart_path)
+            # Add user-specified values files
+            if values_files:
+                for file_path in values_files:
+                    helm_args.append(f"--values={os.path.join(chart_path, 'values', file_path)}")
             if chart_name in charts:
                 hr = HelmRules(cr, chart_name)
                 if dry_run:

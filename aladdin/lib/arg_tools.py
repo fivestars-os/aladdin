@@ -86,7 +86,7 @@ HELM_OPTION_PARSER.add_argument(
     action="append",
     type=str,
     help=(
-        "override values in the values file. "
+        "add values file to override chart values"
         "Syntax: --values-file my-values.yaml ..."
     ),
 )
