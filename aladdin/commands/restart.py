@@ -12,19 +12,13 @@ def parse_args(sub_parser):
         dest="charts",
         help="Start only these charts (may be specified multiple times)",
     )
-    subparser.add_argument(
-        "--with-mount",
-        "-m",
-        action="store_true",
-        help="Mount user's host's project repo onto container",
-    )
 
 
 def restart_args(args):
-    restart(args.namespace, args.charts, args.with_mount)
+    restart(args.namespace, args.charts)
 
 
 @container_command
-def restart(namespace, charts, with_mount):
+def restart(namespace, charts):
     stop.stop(namespace, charts)
-    start.start(namespace, charts, False, with_mount)
+    start.start(namespace, charts, False)

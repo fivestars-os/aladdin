@@ -22,7 +22,7 @@ def parse_args(sub_parser):
     exclude_steps_group.add_argument(
         "--build-only",
         action="store_true",
-        help="only builds docker images in your minikube env with hash and timestamp as tags",
+        help="only builds docker images in your LOCAL env with hash as tag",
     )
     exclude_steps_group.add_argument(
         "--build-publish-ecr-only",

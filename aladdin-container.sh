@@ -74,16 +74,6 @@ function exec_command_or_plugin() {
     echo "Error: unknown command $command for aladdin"
 }
 
-function _replace_aws_secret() {
-    local creds username password server
-    creds=$(aws ecr get-login)
-    username=$(echo $creds | cut -d ' ' -f4)
-    password=$(echo $creds | cut -d ' ' -f6)
-    server=$(echo $creds | cut -d ' ' -f9)
-    kubectl delete secret aws || true
-    kubectl create secret docker-registry aws --docker-username="$username" --docker-password="$password" --docker-server="$server" --docker-email="can be anything"
-}
-
 function environment_init() {
     echo "START ENVIRONMENT CONFIGURATION============================================="
     echo "CLUSTER_CODE = $CLUSTER_CODE"
@@ -100,22 +90,19 @@ function environment_init() {
 
         if "$IS_LOCAL"; then
             mkdir -p $HOME/.kube/
-            cp $HOME/.kube_local/config $HOME/.kube/config
-            # Replace e.g. /Users/ptr/.minikube with /root/.minikube in the minikube conf dir path
-            # (since that's where it will be mounted within the aladdin container)
-            sed 's|: \?.*\.minikube|: /root/.minikube| ; /: \/root\/.minikube/ s|\\|/|g' $HOME/.kube_local/config > $HOME/.kube/config
+            sed "s;https://0.0.0.0:$K3D_API_PORT;https://$HOST_ADDR:$K3D_API_PORT;g" $HOME/.kube_local/config > $HOME/.kube/config
+            kubectl config set-context "$NAMESPACE.k3d-$CLUSTER_NAME" --cluster "k3d-$CLUSTER_NAME" --namespace="$NAMESPACE" --user "admin@k3d-$CLUSTER_NAME"
+            kubectl config use-context "$NAMESPACE.k3d-$CLUSTER_NAME"
         else
             cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
+            kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
+            kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"            
         fi
-
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
-        kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
 
         _handle_authentication_config
 
         if $INIT; then
-            kubectl create namespace --cluster $CLUSTER_NAME $NAMESPACE || true
-            _replace_aws_secret || true
+            kubectl create namespace $NAMESPACE || true
             $PY_MAIN namespace-init --force
         fi
     fi

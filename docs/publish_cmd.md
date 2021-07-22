@@ -13,7 +13,7 @@ usage: aladdin publish [-h]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --build-only          only builds docker images in your minikube env with
+  --build-only          only builds docker images in your LOCAL env with
                         hash and timestamp as tags
   --build-publish-ecr-only
                         only build and publish docker images to ecr

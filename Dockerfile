@@ -67,6 +67,9 @@ ARG ISTIO_VERSION=1.9.2
 RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
     mv /istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
 
+ARG K3D_VERSION=4.4.4
+RUN curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v$K3D_VERSION bash
+
 # Install edgectl
 RUN curl -fL https://metriton.datawire.io/downloads/linux/edgectl -o /usr/local/bin/edgectl && \
     chmod a+x /usr/local/bin/edgectl

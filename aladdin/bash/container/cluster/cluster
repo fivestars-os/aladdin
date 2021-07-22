@@ -29,7 +29,7 @@ function usage {
 		optional arguments:
 		  -h, --help            show this help message and exit
 		  --cluster CLUSTER, -c CLUSTER
-		                        cluster dns, defaults to minikube current : [minikube]
+		                        cluster dns, defaults to LOCAL current : [$CLUSTER_NAME]
 		  --namespace NAMESPACE, -n NAMESPACE
 		                        namespace name, defaults to default current : [default]
 		  --init                force the initialization steps (dl latest docker, aws auth, etc...)

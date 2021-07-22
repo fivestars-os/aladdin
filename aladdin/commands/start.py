@@ -20,10 +20,15 @@ def parse_args(sub_parser):
     )
     subparser.set_defaults(func=start_args)
     subparser.add_argument(
-        "--with-mount",
-        "-m",
+        "--force-helm",
         action="store_true",
-        help="Mount user's host's project repo onto container",
+        help="Have helm force resource update through delete/recreate if needed",
+    )
+    subparser.add_argument(
+        "--set-override-values",
+        default=[],
+        nargs="+",
+        help="override values in the values file. Syntax: --set key1=value1 key2=value2 ...",
     )
 
 
@@ -32,7 +37,6 @@ def start_args(args):
         args.namespace,
         args.charts,
         args.dry_run,
-        args.with_mount,
         args.force_helm,
         args.set_override_values,
         args.values_files,
@@ -44,7 +48,6 @@ def start(
     namespace,
     charts=None,
     dry_run=False,
-    with_mount=False,
     force_helm=False,
     set_override_values=None,
     values_files=None,
@@ -64,9 +67,7 @@ def start(
     # Start command values
     values = {
         "deploy.imageTag": "local",
-        "deploy.mountPath": pc.mount_path,
         "deploy.namespace": namespace,
-        "deploy.withMount": with_mount,
         "project.name": pc.name,
         "service.certificateArn": cr.service_certificate_arn,
         "service.certificateScope": cr.service_certificate_scope,

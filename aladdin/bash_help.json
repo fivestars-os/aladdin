@@ -26,17 +26,11 @@
     "env": {
         "help": "Set aladdin env variables : $(aladdin env)"
     },
-    "get-minikube-endpoints": {
-        "help": "Show endpoints for all minikube services"
-    },
-    "get-dashboard-url": {
-        "help": "Show url for cluster dashboard"
-    },    
     "helm-history": {
         "help": "Show the history of a helm release"
     },
     "host": {
-        "help": "Give instructions to update local /etc/hosts file for minikube ingress compatibility"
+        "help": "Give instructions to update local /etc/hosts file for k3d ingress compatibility"
     },
     "load-images": {
         "help": "Import local images"
@@ -45,7 +39,7 @@
         "help": "Export images locally"
     },
     "test-local": {
-        "help": "Test aladdin local commands using a test minikube cluster"
+        "help": "Test aladdin local commands using a test k3d cluster"
     },
     "test-remote": {
         "help": "Test aladdin remote commands on a remote test cluster"

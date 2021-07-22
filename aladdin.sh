@@ -10,11 +10,10 @@ trap ctrl_trap INT
 # Set defaults on command line args
 DEV=false
 INIT=false
-CLUSTER_CODE=minikube
+CLUSTER_CODE=LOCAL
 NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
-MANAGE_MINIKUBE=true
 KUBERNETES_VERSION="1.19.7"
 MANAGE_SOFTWARE_DEPENDENCIES=true
 
@@ -26,21 +25,8 @@ ALADDIN_PLUGIN_DIR=
 ALADDIN_BIN="$HOME/.aladdin/bin"
 PATH="$ALADDIN_BIN":"$PATH"
 
-# Minikube defaults
-DEFAULT_MINIKUBE_VM_DRIVER="virtualbox"
-DEFAULT_MINIKUBE_MEMORY=4096
-
 source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
 
-# If $MANAGE_MINIKUBE is true, then all commands will be executed
-# using the external 'minikube' command.
-# https://www.gnu.org/software/bash/manual/html_node/Bash-Builtins.html#index-command
-# Otherwise calls to minikube will be no-op
-function minikube() {
-    if "$MANAGE_MINIKUBE"; then
-      command minikube "$@"
-    fi
-}
 function get_config_path() {
     if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
         echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
@@ -63,15 +49,6 @@ function get_plugin_dir() {
     fi
 }
 
-function get_manage_minikube() {
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        MANAGE_MINIKUBE=$(jq -r .manage.minikube $HOME/.aladdin/config/config.json)
-        if [[ "$MANAGE_MINIKUBE" == null ]]; then
-            MANAGE_MINIKUBE=true
-        fi
-    fi
-}
-
 function get_manage_software_dependencies() {
     if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
         MANAGE_SOFTWARE_DEPENDENCIES=$(jq -r .manage.software_dependencies $HOME/.aladdin/config/config.json)
@@ -86,6 +63,40 @@ function check_cluster_alias() {
     if [[ $cluster_alias != null ]]; then
         export CLUSTER_CODE=$cluster_alias
     fi
+}
+
+function get_config_variables() {
+    # Get host directory that will be mounted onto the docker container
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        HOST_DIR=$(jq -r .host_dir $HOME/.aladdin/config/config.json)
+        if [[ "$HOST_DIR" == null ]]; then
+            # defaults to osx
+            HOST_DIR="/Users"
+        fi
+    fi
+    # Get k3d service port
+    K3D_SERVICE_PORT=8081 # default value
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        K3D_SERVICE_PORT=$(jq -r .k3d.service_port $HOME/.aladdin/config/config.json)
+        if [[ "$K3D_SERVICE_PORT" == null ]]; then
+            K3D_SERVICE_PORT=8081
+        fi
+    fi
+    # Get k3d api port
+    K3D_API_PORT=6550 # default value
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        K3D_API_PORT=$(jq -r .k3d.api_port $HOME/.aladdin/config/config.json)
+        if [[ "$K3D_API_PORT" == null ]]; then
+            K3D_API_PORT=6550
+        fi
+    fi
+}
+
+function get_host_addr() {
+    case "$OSTYPE" in
+        linux*) HOST_ADDR="172.17.0.1" ;;
+        *)      HOST_ADDR="host.docker.internal" ;;
+    esac
 }
 
 function check_and_handle_init() {
@@ -105,9 +116,7 @@ function check_and_handle_init() {
         if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
             "$SCRIPT_DIR"/infra_k8s_check.sh --force
         fi
-        enter_minikube_env
-        copy_ssh_to_minikube
-        minikube addons enable ingress > /dev/null
+        check_or_start_k3d
         readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_FILE")"
         if [[ "$repo_login_command" != "null" ]]; then
             eval "$repo_login_command"
@@ -121,112 +130,25 @@ function check_and_handle_init() {
         if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
             "$SCRIPT_DIR"/infra_k8s_check.sh
         fi
-        enter_minikube_env
+        check_or_start_k3d
     fi
 }
 
-function set_minikube_config(){
-    if "$MANAGE_MINIKUBE"; then
-        minikube config set kubernetes-version v$KUBERNETES_VERSION > /dev/null
-
-        for key in vm_driver memory disk_size cpus; do
-            local minikube_key=$(tr _ - <<< "$key")  # e.g., driver
-            local default_var="DEFAULT_MINIKUBE_$(tr a-z A-Z <<< "$key")"  # e.g., DEFAULT_MINIKUBE_VM_DRIVER
-
-            local value=$(aladdin config get "minikube.$key" "${!default_var:-}")
-
-            if test -n "$value"; then
-                minikube config set "$minikube_key" "$value" > /dev/null
-            fi
-        done
-    fi
+function _start_k3d() {
+    # start k3d cluster
+    k3d cluster create LOCAL --api-port "$K3D_API_PORT" -p "$K3D_SERVICE_PORT:80@loadbalancer" \
+        --k3s-server-arg "--tls-san=$HOST_ADDR" --image "rancher/k3s:v$KUBERNETES_VERSION-k3s1"
 }
 
-function _start_minikube() {
-    if "$MANAGE_MINIKUBE"; then
-        local minikube_cmd="minikube start"
-
-        if test "$OSTYPE" = "linux-gnu"; then
-            if test $(minikube config get driver) = "none"; then
-                # If we're running on native docker on a linux host, minikube start must happen as root
-                # due to limitations in minikube.  Specifying CHANGE_MINIKUBE_NONE_USER causes minikube
-                # to switch users to $SUDO_USER (the user that called sudo) before writing out
-                # configuration.
-                minikube_cmd="sudo -E CHANGE_MINIKUBE_NONE_USER=true '$(which minikube)' start"
-
-            else
-                # On linux, /home gets mounted on /hosthome in the minikube vm, so as not to
-                # override /home/docker.  We still want the user's home directory to be in the
-                # same path both in and outside the minikube vm though, so symlink it into place.
-                minikube_cmd="$minikube_cmd &&\
-                              minikube ssh \"sudo mkdir '$HOME' && \
-                                             sudo mount --bind '${HOME/\/home//hosthome}' '$HOME'\""
-            fi
-        fi
-
-        bash -c "$minikube_cmd"
-    fi
-}
-
-# Start minikube if we need to
-function check_or_start_minikube() {
-    if "$MANAGE_MINIKUBE"; then
-        if ! minikube status | grep Running > /dev/null; then
-
-            echo "Starting minikube... (this will take a moment)"
-            set_minikube_config
-            _start_minikube
-
-            if test -n "$(aladdin config get nfs)"; then
-                if test "$(minikube config get driver)" != "none"; then
-                    # Determine if we've installed our bootlocal.sh script to replace
-                    # the default mounts with nfs mounts.
-                    if ! minikube ssh -- "test -x /var/lib/boot2docker/bootlocal.sh"; then
-                        echo "Installing NFS mounts from host..."
-                        "$SCRIPT_DIR"/install_nfs_mounts.sh
-                        echo "NFS mounts installed"
-                    fi
-                fi
-            fi
-            echo "Minikube started"
-        else
-            if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" > /dev/null; then
-                echo "Minikube detected on the incorrect version, stopping and restarting"
-                minikube stop > /dev/null
-                minikube delete > /dev/null
-                set_minikube_config
-                check_or_start_minikube
-            fi
-        fi
-    fi
-}
-
-function copy_ssh_to_minikube() {
-    if "$MANAGE_MINIKUBE"; then
-        # Some systems fail when we directly mount the host's ~/.ssh directory into the aladdin container.
-        # This allows us to move the ~/.ssh directory into minikube and later mount that directory (with
-        # the adjusted ownernship and permissions) such that the container can leverage the user's
-        # credentials for ssh operations.
-        case "$OSTYPE" in
-            cygwin*) # Cygwin under windows
-                echo "Copying ~/.ssh into minikube"
-                (
-                    tmp_ssh_dir=".ssh.$(tr </dev/urandom -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)" ||:
-                    minikube mount --ip 192.168.99.1 "$(cygpath -w ~/.ssh):/tmp/$tmp_ssh_dir" &
-                    minikube ssh -- "sudo rm -rf /.ssh && sudo cp -r /tmp/$tmp_ssh_dir /.ssh && sudo chmod -R 600 /.ssh"
-                    kill $!
-                ) >/dev/null
-            ;;
-        esac
-        :
-    fi
-}
-
-function enter_minikube_env() {
-    if "$MANAGE_MINIKUBE"; then
-        if [[ $OSTYPE = darwin* || $OSTYPE = cygwin* || $OSTYPE = linux* ]]; then
-            check_or_start_minikube
-            eval "$(minikube docker-env)"
+function check_or_start_k3d() {
+    if ! k3d cluster list | grep LOCAL > /dev/null; then
+        echo "Starting k3d LOCAL cluster... (this will take a moment)"
+        _start_k3d
+    else
+        if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" > /dev/null; then
+            echo "k3d detected on the incorrect version, stopping and restarting"
+            k3d cluster delete LOCAL > /dev/null
+            check_or_start_k3d
         fi
     fi
 }
@@ -311,41 +233,43 @@ function handle_ostypes() {
     esac
 }
 
-function prepare_docker_subcommands() {
+function prepare_volume_mount_options() {
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
-    MOUNTS_CMD=""
+    VOLUME_MOUNTS_OPTIONS=""
     if "$DEV"; then
-        MOUNTS_CMD="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
-        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
-        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
-    fi
-
-    if "$IS_LOCAL"; then
-        if [ "$CLUSTER_CODE" = "minikube" ] ; then
-            MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm ~/.minikube):/root/.minikube"
-        fi
+        VOLUME_MOUNTS_OPTIONS="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
     fi
 
     if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
-        MOUNTS_CMD="$MOUNTS_CMD -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
     if "$DEV" || "$IS_LOCAL"; then
-        MOUNTS_CMD="$MOUNTS_CMD -v /:/aladdin_root"
-        MOUNTS_CMD="$MOUNTS_CMD -w /aladdin_root$(pathnorm "$PWD")"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $HOST_DIR:/aladdin_root$HOST_DIR"
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -w /aladdin_root$(pathnorm "$PWD")"
     fi
 }
 
-function synchronize_datetime()
-{
-    if "$MANAGE_MINIKUBE"; then
-        # When minikube wakes up from sleep, date or time could be out of sync.
-        # Take date + time from host and set it on minikube.
-        if test "$(minikube config get vm-driver)" != "none"; then
-            echo "Synchronizing date and time on minikube with the host"
-            minikube ssh "sudo date -s @$(date +%s)"
+function prepare_ssh_options() {
+    local ssh_src
+
+    if $(jq -r '.ssh.agent // false' $HOME/.aladdin/config/config.json ); then
+        # Give the container access to the agent socket and tell it where to find it
+        if [[ -z ${SSH_AUTH_SOCK:-} ]]; then
+            echo >&2 "Aladdin is configured to use the host's ssh agent (ssh.agent == true) but SSH_AUTH_SOCK is empty."
+            exit 1
         fi
+        SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AUTH_SOCK} -v ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}"
+    else
+        # Default behavior is to attempt to mount the host's .ssh directory into root's home.
+        case "$OSTYPE" in
+            cygwin*) ssh_src="/.ssh" ;;
+            *)       ssh_src="$(pathnorm ~/.ssh)" ;;
+        esac
+        SSH_OPTIONS="-v ${ssh_src}:/root/.ssh"
     fi
 }
 
@@ -361,12 +285,6 @@ function enter_docker_container() {
     fi
 
     local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"}"
-    local ssh_src
-
-    case "$OSTYPE" in
-        cygwin*) ssh_src="/.ssh" ;;
-        *)       ssh_src="$(pathnorm ~/.ssh)" ;;
-    esac
 
     docker run $FLAGS \
         `# Environment` \
@@ -374,24 +292,23 @@ function enter_docker_container() {
         -e "INIT=$INIT" \
         -e "CLUSTER_CODE=$CLUSTER_CODE" \
         -e "NAMESPACE=$NAMESPACE" \
-        -e "MINIKUBE_IP=$(minikube ip)" \
         -e "IS_LOCAL=$IS_LOCAL" \
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
+        -e "K3D_API_PORT=$K3D_API_PORT" \
+        -e "HOST_ADDR=$HOST_ADDR" \
         -e "command=$command" \
         `# Mount host credentials` \
         `# Mount destination for aws creds will not be /root/.aws because we will possibly make` \
         `# changes there that we don't want propagated on the host's ~/.aws` \
         -v "$(pathnorm ~/.aws):/root/tmp/.aws" \
-        -v "${ssh_src}:/root/.ssh" \
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
-        `# Mount minikube parts` \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        `# Specific command` \
-        ${MOUNTS_CMD} \
+        ${VOLUME_MOUNTS_OPTIONS} \
+        ${SSH_OPTIONS} \
         "$aladdin_image" \
         `# Finally, launch the command` \
         /root/aladdin/aladdin-container.sh "$@"
@@ -436,13 +353,14 @@ done
 exec_host_command "$@"
 get_config_path
 get_plugin_dir
-get_manage_minikube
+get_host_addr
 get_manage_software_dependencies
 exec_host_plugin "$@"
 check_cluster_alias
+get_config_variables
 check_and_handle_init
 set_cluster_helper_vars
 handle_ostypes
-prepare_docker_subcommands
-synchronize_datetime
+prepare_volume_mount_options
+prepare_ssh_options
 enter_docker_container "$@"

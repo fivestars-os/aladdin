@@ -1,1 +1,2 @@
+commands/bash/container/get-dashboard-url/get-dashboard-url
 aladdin/bash/container/get-dashboard-url/get-dashboard-url

@@ -1,6 +1,6 @@
 service:
   publicServiceType: "NodePort"
-  certificateArn: "no-certificate-on-minikube"
+  certificateArn: "no-certificate-on-local"
 
 deploy:
   ecr:

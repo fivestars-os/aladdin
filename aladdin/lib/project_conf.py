@@ -58,11 +58,6 @@ class ProjectConf(object):
         return self.lamp_content["name"]
 
     @property
-    def mount_path(self):
-        # Under aladdin, we are using /aladdin_root , but under minikube it's /
-        return re.sub(r"^/aladdin_root", "", self.path)
-
-    @property
     def build_command(self):
         cmd = search("build_docker", self.lamp_content) or ["aladdin", "build-components"]
         return [cmd] if isinstance(cmd, str) else cmd

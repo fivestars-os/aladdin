@@ -36,7 +36,7 @@ optional arguments:
 - Example: `aladdin -c DEV -n test deploy aladdin-demo 5a5e59b2f6 --set-override-values replicas=3 resources.cpu.request.enable=true`
 - Example: `aladdin -c DEV -n special deploy aladdin-demo 5a5e59b2f6 --chart aladdin-demo-special`
 
-Note: Although this command is primarily used for non local environments, you can still use it in minikube rather than using `aladdin start`. The benefit of this is that you are not required to have the project pulled locally. The cons of this is that you have to get the githash you want to deploy, and you cannot mount your host code in this method.
+Note: Although this command is primarily used for non local environments, you can still use it in LOCAL rather than using `aladdin start`. The benefit of this is that you are not required to have the project pulled locally. The cons of this is that you have to get the githash you want to deploy, and you cannot mount your host code in this method.
 
 Also note: Aladdin deploy will also request a certificate arn for `*.{namespace}.{cluster dns}` or `*.{service_dns_suffix}` if you have supplied `service_dns_suffix` in your config. It will use helm to pass in `--set service.certificateArn={certificate arn}` once the certificate is issued. Since the certificate validation happens asynchronously, it may not be applied the first time you deploy. However, once it is issued, if you have these lines in your k8s service yaml file:
 ```

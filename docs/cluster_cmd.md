@@ -46,14 +46,14 @@ Manage kubernetes clusters
 positional arguments:
   {backup,create-at-aws,create-config,delete,export-config,import-config,init,populate,rolling-update-at-aws,update-at-aws,view-config}
                         cluster subcommands
-    backup              export all k8s resources for each namespace to minikube/<namespace>.yaml for later repopulation
-    create-at-aws       create cluster minikube from kops configuration
-    create-config       import kops configuration for cluster minikube based on minikube environment file
-    delete              delete cluster minikube
-    export-config       export kops configuration for cluster minikube to host machine
-    import-config       update kops cluster minikube state with host machine cluster files
-    init                deploy all cluster_init projects as specified by your minikube config.json file
-    populate            populate a cluster using the minikube/<namespace>.yaml files generated from cluster backup
+    backup              export all k8s resources for each namespace to $CLUSTER_NAME/<namespace>.yaml for later repopulation
+    create-at-aws       create cluster $CLUSTER_NAME from kops configuration
+    create-config       import kops configuration for cluster $CLUSTER_NAME based on $CLUSTER_NAME environment file
+    delete              delete cluster $CLUSTER_NAME
+    export-config       export kops configuration for cluster $CLUSTER_NAME to host machine
+    import-config       update kops cluster $CLUSTER_NAME state with host machine cluster files
+    init                deploy all cluster_init projects as specified by your $CLUSTER_NAME config.json file
+    populate            populate a cluster using the $CLUSTER_NAME/<namespace>.yaml files generated from cluster backup
     rolling-update-at-aws
                         update cluster configuration by restarting cluster nodes
     update-at-aws       update cluster configuration without restarting cluster nodes
@@ -62,7 +62,7 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --cluster CLUSTER, -c CLUSTER
-                        cluster dns, defaults to minikube current : [minikube]
+                        cluster dns, defaults to LOCAL current : [$CLUSTER_NAME]
   --namespace NAMESPACE, -n NAMESPACE
                         namespace name, defaults to default current : [default]
   --init                force the initialization steps (dl latest docker, aws auth, etc...)
