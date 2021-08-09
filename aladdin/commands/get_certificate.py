@@ -1,12 +1,14 @@
+import time
+
 from aladdin.lib.cluster_rules import cluster_rules
-from aladdin.lib.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.arg_tools import add_namespace_argument, container_command, expand_namespace
 
 
 def parse_args(sub_parser):
     subparser = sub_parser.add_parser(
         "get-certificate", help="Get the certificate arn needed for the services elb"
     )
-    subparser.set_defaults(func=get_certificate_args)
+    subparser.set_defaults(func=get_certificate)
     add_namespace_argument(subparser)
     subparser.add_argument(
         "--for-cluster",
@@ -14,13 +16,23 @@ def parse_args(sub_parser):
         dest="for_cluster",
         help="Get the certificate arn for the cluster's un-namespaced domain name",
     )
-
-
-def get_certificate_args(args):
-    get_certificate(args.namespace, for_cluster=args.for_cluster)
+    subparser.add_argument(
+        "--wait",
+        action="store_true",
+        dest="wait",
+        help="Wait for certificate to be ready",
+    )
 
 
 @container_command
-def get_certificate(namespace, for_cluster):
+@expand_namespace
+def get_certificate(namespace: str, for_cluster: bool = False, wait: bool = False):
     cr = cluster_rules(namespace=namespace)
-    return cr.cluster_certificate_arn if for_cluster else cr.service_certificate_arn
+    cert = None
+    while not cert:
+        cert = cr.cluster_certificate_arn if for_cluster else cr.service_certificate_arn
+        if not wait:
+            return cert
+        if not cert:
+            time.sleep(10)
+    return cert
