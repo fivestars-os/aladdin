@@ -43,7 +43,7 @@ class Helm(object):
         try:
             package_path = join(charts_dir, "{}-{}.tgz".format(chart_name, version))
             bucket_path = self.PACKAGE_PATH.format(
-                project_name=project_name, chart_name=chart_name, git_ref=hash
+                project_name=project_name, chart_name=chart_name, git_ref=git_hash
             )
 
             logger.info("Uploading %s chart to %s", chart_name, bucket_path)
