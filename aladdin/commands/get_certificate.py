@@ -18,20 +18,24 @@ def parse_args(sub_parser):
     )
     subparser.add_argument(
         "--wait",
-        action="store_true",
+        type=int,
+        default=0,
         dest="wait",
-        help="Wait for certificate to be ready",
+        help="Seconds to wait for certificate to be ready (use -1 to wait forever)",
     )
 
 
 @container_command
 @expand_namespace
-def get_certificate(namespace: str, for_cluster: bool = False, wait: bool = False):
+def get_certificate(namespace: str, for_cluster: bool = False, wait: int = 0):
     cr = cluster_rules(namespace=namespace)
     cert = None
+    timeout_start = time.time()
     while not cert:
         cert = cr.cluster_certificate_arn if for_cluster else cr.service_certificate_arn
         if not wait:
+            return cert
+        if wait > 0 and time.time() - timeout_start > wait:
             return cert
         if not cert:
             time.sleep(10)
