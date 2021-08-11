@@ -145,6 +145,7 @@ class Helm(object):
         cluster_namespace_config_values_path = os.path.join(
             os.environ["ALADDIN_CONFIG_DIR"],
             cluster_name,
+            "namespace-overrides",
             namespace,
             "values.yaml"
         )
