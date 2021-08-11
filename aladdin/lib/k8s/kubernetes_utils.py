@@ -2,6 +2,7 @@ import os
 import logging
 import time
 
+from aladdin.lib.arg_tools import get_current_namespace
 from aladdin.lib.k8s.kubernetes import KubernetesException
 
 
@@ -105,7 +106,7 @@ class KubernetesUtils(object):
             )
             logging.warning(
                 "Please Try again in a few moments by calling `aladdin -c {0} -n {1}"
-                " sync-dns`.".format(os.getenv("CLUSTER_CODE"), os.getenv("NAMESPACE"))
+                " sync-dns`.".format(os.getenv("CLUSTER_CODE"), get_current_namespace())
             )
             return
         elif len(load_balancers) != 1:

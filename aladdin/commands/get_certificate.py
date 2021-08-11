@@ -1,12 +1,15 @@
+import argparse
+import time
+
 from aladdin.lib.cluster_rules import cluster_rules
-from aladdin.lib.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.arg_tools import add_namespace_argument, container_command, expand_namespace
 
 
-def parse_args(sub_parser):
-    subparser = sub_parser.add_parser(
+def parse_args(parser):
+    subparser: argparse.ArgumentParser = parser.add_parser(
         "get-certificate", help="Get the certificate arn needed for the services elb"
     )
-    subparser.set_defaults(func=get_certificate_args)
+    subparser.set_defaults(func=get_certificate)
     add_namespace_argument(subparser)
     subparser.add_argument(
         "--for-cluster",
@@ -14,13 +17,39 @@ def parse_args(sub_parser):
         dest="for_cluster",
         help="Get the certificate arn for the cluster's un-namespaced domain name",
     )
-
-
-def get_certificate_args(args):
-    get_certificate(args.namespace, for_cluster=args.for_cluster)
+    subparser.add_argument(
+        "--wait",
+        type=int,
+        default=0,
+        dest="wait",
+        help="Seconds to wait for certificate to be ready (use -1 to wait forever)",
+    )
+    subparser.add_argument(
+        "--poll-interval",
+        type=int,
+        default=10,
+        dest="poll_interval",
+        help="Seconds to wait between polls to AWS ACM",
+    )
 
 
 @container_command
-def get_certificate(namespace, for_cluster):
+@expand_namespace
+def get_certificate(
+    namespace: str,
+    for_cluster: bool = False,
+    wait: int = 0,
+    poll_interval: int = 10
+):
     cr = cluster_rules(namespace=namespace)
-    return cr.cluster_certificate_arn if for_cluster else cr.service_certificate_arn
+    cert = None
+    timeout_start = time.time()
+    while not cert:
+        cert = cr.cluster_certificate_arn if for_cluster else cr.service_certificate_arn
+        if not wait:
+            return cert
+        if wait > 0 and time.time() - timeout_start > wait:
+            return cert
+        if not cert:
+            time.sleep(poll_interval)
+    return cert

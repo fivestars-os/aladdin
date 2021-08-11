@@ -5,17 +5,35 @@ import os
 import subprocess
 import sys
 import pkg_resources
+from contextlib import suppress
+from inspect import signature
+
+from kubernetes import config as kube_config
 
 from aladdin.config import PROJECT_ROOT
 
 
+def get_current_namespace():
+    namespace = os.getenv("NAMESPACE")
+
+    if not namespace:
+        with suppress(KeyError, kube_config.config_exception.ConfigException):
+            _, active_context = kube_config.list_kube_config_contexts()
+            namespace = active_context["context"]["namespace"]
+
+    if not namespace:
+        namespace = "default"
+    return namespace
+
+CURRENT_NAMESPACE = get_current_namespace()
+
+
 def add_namespace_argument(arg_parser):
-    namespace_def = os.getenv("NAMESPACE", "default")
     arg_parser.add_argument(
         "--namespace",
         "-n",
-        default=namespace_def,
-        help="namespace name, defaults to default current : [{}]".format(namespace_def),
+        default=CURRENT_NAMESPACE,
+        help=f"namespace name, defaults to default current : [{CURRENT_NAMESPACE}]",
     )
 
 
@@ -111,6 +129,26 @@ COMMON_OPTION_PARSER = argparse.ArgumentParser(add_help=False)
 COMMON_OPTION_PARSER.add_argument(
     "--namespace",
     "-n",
-    default=os.getenv("NAMESPACE", "default"),
-    help="namespace name, defaults current: [{}]".format(os.getenv("NAMESPACE", "default")),
+    default=CURRENT_NAMESPACE,
+    help=f"namespace name, defaults current: [{CURRENT_NAMESPACE}]",
 )
+
+
+def expand_namespace(func=None):
+    """
+    Decorator to expand an argparse.Namespace obj into keyworded arguments
+    and inject them into a function. It inspects the decorated function and only injects
+    arguments included in the function signature (to avoid `TypeError`).
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if len(args) == 1 and isinstance(args[0], argparse.Namespace):
+            nmspace = vars(args[0])
+            allowed = list(signature(func).parameters.keys())
+            return func(**{k: v for (k, v) in nmspace.items() if k in allowed})
+        return func(*args, **kwargs)
+
+    if not func:
+        return expand_namespace
+    return wrapper
