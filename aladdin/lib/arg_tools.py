@@ -1,3 +1,4 @@
+import argparse
 import functools
 import json
 import os
@@ -24,23 +25,6 @@ def get_current_namespace():
         namespace = "default"
     return namespace
 
-
-def expand_namespace(func=None):
-    """
-    Decorator to expand a Namespace obj into keyworded arguments
-    """
-
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        if len(args) == 1 and isinstance(args[0], argparse.Namespace):
-            nmspace = vars(args[0])
-            allowed = list(signature(func).parameters.keys())
-            return func(**{k: v for (k, v) in nmspace.items() if k in allowed})
-        return func(*args, **kwargs)
-
-    if not func:
-        return expand_namespace
-    return wrapper
 
 def add_namespace_argument(arg_parser):
     namespace_def = get_current_namespace()
@@ -89,3 +73,23 @@ def get_bash_commands():
             sub_parser.set_defaults(func=lambda args: bash_wrapper())
         commands.append((bash_cmd, add_command))
     return commands
+
+
+def expand_namespace(func=None):
+    """
+    Decorator to expand an argparse.Namespace obj into keyworded arguments
+    and inject them into a function. It inspects the decorated function and only injects
+    arguments included in the function signature (to avoid `TypeError`).
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if len(args) == 1 and isinstance(args[0], argparse.Namespace):
+            nmspace = vars(args[0])
+            allowed = list(signature(func).parameters.keys())
+            return func(**{k: v for (k, v) in nmspace.items() if k in allowed})
+        return func(*args, **kwargs)
+
+    if not func:
+        return expand_namespace
+    return wrapper

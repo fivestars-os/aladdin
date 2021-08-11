@@ -1,11 +1,12 @@
+import argparse
 import time
 
 from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.lib.arg_tools import add_namespace_argument, container_command, expand_namespace
 
 
-def parse_args(sub_parser):
-    subparser = sub_parser.add_parser(
+def parse_args(parser):
+    subparser: argparse.ArgumentParser = parser.add_parser(
         "get-certificate", help="Get the certificate arn needed for the services elb"
     )
     subparser.set_defaults(func=get_certificate)
@@ -23,11 +24,23 @@ def parse_args(sub_parser):
         dest="wait",
         help="Seconds to wait for certificate to be ready (use -1 to wait forever)",
     )
+    subparser.add_argument(
+        "--poll-interval",
+        type=int,
+        default=10,
+        dest="poll_interval",
+        help="Seconds to wait between polls to AWS ACM",
+    )
 
 
 @container_command
 @expand_namespace
-def get_certificate(namespace: str, for_cluster: bool = False, wait: int = 0):
+def get_certificate(
+    namespace: str,
+    for_cluster: bool = False,
+    wait: int = 0,
+    poll_interval: int = 10
+):
     cr = cluster_rules(namespace=namespace)
     cert = None
     timeout_start = time.time()
@@ -38,5 +51,5 @@ def get_certificate(namespace: str, for_cluster: bool = False, wait: int = 0):
         if wait > 0 and time.time() - timeout_start > wait:
             return cert
         if not cert:
-            time.sleep(10)
+            time.sleep(poll_interval)
     return cert
