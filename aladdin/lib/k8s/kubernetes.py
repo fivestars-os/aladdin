@@ -7,6 +7,8 @@ import time
 from kubernetes.client import configuration
 from kubernetes import config, client
 
+from aladdin.lib.arg_tools import get_current_namespace
+
 
 class KubernetesException(Exception):
     pass
@@ -28,7 +30,6 @@ class Kubernetes(object):
     ):
         self.default_component_label = default_component_label or "app"
         self.default_project_label = default_project_label or "project"
-        self.namespace = namespace or os.getenv("NAMESPACE", "default")
         self.kubeconfig = kubeconfig or os.getenv("KUBECONFIG")
         try:
             config.load_kube_config(self.kubeconfig)
@@ -41,6 +42,7 @@ class Kubernetes(object):
         self.core_v1_api = client.CoreV1Api()
         self.apps_v1_api = client.AppsV1Api()
         self.networking_v1_beta1_api = client.NetworkingV1beta1Api()
+        self.namespace = namespace or get_current_namespace()
 
     def _kub_cmd(self, *args):
         # For commands that use kubectl - only exec is left
