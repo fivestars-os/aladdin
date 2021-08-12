@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 from botocore.exceptions import ClientError
-from os.path import join, expanduser
+from os.path import join
 
 from aladdin.lib import logging
 
@@ -16,15 +16,9 @@ class Helm(object):
     PACKAGE_DIR_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/"
     PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{chart_name}.{git_ref}.tgz"
 
-    @property
-    def helm_home(self):
-        return join(expanduser("~"), ".helm")
-
     def publish(self, project_name, publish_rules, chart_path, git_hash):
 
-        # HelmContext = namedtuple('HelmContext', ['chart_home', 'values_files', 'name'])
-
-        version = "0.0.0"
+        version = f"0.0.0-{git_hash}"
 
         logger.info("Building package")
 
