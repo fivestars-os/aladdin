@@ -33,7 +33,7 @@ def add_namespace_argument(arg_parser):
         "--namespace",
         "-n",
         default=CURRENT_NAMESPACE,
-        help=f"namespace name, defaults to default current : [{CURRENT_NAMESPACE}]",
+        help=f"namespace name, defaults to current: [{CURRENT_NAMESPACE}]",
     )
 
 
@@ -130,7 +130,7 @@ COMMON_OPTION_PARSER.add_argument(
     "--namespace",
     "-n",
     default=CURRENT_NAMESPACE,
-    help=f"namespace name, defaults current: [{CURRENT_NAMESPACE}]",
+    help=f"namespace name, defaults to current: [{CURRENT_NAMESPACE}]",
 )
 
 
