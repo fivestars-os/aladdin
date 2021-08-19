@@ -1,5 +1,5 @@
 # Aladdin Start
-Start is one of aladdin's commands used for local development. This command is to be called from within an aladdin-compatible project repo. This command installs a project to your local environment. 
+Start is one of aladdin's commands used for local development. This command is to be called from within an aladdin-compatible project repo. This command installs a project to your local environment.
 ```
 usage: aladdin start [-h] [--namespace NAMESPACE] [--dry-run]
                      [--chart CHART_NAME]...
@@ -16,8 +16,9 @@ optional arguments:
   --force-helm          Have helm force resource update through
                         delete/recreate if needed
   --set-override-values SET_OVERRIDE_VALUES [SET_OVERRIDE_VALUES ...]
-                        override values in the values file. Syntax: --set
-                        key1=value1 key2=value2 ...
+                        override values in the values file. Syntax: --set-override-values key1=value1 key2=value2 ...
+  --values-file         Override values file to be passed to helm.
+                        Syntax: --values-file my-values.yaml (can be specified multiple times)
 ```
 
 If the `--chart` option is not provided, all charts defined in the `lamp.json` file will be started.

@@ -2,9 +2,10 @@
 import json
 import os
 import subprocess
+import sys
 
 from botocore.exceptions import ClientError
-from os.path import join, expanduser
+from os.path import join
 
 from aladdin.lib import logging
 
@@ -15,15 +16,9 @@ class Helm(object):
     PACKAGE_DIR_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/"
     PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{chart_name}.{git_ref}.tgz"
 
-    @property
-    def helm_home(self):
-        return join(expanduser("~"), ".helm")
+    def publish(self, project_name, publish_rules, chart_path, git_hash):
 
-    def publish(self, project_name, publish_rules, chart_path, hash):
-
-        # HelmContext = namedtuple('HelmContext', ['chart_home', 'values_files', 'name'])
-
-        version = "0.0.0"
+        version = f"0.0.0-{git_hash}"
 
         logger.info("Building package")
 
@@ -34,13 +29,15 @@ class Helm(object):
             "package",
             "--version",
             version,
+            "--app-version",
+            git_hash,
             chart_name
         ], cwd=charts_dir)
 
         try:
             package_path = join(charts_dir, "{}-{}.tgz".format(chart_name, version))
             bucket_path = self.PACKAGE_PATH.format(
-                project_name=project_name, chart_name=chart_name, git_ref=hash
+                project_name=project_name, chart_name=chart_name, git_ref=git_hash
             )
 
             logger.info("Uploading %s chart to %s", chart_name, bucket_path)
@@ -68,6 +65,10 @@ class Helm(object):
             )
             if obj.key.endswith(f".{git_ref}.tgz")
         ]
+
+        if not package_keys:
+            logger.error(f"No published charts found for: {project_name} at {git_ref}")
+            sys.exit(1)
 
         # Download the chart archives and extract the contents into their own chart sub-directories
         for package_key in package_keys:
@@ -138,6 +139,7 @@ class Helm(object):
         cluster_namespace_config_values_path = os.path.join(
             os.environ["ALADDIN_CONFIG_DIR"],
             cluster_name,
+            "namespace-overrides",
             namespace,
             "values.yaml"
         )

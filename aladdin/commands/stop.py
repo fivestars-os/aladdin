@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 
-from aladdin.lib.arg_tools import add_namespace_argument, container_command
+from aladdin.lib.arg_tools import CHARTS_OPTION_PARSER, COMMON_OPTION_PARSER, container_command
 from aladdin.lib.cluster_rules import cluster_rules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.lib.helm_rules import HelmRules
@@ -10,15 +10,11 @@ from aladdin.lib.project_conf import ProjectConf
 
 
 def parse_args(sub_parser):
-    subparser = sub_parser.add_parser("stop", help="Remove the helm chart in local")
-    subparser.set_defaults(func=stop_args)
-    add_namespace_argument(subparser)
-    subparser.add_argument(
-        "--chart",
-        action="append",
-        dest="charts",
-        help="Stop only these charts (may be specified multiple times)",
+    subparser = sub_parser.add_parser(
+        "stop", help="Remove the helm chart in local",
+        parents=[COMMON_OPTION_PARSER, CHARTS_OPTION_PARSER]
     )
+    subparser.set_defaults(func=stop_args)
 
 
 def stop_args(args):
