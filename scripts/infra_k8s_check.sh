@@ -9,7 +9,7 @@ set -eu -o pipefail
 # To force the script to do the full check, use the parameter '--force'
 
 #- from : https://github.com/rancher/k3d/releases
-VERSION_K3D="4.4.8"
+VERSION_K3D="4.4.4"
 #- from : https://github.com/kubernetes/kubernetes/releases
 VERSION_KUBECTL="1.19.7"
 #- from : https://github.com/kubernetes/helm/releases
