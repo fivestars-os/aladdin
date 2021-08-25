@@ -11,8 +11,8 @@ include = [
 
 [tool.poetry.dependencies]
 python = "^3.7"
-awscli = "1.20.28"
-boto3 = "1.18.28"
+awscli = "1.18.175"
+boto3 = "1.16.15"
 cached-property = "1.5.1"
 jmespath = "0.10.0"
 kubernetes = "12.0.01"
@@ -23,7 +23,7 @@ PyYAML = "^5.3.1"
 networkx = "^2.4"
 jinja2 = "^2.11.2"
 lazy-object-proxy = "^1.5.1"
-urllib3 = "1.26.6"
+urllib3 = "1.25.11"
 importlib-metadata = {version = "^1.0", python = "<3.8"}
 
 [tool.poetry.dev-dependencies]
