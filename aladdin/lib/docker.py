@@ -59,7 +59,7 @@ class DockerCommands(object):
             repo = publish_rules.ecr.describe_repositories(repositoryNames=[repo_name])[
                 "repositories"
             ][0]
-        except Exception as e:
+        except Exception:
             # botocore.errorfactory.RepositoryNotFoundException, but can't import it
             logging.info(f"No repository of name {repo_name} exists on ECR, creating...")
             repo = publish_rules.ecr.create_repository(repositoryName=repo_name)["repository"]
