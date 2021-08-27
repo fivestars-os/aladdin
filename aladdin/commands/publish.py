@@ -1,7 +1,6 @@
 import logging
 import subprocess
 import tempfile
-from itertools import product
 
 from aladdin.config import load_git_configs
 from aladdin.lib.docker import DockerCommands, Tag

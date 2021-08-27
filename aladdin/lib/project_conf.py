@@ -1,7 +1,6 @@
 import json
 import os
 import os.path
-import re
 import subprocess
 import sys
 from collections import namedtuple

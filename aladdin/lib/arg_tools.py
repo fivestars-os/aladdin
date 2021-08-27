@@ -25,6 +25,7 @@ def get_current_namespace():
         namespace = "default"
     return namespace
 
+
 CURRENT_NAMESPACE = get_current_namespace()
 
 

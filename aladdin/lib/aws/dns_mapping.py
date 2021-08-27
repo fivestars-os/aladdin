@@ -128,8 +128,8 @@ def extract_cname_mapping(boto_session, hostedzone_id):
 
     res = {}
     for rrs in response:
-        name, type, records = rrs["Name"], rrs["Type"], rrs["ResourceRecords"]
-        if type != "CNAME":
+        name, type, records = rrs.get("Name"), rrs.get("Type"), rrs.get("ResourceRecords")
+        if name is None or records is None or type != "CNAME":
             continue
         # CNAME have only one value
         res[name.strip(".")] = records[0]["Value"]

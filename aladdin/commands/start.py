@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import logging
 import os
-import sys
 
 from aladdin.lib.arg_tools import (
     COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHARTS_OPTION_PARSER, container_command
