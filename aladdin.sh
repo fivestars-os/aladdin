@@ -136,8 +136,16 @@ function check_and_handle_init() {
 
 function _start_k3d() {
     # start k3d cluster
-    k3d cluster create LOCAL --api-port "$K3D_API_PORT" -p "$K3D_SERVICE_PORT:80@loadbalancer" \
-        --k3s-server-arg "--tls-san=$HOST_ADDR" --image "rancher/k3s:v$KUBERNETES_VERSION-k3s1"
+    k3d cluster create LOCAL \
+        --api-port "$K3D_API_PORT" \
+        -p "$K3D_SERVICE_PORT:80@loadbalancer" \
+        --image "rancher/k3s:v$KUBERNETES_VERSION-k3s1" \
+        --k3s-server-arg "--tls-san=$HOST_ADDR" \
+        # these last two are for compatibility with newer linux kernels
+        # https://k3d.io/faq/faq/#solved-nodes-fail-to-start-or-get-stuck-in-notready-state-with-log-nf_conntrack_max-permission-denied
+        # https://github.com/rancher/k3d/issues/607
+        --k3s-server-arg "--kube-proxy-arg=conntrack-max-per-core=0" \
+        --k3s-agent-arg "--kube-proxy-arg=conntrack-max-per-core=0"
 }
 
 function check_or_start_k3d() {
