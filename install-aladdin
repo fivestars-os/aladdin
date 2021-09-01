@@ -1,4 +1,4 @@
 #!/usr/bin/env sh
 python3 -m pip install --user --upgrade pipx
 python3 -m pipx ensurepath
-python3 -m pipx install git+https://github.com/fivestars-os/aladdin.git@${ALADDIN_VERSION:-live}
+python3 -m pipx install git+https://github.com/fivestars-os/aladdin.git@${ALADDIN_VERSION:-live} --force
