@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - 'master'
-      - 'cross-platform'
     tags:
       - 'live'
       - '*.*.*'

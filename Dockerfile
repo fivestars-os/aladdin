@@ -40,7 +40,7 @@ RUN pip install --no-cache-dir pip==20.2.3
 
 # Update all needed tool versions here
 
-ARG AWS_IAM_AUTHENTICATOR_VERSION=1.17.9
+ARG AWS_IAM_AUTHENTICATOR_VERSION=1.21.2
 RUN curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/$AWS_IAM_AUTHENTICATOR_VERSION/2020-08-04/bin/linux/$(dpkg --print-architecture)/aws-iam-authenticator && \
     chmod 755 /usr/local/bin/aws-iam-authenticator
 
