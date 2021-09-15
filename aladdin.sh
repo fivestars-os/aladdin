@@ -271,6 +271,8 @@ function prepare_ssh_options() {
             exit 1
         fi
         case "$OSTYPE" in
+            # docker-desktop on mac only supports this "magic" ssh-agent socket
+            # https://github.com/docker/for-mac/issues/410
             darwin*) SSH_OPTIONS="-e SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock -v /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock" ;;
             *)       SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AUTH_SOCK} -v ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}" ;;
         esac
