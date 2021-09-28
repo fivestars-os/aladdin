@@ -18,7 +18,7 @@ class Helm(object):
 
     def publish(self, project_name, publish_rules, chart_path, git_hash):
 
-        version = f"0.0.0-{git_hash}"
+        version = f"0.0.0+{git_hash}"
 
         logger.info("Building package")
 
