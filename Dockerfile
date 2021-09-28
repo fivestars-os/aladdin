@@ -5,15 +5,13 @@ WORKDIR /root/aladdin
 RUN python -m venv /root/.venv
 ENV PATH /root/.venv/bin:$PATH
 
-# On some images "sh" is aliased to "dash" which does not support "set -o pipefail".
-# We use the "exec" form of RUN to delegate this command to bash instead.
-# This is all because we have a pipe in this command and we wish to fail the build
-# if any command in the pipeline fails.
-ARG POETRY_VERSION=1.1.5
-RUN ["/bin/bash", "-c", "set -o pipefail && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python"]
-ENV PATH /root/.poetry/bin:$PATH
-
-ARG POETRY_VIRTUALENVS_CREATE="false"
+ARG POETRY_VERSION=1.1.10
+ENV PATH /root/.local/bin:$PATH
+RUN pip install --upgrade pip && \
+    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py -o install-poetry.py && \
+    python install-poetry.py --version $POETRY_VERSION
+ENV POETRY_VIRTUALENVS_CREATE="false"
+ENV POETRY_INSTALLER_PARALLEL="false"
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root
@@ -36,7 +34,7 @@ RUN apt-get update && \
     curl \
     ssh
 
-RUN pip install --no-cache-dir pip==20.2.3
+RUN pip install --no-cache-dir pip==21.2.4
 
 # Update all needed tool versions here
 
@@ -72,9 +70,9 @@ RUN curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=
 
 WORKDIR /root/aladdin
 
-COPY --from=build /root/.poetry /root/.poetry
+COPY --from=build /root/.local /root/.local
 COPY --from=build /root/.venv /root/.venv
-ENV PATH /root/.venv/bin:/root/.poetry/bin:$PATH
+ENV PATH /root/.venv/bin:/root/.local/bin:$PATH
 # Install aladdin
 COPY . .
 ARG POETRY_VIRTUALENVS_CREATE="false"
