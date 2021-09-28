@@ -2,6 +2,13 @@ FROM python:3.8.12-buster as build
 
 WORKDIR /root/aladdin
 
+RUN apt-get update && \
+    apt-get -y --no-install-recommends install \
+    gettext \
+    gcc \
+    g++ \
+    curl
+
 RUN python -m venv /root/.venv
 ENV PATH /root/.venv/bin:$PATH
 
