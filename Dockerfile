@@ -1,4 +1,32 @@
+FROM python:3.8.12-buster as build
+
+WORKDIR /root/aladdin
+
+RUN apt-get update && \
+    apt-get -y --no-install-recommends install \
+    gettext \
+    gcc \
+    g++ \
+    curl
+
+RUN python -m venv /root/.venv
+ENV PATH /root/.venv/bin:$PATH
+
+ARG POETRY_VERSION=1.1.10
+ENV PATH /root/.local/bin:$PATH
+RUN pip install --upgrade pip && \
+    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py -o install-poetry.py && \
+    python install-poetry.py --version $POETRY_VERSION
+ENV POETRY_VIRTUALENVS_CREATE="false"
+ENV POETRY_INSTALLER_PARALLEL="false"
+# Install aladdin python requirements
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --no-root
+
 FROM python:3.8.12-slim-buster
+
+# Remove the default $PS1 manipulation
+RUN rm /etc/bash.bashrc
 
 RUN apt-get update && \
     apt-get -y --no-install-recommends install \
@@ -11,13 +39,8 @@ RUN apt-get update && \
     openssl \
     vim-nox \
     curl \
-    gettext \
-    gcc \
-    g++ \
     ssh
 
-# Remove the default $PS1 manipulation
-RUN rm /etc/bash.bashrc
 RUN pip install --no-cache-dir pip==21.2.4
 
 # Update all needed tool versions here
@@ -54,16 +77,10 @@ RUN curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=
 
 WORKDIR /root/aladdin
 
-ARG POETRY_VERSION=1.1.10
-ENV PATH /root/.local/bin:$PATH
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py -o install-poetry.py && \
-    python install-poetry.py --version $POETRY_VERSION
-ENV POETRY_VIRTUALENVS_CREATE="false"
-ENV POETRY_INSTALLER_PARALLEL="false"
-
-# Install aladdin dependencies
-COPY poetry.lock pyproject.toml ./
-RUN poetry install --no-root --no-dev
+COPY --from=build /root/.local /root/.local
+COPY --from=build /root/.venv /root/.venv
+ENV PATH /root/.venv/bin:/root/.local/bin:$PATH
 # Install aladdin
 COPY . .
-RUN poetry install --no-dev
+ARG POETRY_VIRTUALENVS_CREATE="false"
+RUN poetry install
