@@ -22,7 +22,7 @@ ENV POETRY_INSTALLER_PARALLEL="false"
 ENV VIRTUAL_ENV=/root/.venv
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root
+RUN poetry install --no-root --no-dev
 
 FROM python:3.8.12-slim-buster
 
@@ -83,5 +83,6 @@ COPY --from=build /root/.venv /root/.venv
 ENV PATH /root/.venv/bin:/root/.local/bin:$PATH
 # Install aladdin
 COPY . .
-ARG POETRY_VIRTUALENVS_CREATE="false"
-RUN poetry install
+ENV POETRY_VIRTUALENVS_CREATE="false"
+ENV VIRTUAL_ENV=/root/.venv
+RUN poetry install --no-dev
