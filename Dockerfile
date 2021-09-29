@@ -19,6 +19,7 @@ RUN pip install --upgrade pip && \
     python install-poetry.py --version $POETRY_VERSION
 ENV POETRY_VIRTUALENVS_CREATE="false"
 ENV POETRY_INSTALLER_PARALLEL="false"
+ENV VIRTUAL_ENV=/root/.venv
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root
