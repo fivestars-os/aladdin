@@ -19,6 +19,7 @@ RUN pip install --upgrade pip && \
     python install-poetry.py --version $POETRY_VERSION
 ENV POETRY_VIRTUALENVS_CREATE="false"
 ENV POETRY_INSTALLER_PARALLEL="false"
+# Poetry needs this to find the venv we created
 ENV VIRTUAL_ENV=/root/.venv
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
@@ -84,5 +85,6 @@ ENV PATH /root/.venv/bin:/root/.local/bin:$PATH
 # Install aladdin
 COPY . .
 ENV POETRY_VIRTUALENVS_CREATE="false"
+# Poetry needs this to find the venv we created
 ENV VIRTUAL_ENV=/root/.venv
 RUN poetry install --no-dev
