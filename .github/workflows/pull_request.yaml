@@ -1,3 +1,6 @@
+# This workflow is setup to run CI checks for aladdin
+# At this time it only ensures the docker image is buildable
+# In the future it could run linting, tests, etc
 name: Pull Request
 on:
   pull_request:
@@ -11,6 +14,7 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v2
 
+      # QEMU is needed to support multi-platform builds
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -20,5 +24,5 @@ jobs:
       - name: Build
         uses: docker/build-push-action@v2
         with:
-          push: false
-          platforms: linux/amd64,linux/arm64
+          push: false  # don't push to Dockerhub for all PRs
+          platforms: linux/amd64,linux/arm64  # ensure builds succeed for both platforms
