@@ -100,6 +100,8 @@ class Helm(object):
         8. user passed overrides
         """
         values = []
+        # cluster_name could be an alias, "CLUSTER_CODE" is what is used in aladdin-config
+        cluster_code = os.environ["CLUSTER_CODE"]
 
         cluster_values_path = join(chart_path, "values", f"values.{cluster_name}.yaml")
         if os.path.isfile(cluster_values_path):
@@ -129,7 +131,7 @@ class Helm(object):
 
         cluster_config_values_path = os.path.join(
             os.environ["ALADDIN_CONFIG_DIR"],
-            cluster_name,
+            cluster_code,
             "values.yaml"
         )
         if os.path.isfile(cluster_config_values_path):
@@ -138,7 +140,7 @@ class Helm(object):
 
         cluster_namespace_config_values_path = os.path.join(
             os.environ["ALADDIN_CONFIG_DIR"],
-            cluster_name,
+            cluster_code,
             "namespace-overrides",
             namespace,
             "values.yaml"

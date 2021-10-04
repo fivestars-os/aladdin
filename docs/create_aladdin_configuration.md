@@ -7,19 +7,22 @@ aladdin-config/
   config.json
   default/
     config.json
+    values.yaml  # Optional
   LOCAL/
     config.json
+    values.yaml
     env.sh
   REMOTE-CLUSTER-1/
     config.json
     env.sh
-    values.yaml     # Optional
+    values.yaml
   REMOTE-CLUSTER-2/
     config.json
     env.sh
     namespace-overrides/
       test/
         config.json
+        values.yaml
 ```
 
 ## Root config.json file
