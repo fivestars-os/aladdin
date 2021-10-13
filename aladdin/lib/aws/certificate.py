@@ -1,7 +1,6 @@
 """
 Helpers function to get/create certificates the way we want
 """
-import itertools
 import logging
 import re
 from hashlib import md5
@@ -14,41 +13,27 @@ def search_certificate_arn(boto_session, dns_name):
     log = logging.getLogger(__name__)
     acm = boto_session.client("acm")
 
-    raw_res = _list_all_certificates(acm, CertificateStatuses=["ISSUED"])
+    certicate = _search_certificate(acm, dns_name, CertificateStatuses=["ISSUED"])
+    if certicate:
+        log.info("Found ISSUED certificate %s for %s", certicate, dns_name)
+        return certicate
 
-    list_cert = [c for c in raw_res if c["DomainName"] == dns_name]
-
-    if len(list_cert) == 1:
-        arn_res = list_cert[0]["CertificateArn"]
-        log.info("Found ISSUED certificate %s for %s", arn_res, dns_name)
-        return arn_res
-
-    if len(list_cert) == 0:
-        raw_res = _list_all_certificates(acm, CertificateStatuses=["PENDING_VALIDATION"])
-
-        list_cert = [c for c in raw_res if c["DomainName"] == dns_name]
-
-    if len(list_cert) == 0:
-        return None
-
-    if len(list_cert) == 1:
-        arn_res = list_cert[0]["CertificateArn"]
-        _validate_certificate_with_retry(boto_session, dns_name, arn_res)
+    certicate = _search_certificate(acm, dns_name, CertificateStatuses=["PENDING_VALIDATION"])
+    if certicate:
+        _validate_certificate_with_retry(boto_session, dns_name, certicate)
 
         # Warn that certificate is in pending state, so https will not work until certificate is
         # in issued state and project is redeployed
         log.warning(
-            f"Certificate {arn_res} for your namespace is not in issued state yet, so"
+            f"Certificate {certicate} for your namespace is not in issued state yet, so"
             " https will not work. Please redeploy your project later with the --init flag"
             " set to enable https."
         )
         # Return empty string so that load balancer will create, and at least http will work
         return ""
 
-    # Now we must choose between multiples valid certificates
-    # TODO describe_certificate and get the one that is the best (guess latest 1st is a good choice)
-    return list_cert[0]["CertificateArn"]
-
+    # No cert found
+    return None
 
 def new_certificate_arn(boto_session, dns_name):
     """Ask for a new certificate"""
@@ -120,10 +105,10 @@ def _validate_certificate_with_retry(boto_session, dns_name, arn, max_retries=20
         fill_dns_dict(boto_session, hostedzone, cname_record)
 
 
-def _list_all_certificates(client, **pagination_options):
+def _search_certificate(client, domain_name, **filters):
     paginator = client.get_paginator("list_certificates")
-    all_results = [
-        page["CertificateSummaryList"] for page in paginator.paginate(**pagination_options)
-    ]
 
-    return list(itertools.chain.from_iterable(all_results))
+    for page in paginator.paginate(**filters):
+        for cert in page["CertificateSummaryList"]:
+            if cert["DomainName"] == domain_name:
+                return cert["CertificateArn"]
