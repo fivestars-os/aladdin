@@ -7,9 +7,9 @@ from aladdin.config import load_cluster_config, load_namespace_override_config
 
 
 class ClusterRules(object):
-    def __init__(self, rules, namespace=None):
+    def __init__(self, rules, namespace=CURRENT_NAMESPACE):
         self.rules = rules
-        self._namespace = namespace or CURRENT_NAMESPACE
+        self._namespace = namespace
 
     def __getattr__(self, attr):
         if attr in self.rules:
@@ -114,9 +114,8 @@ class ClusterRules(object):
         return boto3.Session(profile_name=self.aws_profile)
 
 
-def cluster_rules(cluster=None, namespace=None):
+def cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE):
 
-    namespace = namespace or CURRENT_NAMESPACE
     if cluster is None:
         cluster = os.environ["CLUSTER_CODE"]
 
