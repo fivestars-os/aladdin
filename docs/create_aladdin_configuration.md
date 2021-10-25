@@ -106,10 +106,11 @@ Most these variables are just used by kops when creating the cluster, which is w
 ## Cluster config.json file
 The config.json file in each of your subdirectories in your config folder will contain cluster-specific configuration for your aladdin installation. Here is an example config.json file for a specific cluster:
 
-```json
+```jsonc
 {
     "aws_profile": "abcdefgh",
     "cluster_name": "CLUSTERDEV",
+    "certificate_lookup": true,  // optional, defaults to true
     "root_dns": "clusterdev.exampledev.info",
     "service_dns_suffix": "exampletest.com",
     "allowed_namespaces": [
@@ -130,6 +131,7 @@ The config.json file in each of your subdirectories in your config folder will c
 - cluster_init section: which projects to install when running `aladdin cluster init`. You must specify the project, ref, and namespace.
 - namespace_init section (not shown in example): whenever a namespace is created, install any projects in this section. You must specify a project and a ref.
 - dual_dns_prefix_annotation_name section: you can use this annotation (in this example, it is "dns-name") in your service.yaml files to change the prefix for the dns your service is mapped to
+- certificate_lookup section: determines if aladdin should lookup acm certificates to inject into helm charts (optional, defaults to `true`).
 
 Note: Aladdin also supports a `default/` folder which can have a `config.json` file that other clusters will inherit from.
 

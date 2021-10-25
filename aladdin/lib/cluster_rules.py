@@ -1,12 +1,13 @@
 import os
 import boto3
 
+from aladdin.lib.arg_tools import CURRENT_NAMESPACE
 from aladdin.lib.aws.certificate import search_certificate_arn, new_certificate_arn
 from aladdin.config import load_cluster_config, load_namespace_override_config
 
 
 class ClusterRules(object):
-    def __init__(self, rules, namespace="default"):
+    def __init__(self, rules, namespace=CURRENT_NAMESPACE):
         self.rules = rules
         self._namespace = namespace
 
@@ -17,20 +18,15 @@ class ClusterRules(object):
             "'{}' object has no attribute '{}'".format(self.__class__.__name__, attr)
         )
 
-    @property
-    def service_certificate_arn(self):
+    def get_service_certificate_arn(self) -> str:
         return self._get_certificate_arn(self.service_certificate_scope)
 
-    @property
-    def cluster_certificate_arn(self):
+    def get_cluster_certificate_arn(self) -> str:
         return self._get_certificate_arn(self.cluster_certificate_scope)
 
-    def _get_certificate_arn(self, certificate_scope):
-        cert = self.values.get("service.certificateArn")
+    def _get_certificate_arn(self, certificate_scope) -> str:
 
-        # Check against None to allow empty string
-        if cert is None:
-            cert = search_certificate_arn(self.boto, certificate_scope)
+        cert = search_certificate_arn(self.boto, certificate_scope)
 
         # Check against None to allow empty string
         if cert is None:
@@ -110,11 +106,15 @@ class ClusterRules(object):
         return self.rules.get("dual_dns_prefix_annotation_name", None)
 
     @property
+    def certificate_lookup(self):
+        return self.rules.get("certificate_lookup", True)
+
+    @property
     def boto(self):
         return boto3.Session(profile_name=self.aws_profile)
 
 
-def cluster_rules(cluster=None, namespace="default"):
+def cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE):
 
     if cluster is None:
         cluster = os.environ["CLUSTER_CODE"]

@@ -45,7 +45,10 @@ def get_certificate(
     cert = None
     timeout_start = time.time()
     while not cert:
-        cert = cr.cluster_certificate_arn if for_cluster else cr.service_certificate_arn
+        if for_cluster:
+            cert = cr.get_cluster_certificate_arn()
+        else:
+            cert = cr.get_service_certificate_arn()
         if not wait:
             return cert
         if wait > 0 and time.time() - timeout_start > wait:
