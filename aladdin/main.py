@@ -1,10 +1,12 @@
 import argparse
 import logging
+import os
 import sys
 
 import verboselogs
 import coloredlogs
 
+from aladdin import config
 from aladdin.lib.arg_tools import get_bash_commands, bash_wrapper
 from aladdin.commands import (
     build,
@@ -84,9 +86,6 @@ def cli():
     parser.add_argument("--cluster", "-c", help="The cluster name you want to interact with")
     parser.add_argument("--namespace", "-n", help="The namespace name you want to interact with")
     parser.add_argument("-i", "--init", action="store_true", help="Force initialization logic")
-    parser.add_argument(
-        "--dev", action="store_true", help="Mount host's aladdin directory onto aladdin container"
-    )
     parser.add_argument("--image", help="Use the specified aladdin image (if building it yourself)")
     parser.add_argument(
         "--skip-prompts",
@@ -126,6 +125,9 @@ def cli():
 
     if not sys.argv[1:] or sys.argv[1] in ["-h", "--help"]:
         return parser.print_help()
+
+    if not config.set_config_path():
+        return
 
     # if it's not a command we know about it might be a plugin
     # currently the bash scripts handle plugins

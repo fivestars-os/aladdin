@@ -8,7 +8,7 @@ function ctrl_trap(){ exit 1 ; }
 trap ctrl_trap INT
 
 # Set defaults on command line args
-DEV=false
+ALADDIN_DEV=${ALADDIN_DEV:-false}
 INIT=false
 CLUSTER_CODE=LOCAL
 NAMESPACE=default
@@ -245,7 +245,7 @@ function prepare_volume_mount_options() {
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
     VOLUME_MOUNTS_OPTIONS=""
-    if "$DEV"; then
+    if "$ALADDIN_DEV"; then
         VOLUME_MOUNTS_OPTIONS="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
@@ -255,7 +255,7 @@ function prepare_volume_mount_options() {
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
-    if "$DEV" || "$IS_LOCAL"; then
+    if "$ALADDIN_DEV" || "$IS_LOCAL"; then
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $HOST_DIR:/aladdin_root$HOST_DIR"
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -w /aladdin_root$(pathnorm "$PWD")"
     fi
@@ -301,7 +301,7 @@ function enter_docker_container() {
 
     docker run $FLAGS \
         `# Environment` \
-        -e "DEV=$DEV" \
+        -e "ALADDIN_DEV=$ALADDIN_DEV" \
         -e "INIT=$INIT" \
         -e "CLUSTER_CODE=$CLUSTER_CODE" \
         -e "NAMESPACE=$NAMESPACE" \
@@ -344,9 +344,6 @@ while [[ $# -gt 0 ]]; do
         ;;
         -i|--init)
             INIT=true
-        ;;
-        --dev)
-            DEV=true
         ;;
         --non-terminal)
             IS_TERMINAL=false
