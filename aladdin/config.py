@@ -63,11 +63,14 @@ def set_user_config_file(config: dict):
 
 
 def set_config_path() -> bool:
+    """
+
+    """
     err_message = (
-        "Unable to find config directory. "
+        "Unable to find config repo. "
         "Please use "
         "'aladdin config set config_repo <git@github.com:{git_account}/{repo}.git>' "
-        "to set config directory"
+        "to set config repo"
     )
     try:
         config = load_user_config_file()
@@ -87,12 +90,16 @@ def set_config_path() -> bool:
             logger.error(err_message)
             return False
         with working_directory(config_dir):
-            remote = subprocess.run(
-                "git remote get-url origin".split(),
-                check=True,
-                capture_output=True,
-                encoding="utf-8"
-            ).stdout.strip()
+            try:
+                remote = subprocess.run(
+                    "git remote get-url origin".split(),
+                    check=True,
+                    capture_output=True,
+                    encoding="utf-8"
+                ).stdout.strip()
+            except subprocess.CalledProcessError:
+                logger.error(err_message)
+                return False
         *_, git_account, repo = remote.split("/")
         config_repo = f"git@github.com:{git_account}/{repo}"
         config["config_repo"] = config_repo
@@ -128,6 +135,9 @@ def set_config_path() -> bool:
     os.environ["ALADDIN_CONFIG_FILE"] = os.path.join(remote_config_path, "config.json")
 
     if strtobool(os.getenv("ALADDIN_DEV", "false")) and config_dir and os.path.isdir(config_dir):
+        """
+        Allow aladdin developers to use a custom config
+        """
         os.environ["ALADDIN_CONFIG_DIR"] = config_dir
         os.environ["ALADDIN_CONFIG_FILE"] = os.path.join(config_dir, "config.json")
 

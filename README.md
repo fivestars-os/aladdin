@@ -53,7 +53,7 @@ You can add these two commands to your profile file if desired.
 
 You will now need to [create your aladdin configuration](./docs/create_aladdin_configuration.md), and link that to aladdin.
 
-    $ aladdin config set config_dir /path/to/aladdin/configuration
+    $ aladdin config set config_repo git@github.com:{git_account}/{repo}.git
 
 ### Manage configuration
 #### Software dependencies
