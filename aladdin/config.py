@@ -4,6 +4,7 @@ import pathlib
 import subprocess
 from distutils.util import strtobool
 
+from aladdin import __version__
 from aladdin.lib import logging
 from aladdin.lib.utils import working_directory
 
@@ -55,6 +56,12 @@ def load_user_config_file() -> dict:
     return load_config_from_file(home / ".aladdin/config/config.json")
 
 
+def set_user_config_file(config: dict):
+    home = pathlib.Path.home()
+    with open(home / ".aladdin/config/config.json", "w") as json_file:
+        json.dump(config, json_file, indent=2)
+
+
 def set_config_path() -> bool:
     err_message = (
         "Unable to find config directory. "
@@ -75,7 +82,7 @@ def set_config_path() -> bool:
         return False
 
     if not config_repo:
-        # backwards compat, auto-set config_repo
+        # try to auto-set config_repo
         if not os.path.isdir(config_dir):
             logger.error(err_message)
             return False
@@ -87,9 +94,40 @@ def set_config_path() -> bool:
                 encoding="utf-8"
             ).stdout.strip()
         *_, git_account, repo = remote.split("/")
-        config["config_repo"] = f"git@github.com:{git_account}/{repo}.git"
+        config_repo = f"git@github.com:{git_account}/{repo}"
+        config["config_repo"] = config_repo
+        set_user_config_file(config)
 
-    if strtobool(os.getenv("ALADDIN_DEV", "false")) and config_dir:
+    remote_config_path = pathlib.Path.home() / ".aladdin/remote_config"
+    commands = [f"git clone -b {__version__} {config_repo} remote_config"]
+    cwd = pathlib.Path.home() / ".aladdin"
+    if os.path.isdir(remote_config_path) and os.path.isdir(remote_config_path / ".git"):
+        cwd = remote_config_path
+        commands = [
+            "git fetch --tags --prune -f",
+            f"git checkout {__version__}"
+        ]
+    with working_directory(cwd):
+        for command in commands:
+            try:
+                subprocess.run(
+                    command.split(),
+                    check=True,
+                    encoding="utf-8",
+                    capture_output=True
+                )
+            except subprocess.CalledProcessError as e:
+                logger.error(
+                    "Failed to fetch aladdin config (%s) from remote: \n%s",
+                    config_repo,
+                    e.stderr.strip() or e.stdout.strip()
+                )
+                return False
+
+    os.environ["ALADDIN_CONFIG_DIR"] = remote_config_path
+    os.environ["ALADDIN_CONFIG_FILE"] = os.path.join(remote_config_path, "config.json")
+
+    if strtobool(os.getenv("ALADDIN_DEV", "false")) and config_dir and os.path.isdir(config_dir):
         os.environ["ALADDIN_CONFIG_DIR"] = config_dir
         os.environ["ALADDIN_CONFIG_FILE"] = os.path.join(config_dir, "config.json")
 
