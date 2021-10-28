@@ -64,7 +64,8 @@ def set_user_config_file(config: dict):
 
 def set_config_path() -> bool:
     """
-
+    Function to set the "ALADDIN_CONFIG_DIR" and "ALADDIN_CONFIG_FILE" env vars
+    Uses git to fetch the latest revision of the config repo
     """
     err_message = (
         "Unable to find config repo. "
