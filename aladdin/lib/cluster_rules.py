@@ -1,5 +1,6 @@
 import os
 import boto3
+from distutils.util import strtobool
 
 from aladdin.lib.arg_tools import CURRENT_NAMESPACE
 from aladdin.lib.aws.certificate import search_certificate_arn, new_certificate_arn
@@ -107,6 +108,8 @@ class ClusterRules(object):
 
     @property
     def certificate_lookup(self):
+        if strtobool(os.getenv("IS_LOCAL", "false")):
+            return False
         return self.rules.get("certificate_lookup", True)
 
     @property

@@ -46,7 +46,7 @@ function get_manage_software_dependencies() {
 }
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
-    cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_FILE")
+    cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_DIR/config.json")
     if [[ $cluster_alias != null ]]; then
         export CLUSTER_CODE=$cluster_alias
     fi
@@ -104,11 +104,11 @@ function check_and_handle_init() {
             "$SCRIPT_DIR"/infra_k8s_check.sh --force
         fi
         check_or_start_k3d
-        readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_FILE")"
+        readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_DIR/config.json")"
         if [[ "$repo_login_command" != "null" ]]; then
             eval "$repo_login_command"
         fi
-        local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"
+        local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_DIR/config.json"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_DIR/config.json")"
         if [[ $aladdin_image == *"/"* ]]; then
             docker pull "$aladdin_image"
         fi
@@ -284,7 +284,7 @@ function enter_docker_container() {
         FLAGS+="t"
     fi
 
-    local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"}"
+    local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_DIR/config.json"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_DIR/config.json")"}"
 
     docker run $FLAGS \
         `# Environment` \

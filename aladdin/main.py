@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 import sys
 
 import verboselogs
@@ -127,7 +126,7 @@ def cli():
         return parser.print_help()
 
     if not config.set_config_path():
-        return
+        return sys.exit(1)
 
     # if it's not a command we know about it might be a plugin
     # currently the bash scripts handle plugins

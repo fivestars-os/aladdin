@@ -64,9 +64,18 @@ def set_user_config_file(config: dict):
 
 def set_config_path() -> bool:
     """
-    Function to set the "ALADDIN_CONFIG_DIR" and "ALADDIN_CONFIG_FILE" env vars
+    Function to set the "ALADDIN_CONFIG_DIR" env var
     Uses git to fetch the latest revision of the config repo
+
+    NOTE:
+    If this function returns False it will short-circuit execution of
+    any aladdin command, so returning False should be preceded by some
+    user-friendly error statement about why we're exiting
     """
+    if os.getenv("ALADDIN_CONFIG_DIR"):
+        # Aladdin config is already set, nothing to do here
+        return True
+
     err_message = (
         "Unable to find config repo. "
         "Please use "
@@ -133,13 +142,11 @@ def set_config_path() -> bool:
                 return False
 
     os.environ["ALADDIN_CONFIG_DIR"] = str(remote_config_path)
-    os.environ["ALADDIN_CONFIG_FILE"] = os.path.join(remote_config_path, "config.json")
 
     if strtobool(os.getenv("ALADDIN_DEV", "false")) and config_dir and os.path.isdir(config_dir):
         """
         Allow aladdin developers to use a custom config
         """
         os.environ["ALADDIN_CONFIG_DIR"] = config_dir
-        os.environ["ALADDIN_CONFIG_FILE"] = os.path.join(config_dir, "config.json")
 
     return True
