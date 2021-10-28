@@ -1,9 +1,9 @@
 # Aladdin cluster command
-The cluster command contains several subcommands to help create, modify, and delete your cluster. 
+The cluster command contains several subcommands to help create, modify, and delete your cluster.
 
-Before creating your cluster, you will need to configure your DNS using the "Configure DNS" section from this [doc](https://github.com/kubernetes/kops/blob/master/docs/aws.md). Make sure the subdomain you create here matches your cluster's DNS_ZONE in your env.sh file and your root_dns in your config.json file. 
+Before creating your cluster, you will need to configure your DNS using the "Configure DNS" section from this [doc](https://github.com/kubernetes/kops/blob/master/docs/aws.md). Make sure the subdomain you create here matches your cluster's DNS_ZONE in your env.sh file and your root_dns in your config.json file.
 
-You will now be able to use aladdin to create your cluster. 
+You will now be able to use aladdin to create your cluster.
 
 ## Sample cluster creation steps
 ```
@@ -19,16 +19,16 @@ Note: aladdin doesn't currently support creating instance groups. You will need 
 aladdin -c <CLUSTER NAME> bash
 kops create ig {ig name} {flags}
 ```
-You can then export these to make necessary modifications, and then import your modifications. 
+You can then export these to make necessary modifications, and then import your modifications.
 
 Then, when the time comes, to delete your cluster:
 ```
 aladdin -c <CLUSTER NAME> cluster delete
 ```
 ## Other aladdin cluster commands
-`aladdin -c <CLUSTER NAME> cluster backup` create a folder called `backup` in your config folder, cluster subdirectory with all your k8s resources, separated on the namespace level.  
-`aladdin -c <CLUSTER NAME> cluster populate` use the `backup` folder in your config folder, cluster subdirectory, to populate your cluster with all the k8s resources.  
-Note: these above two commands are useful when upgrading a kubernetes cluster, by backing up the old cluster, moving the backup folder to your new cluster's config folder, and then populating the cluster. 
+`aladdin -c <CLUSTER NAME> cluster backup` create a folder called `backup` in your config folder, cluster subdirectory with all your k8s resources, separated on the namespace level.
+`aladdin -c <CLUSTER NAME> cluster populate` use the `backup` folder in your config folder, cluster subdirectory, to populate your cluster with all the k8s resources.
+Note: these above two commands are useful when upgrading a kubernetes cluster, by backing up the old cluster, moving the backup folder to your new cluster's config folder, and then populating the cluster.
 
 `aladdin -c <CLUSTER NAME> cluster update-at-aws` update cluster configuration without restarting cluster nodes
 `aladdin -c <CLUSTER NAME> cluster rolling-update-at-aws` update cluster configuration by restarting cluster nodes
@@ -37,7 +37,7 @@ Note: these above two commands are useful when upgrading a kubernetes cluster, b
 ## Usage
 ```
 usage: aladdin [-h] [--cluster CLUSTER] [--namespace NAMESPACE] [--admin]
-               [--init] [--dev] cluster
+               [--init] cluster
                {backup,create-at-aws,create-config,delete,export-config,import-config,init,populate,rolling-update-at-aws,update-at-aws,view-config}
                ...
 
@@ -66,5 +66,4 @@ optional arguments:
   --namespace NAMESPACE, -n NAMESPACE
                         namespace name, defaults to default current : [default]
   --init                force the initialization steps (dl latest docker, aws auth, etc...)
-  --dev                 mount host's aladdin directory onto aladdin container
 ```

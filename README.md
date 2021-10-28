@@ -135,7 +135,6 @@ We have several aladdin commands used for development and deployment. Note that 
 - `-c/--cluster` which cluster to connect to, defaults to `LOCAL`.
 - `-n/--namespace` which namespace to connect to, defaults to `default`.
 - `--init` force initialization logic (i.e. pull latest aladdin image, test aws config, initialize helm, etc...). This is forced every hour for each cluster/namespace combo.
-- `--dev` mount host's aladdin directory onto aladdin container. Useful when developing aladdin.
 - `--skip-prompts` skip any confirmation messages during aladdin execution. Useful when automating commands.
 - `--non-terminal` run aladdin container without tty.
 
