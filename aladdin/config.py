@@ -124,7 +124,7 @@ def set_config_path() -> bool:
                 )
                 return False
 
-    os.environ["ALADDIN_CONFIG_DIR"] = remote_config_path
+    os.environ["ALADDIN_CONFIG_DIR"] = str(remote_config_path)
     os.environ["ALADDIN_CONFIG_FILE"] = os.path.join(remote_config_path, "config.json")
 
     if strtobool(os.getenv("ALADDIN_DEV", "false")) and config_dir and os.path.isdir(config_dir):
