@@ -23,8 +23,8 @@ function usage {
 
 if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
     usage
-elif [[ $# -eq 1 ]]
-    owner="$(whoami)"  # meaningful on local only
+elif [[ $# -eq 1 ]]; then
+	owner="$(aws sts get-caller-identity --query 'UserId' --output text | awk -F ':' '{print$2}')"
     create_namespace $1 $owner
 else
     create_namespace $@

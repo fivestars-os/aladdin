@@ -59,7 +59,7 @@ function usage {
 	EOF
 }
 
-if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
+if [[ $# -lt 4 || "$1" == "-h" || "$1" == "--help" ]]; then
     usage
 else
     add_aws_assume_role_config "$@"
