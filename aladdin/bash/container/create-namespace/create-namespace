@@ -3,7 +3,7 @@ set -eu -o pipefail
 
 function create_namespace {
     kubectl create namespace $1
-    kubectl label --overwrite namespace $1 owner=$2
+    kubectl label --overwrite namespace $1 owner=$2 || true
 }
 
 function usage {
@@ -24,7 +24,7 @@ function usage {
 if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
     usage
 elif [[ $# -eq 1 ]]; then
-	owner="$(aws sts get-caller-identity --query 'UserId' --output text | awk -F ':' '{print$2}')"
+	owner="$(aws sts get-caller-identity --query 'UserId' --output text | awk -F ':' '{print$2}' || echo nobody)"
     create_namespace $1 $owner
 else
     create_namespace $@

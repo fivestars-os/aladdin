@@ -46,7 +46,7 @@ function add_aws_assume_role_config {
 
 function usage {
     cat <<-EOF
-		usage: aladdin add-aws-assume-role [-h] role profile_name mfa_enabled duration
+		usage: aladdin add-aws-assume-role-config [-h] role profile_name mfa_enabled duration
 
 		positional arguments:
 		  role                  which role to set aws config for
