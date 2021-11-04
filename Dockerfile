@@ -56,6 +56,9 @@ RUN curl -L -o- https://download.docker.com/linux/static/stable/x86_64/docker-$D
     cp docker/docker /usr/local/bin/docker && \
     chmod 755 /usr/local/bin/docker
 
+ARG DOCKER_COMPOSE_VERSION=1.29.2
+RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+
 ARG KUBE_VERSION=1.19.7
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
