@@ -102,7 +102,7 @@ function environment_init() {
         _handle_authentication_config
 
         if $INIT; then
-            kubectl create namespace $NAMESPACE || true
+            $PY_MAIN create-namespace $NAMESPACE
             $PY_MAIN namespace-init --force
         fi
     fi

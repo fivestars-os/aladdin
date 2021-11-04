@@ -3,14 +3,18 @@ set -eu -o pipefail
 
 function create_namespace {
     kubectl create namespace $1
+    kubectl label --overwrite namespace $1 owner=$2 || true
 }
 
 function usage {
     cat <<-EOF
-		usage: aladdin create-namespace [-h] namespace
+		usage: aladdin create-namespace [-h] namespace owner
 
 		positional arguments:
 		  namespace             the namespace you want to create
+		  owner                 the owner of the namespace (applied as a label)
+		                        ideally using the format First.Last
+		                        if not supplied then retrieved from `whoami`
           
 		optional arguments:
 		  -h, --help            show this help message and exit
@@ -19,6 +23,9 @@ function usage {
 
 if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
     usage
+elif [[ $# -eq 1 ]]; then
+	owner="$(aws sts get-caller-identity --query 'UserId' --output text | awk -F ':' '{print$2}' || echo nobody)"
+    create_namespace $1 $owner
 else
-    create_namespace "$1"
+    create_namespace $@
 fi
