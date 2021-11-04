@@ -96,13 +96,13 @@ function environment_init() {
         else
             cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
             kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
-            kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"            
+            kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
         fi
 
         _handle_authentication_config
 
         if $INIT; then
-            $PY_MAIN create-namespace $NAMESPACE
+            $PY_MAIN create-namespace $NAMESPACE || true
             $PY_MAIN namespace-init --force
         fi
     fi

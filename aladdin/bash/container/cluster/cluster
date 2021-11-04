@@ -4,7 +4,7 @@ set -eu -o pipefail
 function usage {
     cat <<-EOF
 		usage: aladdin [-h] [--cluster CLUSTER] [--namespace NAMESPACE] [--admin]
-		               [--init] [--dev] cluster
+		               [--init] cluster
 		               {backup,create-at-aws,create-config,delete,export-config,import-config,init,populate,rolling-update-at-aws,update-at-aws,view-config}
 		               ...
 
@@ -33,7 +33,6 @@ function usage {
 		  --namespace NAMESPACE, -n NAMESPACE
 		                        namespace name, defaults to default current : [default]
 		  --init                force the initialization steps (dl latest docker, aws auth, etc...)
-		  --dev                 mount host's aladdin directory onto aladdin container 
 	EOF
 }
 
@@ -141,8 +140,8 @@ function populate {
     # by running "aladdin backup-cluster".
     # This script pulls from your backup folder in your $CLUSTER_CODE directory in your config directory
     # It reads the namespaces.txt file and creates all those namepsaces, and then populates those
-    # namespaces with each namespace's yaml files to create all the k8s resources. 
-    # We then call sync-ingress and sync-dns to update the route 53 records and ingress resource if necessary. 
+    # namespaces with each namespace's yaml files to create all the k8s resources.
+    # We then call sync-ingress and sync-dns to update the route 53 records and ingress resource if necessary.
 
     if ! "$SKIP_PROMPTS"; then
         echo "Is the cluster you wish to populate $CLUSTER_CODE? [y/N] "

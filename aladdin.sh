@@ -8,7 +8,7 @@ function ctrl_trap(){ exit 1 ; }
 trap ctrl_trap INT
 
 # Set defaults on command line args
-DEV=false
+ALADDIN_DEV=${ALADDIN_DEV:-false}
 INIT=false
 CLUSTER_CODE=LOCAL
 NAMESPACE=default
@@ -26,19 +26,6 @@ ALADDIN_BIN="$HOME/.aladdin/bin"
 PATH="$ALADDIN_BIN":"$PATH"
 
 source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
-
-function get_config_path() {
-    if [[ ! -f "$HOME/.aladdin/config/config.json" ]]; then
-        echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
-        exit 1
-    fi
-    ALADDIN_CONFIG_DIR=$(jq -r .config_dir $HOME/.aladdin/config/config.json)
-    if [[ "$ALADDIN_CONFIG_DIR" == null ]]; then
-        echo "Unable to find config directory. Please use 'aladdin config set config_dir <config path location>' to set config directory"
-        exit 1
-    fi
-    ALADDIN_CONFIG_FILE="$ALADDIN_CONFIG_DIR/config.json"
-}
 
 function get_plugin_dir() {
     if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
@@ -59,7 +46,7 @@ function get_manage_software_dependencies() {
 }
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
-    cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_FILE")
+    cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_DIR/config.json")
     if [[ $cluster_alias != null ]]; then
         export CLUSTER_CODE=$cluster_alias
     fi
@@ -117,11 +104,11 @@ function check_and_handle_init() {
             "$SCRIPT_DIR"/infra_k8s_check.sh --force
         fi
         check_or_start_k3d
-        readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_FILE")"
+        readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_DIR/config.json")"
         if [[ "$repo_login_command" != "null" ]]; then
             eval "$repo_login_command"
         fi
-        local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"
+        local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_DIR/config.json"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_DIR/config.json")"
         if [[ $aladdin_image == *"/"* ]]; then
             docker pull "$aladdin_image"
         fi
@@ -245,7 +232,7 @@ function prepare_volume_mount_options() {
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
     VOLUME_MOUNTS_OPTIONS=""
-    if "$DEV"; then
+    if "$ALADDIN_DEV"; then
         VOLUME_MOUNTS_OPTIONS="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
@@ -255,7 +242,7 @@ function prepare_volume_mount_options() {
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
-    if "$DEV" || "$IS_LOCAL"; then
+    if "$ALADDIN_DEV" || "$IS_LOCAL"; then
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $HOST_DIR:/aladdin_root$HOST_DIR"
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -w /aladdin_root$(pathnorm "$PWD")"
     fi
@@ -297,11 +284,11 @@ function enter_docker_container() {
         FLAGS+="t"
     fi
 
-    local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_FILE"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_FILE")"}"
+    local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_DIR/config.json"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_DIR/config.json")"}"
 
     docker run $FLAGS \
         `# Environment` \
-        -e "DEV=$DEV" \
+        -e "ALADDIN_DEV=$ALADDIN_DEV" \
         -e "INIT=$INIT" \
         -e "CLUSTER_CODE=$CLUSTER_CODE" \
         -e "NAMESPACE=$NAMESPACE" \
@@ -345,9 +332,6 @@ while [[ $# -gt 0 ]]; do
         -i|--init)
             INIT=true
         ;;
-        --dev)
-            DEV=true
-        ;;
         --non-terminal)
             IS_TERMINAL=false
         ;;
@@ -364,7 +348,6 @@ while [[ $# -gt 0 ]]; do
 done
 
 exec_host_command "$@"
-get_config_path
 get_plugin_dir
 get_host_addr
 get_manage_software_dependencies

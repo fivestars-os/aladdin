@@ -53,7 +53,11 @@ You can add these two commands to your profile file if desired.
 
 You will now need to [create your aladdin configuration](./docs/create_aladdin_configuration.md), and link that to aladdin.
 
-    $ aladdin config set config_dir /path/to/aladdin/configuration
+    $ aladdin config set config_repo git@github.com:{git_account}/{repo}.git
+
+NOTE:
+
+When doing bootstrapping, initial setup or when developing on the aladdin codebase itself it might be useful to be able to point aladdin to a config on the local development environment (ie not yet in source control). This can be done by setting the `ALADDIN_DEV=true` environment variable and by setting the `config_dir` setting (`aladdin config set config_dir /path/to/your/config`).
 
 ### Manage configuration
 #### Software dependencies
@@ -135,9 +139,10 @@ We have several aladdin commands used for development and deployment. Note that 
 - `-c/--cluster` which cluster to connect to, defaults to `LOCAL`.
 - `-n/--namespace` which namespace to connect to, defaults to `default`.
 - `--init` force initialization logic (i.e. pull latest aladdin image, test aws config, initialize helm, etc...). This is forced every hour for each cluster/namespace combo.
-- `--dev` mount host's aladdin directory onto aladdin container. Useful when developing aladdin.
 - `--skip-prompts` skip any confirmation messages during aladdin execution. Useful when automating commands.
 - `--non-terminal` run aladdin container without tty.
+
+Additionally aladdin checks for a `ALADDIN_DEV=true` environment variable, that when set aladdin will mount the host's aladdin directory onto the aladdin container. This means code changes should be reflected on the container without the need to re-build the image. Mostly useful when developing aladdin.
 
 ## Running several aladdin commands in the same cluster/namespace combo
 Aladdin supports running several commands in the same cluster/namespace combo without having to "reinitialize" aladdin. To do this, go into `aladdin bash`. Then all the container commands will be aliased to be run without prefixing aladdin.
