@@ -6,5 +6,6 @@
     "cluster_init": [
         {"project": "dashboard", "ref": "v1.0.0", "namespace": "kube-system"}
     ],
-    "dual_dns_prefix_annotation_name": "dns-name"
+    "dual_dns_prefix_annotation_name": "dns-name",
+    "bastion_account_enabled": false
 }
