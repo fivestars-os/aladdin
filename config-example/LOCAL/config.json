@@ -1,6 +1,5 @@
 {
     "is_local": true,
-    "is_prod": false,
     "cluster_name": "LOCAL",
     "root_dns": "LOCAL",
     "allowed_namespaces": [
