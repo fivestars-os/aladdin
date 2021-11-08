@@ -1,7 +1,6 @@
 {
     "aladdin": {
-      "repo": "fivestarsos/aladdin",
-      "tag": "1.0.0"
+      "repo": "fivestarsos/aladdin"
     },
     "cluster_aliases": {
         "DEV": "CLUSTERDEV",

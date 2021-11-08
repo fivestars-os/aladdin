@@ -31,8 +31,7 @@ The config.json file in the root of your config directory will contain non clust
 ```
 {
     "aladdin": {
-      "repo": "fivestarsos/aladdin",
-      "tag": "1.0.0"
+      "repo": "fivestarsos/aladdin"
     },
     "cluster_aliases": {
         "DEV": "CLUSTERDEV",

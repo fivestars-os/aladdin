@@ -142,7 +142,10 @@ We have several aladdin commands used for development and deployment. Note that 
 - `--skip-prompts` skip any confirmation messages during aladdin execution. Useful when automating commands.
 - `--non-terminal` run aladdin container without tty.
 
-Additionally aladdin checks for a `ALADDIN_DEV=true` environment variable, that when set aladdin will mount the host's aladdin directory onto the aladdin container. This means code changes should be reflected on the container without the need to re-build the image. Mostly useful when developing aladdin.
+Additionally aladdin checks for a `ALADDIN_DEV=true` environment variable that will enable aladdin development options/features such as:
+
+- mounting the host's aladdin directory onto the aladdin container. This means code changes should be reflected on the container without the need to re-build the image. Mostly useful when developing aladdin.
+- specifying an alternate aladdin docker image using the `ALADDIN_IMAGE` environment variable
 
 ## Running several aladdin commands in the same cluster/namespace combo
 Aladdin supports running several commands in the same cluster/namespace combo without having to "reinitialize" aladdin. To do this, go into `aladdin bash`. Then all the container commands will be aliased to be run without prefixing aladdin.
