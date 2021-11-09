@@ -5,6 +5,7 @@ import os
 import os
 import pathlib
 import subprocess
+from typing import Optional
 
 from jmespath import search
 
@@ -16,11 +17,14 @@ logger = logging.getLogger(__name__)
 
 def configure_env():
     os.environ["ALADDIN_PLUGIN_DIR"] = config.load_user_config().get("plugin_dir") or ""
-    manage_software_dependencies = search("manage.software_dependencies", config.load_user_config())
-    os.environ["ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"] = (
+    manage_software_dependencies: Optional[bool] = search(
+        "manage.software_dependencies",
+        config.load_user_config()
+    )
+    os.environ["ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"] = str(
         # default of True if not specified
         True if manage_software_dependencies is None else manage_software_dependencies
-    )
+    ).lower()
 
     # Allow aladdin devs to use a custom aladdin image by setting ALADDIN_IMAGE
     if not (os.getenv("ALADDIN_IMAGE") and config.ALADDIN_DEV):
