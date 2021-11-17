@@ -60,6 +60,7 @@ def start(
         "service.domainName": cr.service_domain_name_suffix,
         "service.clusterCertificateScope": cr.cluster_certificate_scope,
         "service.clusterDomainName": cr.cluster_domain_name_suffix,
+        "service.clusterName": cr.cluster_domain_name,  # aka root_dns
     }
     if cr.certificate_lookup:
         values.update({
