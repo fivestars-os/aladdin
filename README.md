@@ -39,9 +39,9 @@ To set up, just clone the Aladdin GitHub repository to get started:
 
 The `infra_k8s_check.sh` script checks to see if all of aladdin's dependencies are installed. Depending on the dependency, it will warn if it is missing or install it in `~/.aladdin/bin` if possible. This script is also run every time you run aladdin.
 
-The recommended way to install aladdin is using the [install script](./install-aladdin):
+The recommended way to install aladdin is using the [install script](./scripts/install-aladdin.sh):
 
-    $ ./install-aladdin
+    $ ./scripts/install-aladdin.sh
 
 This script will install [pipx](https://github.com/pipxproject/pipx) and then use it to install aladdin in its own virtual environment.
 
