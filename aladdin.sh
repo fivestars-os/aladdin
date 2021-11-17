@@ -90,7 +90,8 @@ function check_and_handle_init() {
     # Check if we need to force initialization
     local last_launched_file init_every current_time previous_run
     last_launched_file="$HOME/.infra/last_checked_${NAMESPACE}_${CLUSTER_CODE}"
-    init_every=3600
+    # once per day
+    init_every=$((3600 * 24))
     current_time="$(date +'%s')"
     # create last launched file if it doesn't exit
     mkdir -p "$(dirname "$last_launched_file")" && touch "$last_launched_file"
