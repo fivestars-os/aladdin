@@ -100,7 +100,7 @@ def set_repo_path(env_key: str, dir_key: str, repo_key: str, required: bool = Fa
             return False
         *_, git_account, repo = remote.split("/")
         repo_value = f"git@github.com:{git_account}/{repo}"
-        user_config["repo_value"] = repo_value
+        user_config[repo_key] = repo_value
         config.set_user_config_file(user_config)
 
     # The config repo is expected to have a branch or tag matching the current aladdin version
