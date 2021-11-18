@@ -464,4 +464,6 @@ function main(){
 
 
 main
-"$(cd "$(dirname $0)" ; pwd)"/install-aladdin.sh
+if ! ${ALADDIN_DEV:-false} ; then
+    "$(cd "$(dirname $0)" ; pwd)"/install-aladdin.sh
+fi
