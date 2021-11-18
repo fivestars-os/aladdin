@@ -5,7 +5,7 @@ import sys
 import verboselogs
 import coloredlogs
 
-from aladdin import config
+from aladdin import env
 from aladdin.lib.arg_tools import get_bash_commands, bash_wrapper
 from aladdin.commands import (
     build,
@@ -125,8 +125,9 @@ def cli():
     if not sys.argv[1:] or sys.argv[1] in ["-h", "--help"]:
         return parser.print_help()
 
-    if not config.set_config_path():
+    if not env.set_config_path():
         return sys.exit(1)
+    env.configure_env()
 
     # if it's not a command we know about it might be a plugin
     # currently the bash scripts handle plugins
