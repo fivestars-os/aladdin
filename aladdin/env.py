@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 def configure_env():
-    os.environ["ALADDIN_PLUGIN_DIR"] = config.load_user_config().get("plugin_dir") or ""
+    set_repo_path("ALADDIN_PLUGIN_DIR", "plugin_dir", "plugin_repo", required=False)
     manage_software_dependencies: Optional[bool] = search(
         "manage.software_dependencies",
         config.load_user_config()
@@ -38,24 +38,29 @@ def configure_env():
 
 def set_config_path() -> bool:
     """
-    Function to set the "ALADDIN_CONFIG_DIR" env var
-    Uses git to fetch the latest revision of the config repo, the repo
-    is expected to have a branch or tag that matches the current aladdin version
-
     NOTE:
     If this function returns False it will short-circuit execution of
     any aladdin command, so returning False should be preceded by some
     user-friendly error statement about why we're exiting
     """
-    if os.getenv("ALADDIN_CONFIG_DIR"):
-        # Aladdin config is already set, nothing to do here
+    return set_repo_path("ALADDIN_CONFIG_DIR", "config_dir", "config_repo", required=True)
+
+
+def set_repo_path(env_key: str, dir_key: str, repo_key: str, required: bool = False) -> bool:
+    """
+    Function to set the "dir_key" env var
+    Uses git to fetch the latest revision of the repo specified under "repo_key"
+    The repo is expected to have a branch or tag that matches the current aladdin version
+    """
+    if os.getenv(env_key):
+        # env value is already set, nothing to do here
         return True
 
     err_message = (
-        "Unable to find config repo. "
-        "Please use "
-        "'aladdin config set config_repo <git@github.com:{git_account}/{repo}.git>' "
-        "to set config repo"
+        f"Unable to find {repo_key}. "
+        f"Please use 'aladdin config set {repo_key} "
+        "<git@github.com:{git_account}/{repo}.git>' "
+        f"to set {repo_key} repo"
     )
     try:
         user_config = config.load_user_config()
@@ -63,21 +68,23 @@ def set_config_path() -> bool:
         logger.error(err_message)
         return False
 
-    config_dir: str = user_config.get("config_dir")
-    config_repo: str = user_config.get("config_repo")
-    if not config_dir and not config_repo:
-        logger.error(err_message)
-        return False
+    dir_value: str = user_config.get(dir_key)
+    repo_value: str = user_config.get(repo_key)
+    if not dir_value and not repo_value:
+        os.environ[env_key] = ""
+        if required:
+            logger.error(err_message)
+        return not required
 
-    if not config_repo:
+    if not repo_value:
         """
-        Some users might only have "config_dir" setup because
-        "config_repo" was introduced in v1.19.7.14
+        Some users might only have "dir_value" setup because
+        "repo_value" was introduced in v1.19.7.14
 
         This code path makes the version upgrade smooth by automatically setting
-        "config_repo" from "config_dir"
+        "repo_value" from "dir_value"
         """
-        if not os.path.isdir(config_dir):
+        if not os.path.isdir(dir_value):
             logger.error(err_message)
             return False
         try:
@@ -86,20 +93,20 @@ def set_config_path() -> bool:
                 check=True,
                 capture_output=True,
                 encoding="utf-8",
-                cwd=config_dir,
+                cwd=dir_value,
             ).stdout.strip()
         except subprocess.CalledProcessError:
             logger.error(err_message)
             return False
         *_, git_account, repo = remote.split("/")
-        config_repo = f"git@github.com:{git_account}/{repo}"
-        user_config["config_repo"] = config_repo
+        repo_value = f"git@github.com:{git_account}/{repo}"
+        user_config["repo_value"] = repo_value
         config.set_user_config_file(user_config)
 
     # The config repo is expected to have a branch or tag matching the current aladdin version
-    git_commands = [f"git clone -b {__version__} {config_repo} remote_config"]
+    git_commands = [f"git clone -b {__version__} {repo_value} {repo_key}"]
     cwd = pathlib.Path.home() / ".aladdin"
-    remote_config_path = cwd / "remote_config"
+    remote_config_path = cwd / repo_key
     if os.path.isdir(remote_config_path) and os.path.isdir(remote_config_path / ".git"):
         """
         The remote config has already been checked out,
@@ -121,18 +128,19 @@ def set_config_path() -> bool:
             )
         except subprocess.CalledProcessError as e:
             logger.error(
-                "Failed to fetch aladdin config (%s) from remote: \n%s",
-                config_repo,
+                "Failed to fetch aladdin %s (%s) from remote: \n%s",
+                repo_key,
+                repo_value,
                 e.stderr.strip() or e.stdout.strip()
             )
             return False
 
-    os.environ["ALADDIN_CONFIG_DIR"] = str(remote_config_path)
+    os.environ[env_key] = str(remote_config_path)
 
-    if config.ALADDIN_DEV and config_dir and os.path.isdir(config_dir):
+    if config.ALADDIN_DEV and dir_value and os.path.isdir(dir_value):
         """
-        Allow aladdin developers to use a custom config
+        Allow aladdin developers to use custom dirs
         """
-        os.environ["ALADDIN_CONFIG_DIR"] = config_dir
+        os.environ[env_key] = dir_value
 
     return True
