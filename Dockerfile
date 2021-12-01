@@ -69,7 +69,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-he
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}
 
-ARG KOPS_VERSION=1.19.1
+ARG KOPS_VERSION=1.21.1
 RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VERSION/kops-linux-$(dpkg --print-architecture) && \
     chmod +x ./kops && \
     mv ./kops /usr/local/bin/
