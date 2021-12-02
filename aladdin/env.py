@@ -5,6 +5,7 @@ import os
 import os
 import pathlib
 import subprocess
+from contextlib import suppress
 from typing import Optional
 
 from jmespath import search
@@ -17,10 +18,10 @@ logger = logging.getLogger(__name__)
 
 def configure_env():
     set_repo_path("ALADDIN_PLUGIN_DIR", "plugin_dir", "plugin_repo", required=False)
-    manage_software_dependencies: Optional[bool] = search(
-        "manage.software_dependencies",
-        config.load_user_config()
-    )
+    user_config = {}
+    with suppress(FileNotFoundError):
+        user_config = config.load_user_config()
+    manage_software_dependencies: Optional[bool] = search("manage.software_dependencies", user_config)
     os.environ["ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"] = str(
         # default of True if not specified
         True if manage_software_dependencies is None else manage_software_dependencies
