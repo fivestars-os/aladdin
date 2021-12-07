@@ -102,7 +102,7 @@ function environment_init() {
         _handle_authentication_config
 
         if $INIT; then
-            $PY_MAIN create-namespace $NAMESPACE || true
+            $ALADDIN_DIR/aladdin/bash/container/create-namespace/create-namespace $NAMESPACE || true
             $PY_MAIN namespace-init --force
         fi
     fi
