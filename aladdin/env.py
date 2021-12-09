@@ -90,7 +90,7 @@ def set_repo_path(env_key: str, dir_key: str, repo_key: str, required: bool = Fa
             return False
         try:
             remote = subprocess.run(
-                "git remote get-url origin".split(),
+                "git config --get remote.origin.url".split(),
                 check=True,
                 capture_output=True,
                 encoding="utf-8",
@@ -100,7 +100,9 @@ def set_repo_path(env_key: str, dir_key: str, repo_key: str, required: bool = Fa
             logger.error(err_message)
             return False
         *_, git_account, repo = remote.split("/")
-        repo_value = f"git@github.com:{git_account}/{repo}"
+        repo_value = f"{git_account}/{repo}"
+        if not repo_value.startswith("git@github.com:"):
+            repo_value = f"git@github.com:{repo_value}"
         user_config[repo_key] = repo_value
         config.set_user_config_file(user_config)
 
