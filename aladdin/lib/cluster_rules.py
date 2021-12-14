@@ -1,6 +1,7 @@
 import os
 import boto3
 from distutils.util import strtobool
+from functools import cached_property
 
 from aladdin.lib.arg_tools import CURRENT_NAMESPACE
 from aladdin.lib.aws.certificate import search_certificate_arn, new_certificate_arn
@@ -114,7 +115,7 @@ class ClusterRules(object):
             return False
         return self.rules.get("certificate_lookup", True)
 
-    @property
+    @cached_property
     def boto(self):
         return boto3.Session(profile_name=self.aws_profile)
 
