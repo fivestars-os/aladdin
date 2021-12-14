@@ -2,11 +2,14 @@
 import logging
 from datetime import datetime
 
+from aladdin.lib.cluster_rules import ClusterRules
+
 
 def fill_hostedzone(
-    boto_session, cluster_domain_name, namespace_domain_name, hostnames_to_loadbalancers
+    boto_session, hostnames_to_loadbalancers, cluster_domain_name=None, namespace_domain_name=None
 ):
-    # Main DNS is on prod, sub DNS should be on sandbox
+    cluster_domain_name = cluster_domain_name or ClusterRules().cluster_domain_name
+    namespace_domain_name = namespace_domain_name or ClusterRules().namespace_domain_name
     namespace_hosted_zone = get_hostedzone(
         boto_session, namespace_domain_name
     ) or create_hostedzone(boto_session, namespace_domain_name)
@@ -22,7 +25,7 @@ def fill_hostedzone(
     return fill_dns_dict(boto_session, namespace_hosted_zone, hostnames_to_loadbalancers)
 
 
-def get_hostedzone(boto_session, dns_name):
+def get_hostedzone(boto_session, dns_name) -> str:
     log = logging.getLogger(__name__)
     route53 = boto_session.client("route53")
 
@@ -45,7 +48,7 @@ def get_hostedzone(boto_session, dns_name):
     return hostedzone_id
 
 
-def create_hostedzone(boto_session, dns_name):
+def create_hostedzone(boto_session, dns_name) -> str:
     log = logging.getLogger(__name__)
     route53 = boto_session.client("route53")
 
