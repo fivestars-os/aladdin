@@ -1,7 +1,7 @@
 import logging
 
 from aladdin.lib.arg_tools import add_namespace_argument, container_command
-from aladdin.lib.cluster_rules import cluster_rules
+from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.lib.aws.dns_mapping import fill_hostedzone
 from aladdin.lib.k8s.kubernetes import Kubernetes
 from aladdin.lib.k8s.kubernetes_utils import KubernetesUtils
@@ -21,7 +21,7 @@ def sync_dns_args(args):
 
 @container_command
 def sync_dns(namespace):
-    cr = cluster_rules(namespace=namespace)
+    cr = ClusterRules(namespace=namespace)
     if cr.is_local:
         logging.info("Not syncing DNS because you are on local")
         return
@@ -40,9 +40,9 @@ def sync_dns(namespace):
 
     nb_updated = fill_hostedzone(
         cr.boto,
+        service_hostnames_to_loadbalancers,
         cr.cluster_domain_name,
         cr.namespace_domain_name,
-        service_hostnames_to_loadbalancers,
     )
 
     logging.info("%s DNS mapping updated" % (nb_updated or "No",))

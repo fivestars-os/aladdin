@@ -1,7 +1,7 @@
 import argparse
 import time
 
-from aladdin.lib.cluster_rules import cluster_rules
+from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.lib.arg_tools import add_namespace_argument, container_command, expand_namespace
 
 
@@ -41,7 +41,7 @@ def get_certificate(
     wait: int = 0,
     poll_interval: int = 10
 ):
-    cr = cluster_rules(namespace=namespace)
+    cr = ClusterRules(namespace=namespace)
     cert = None
     timeout_start = time.time()
     while not cert:

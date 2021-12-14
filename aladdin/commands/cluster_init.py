@@ -1,4 +1,4 @@
-from aladdin.lib.cluster_rules import cluster_rules
+from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import deploy
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.arg_tools import container_command
@@ -28,8 +28,7 @@ def cluster_init_args(args):
 @container_command
 def cluster_init(force=False):
     helm = Helm()
-    cr = cluster_rules()
-    cluster_init_projects = cr.cluster_init
+    cluster_init_projects = ClusterRules().cluster_init
     for project in cluster_init_projects:
         project_name = project["project"]
         ref = project["ref"]

@@ -4,12 +4,14 @@ from distutils.util import strtobool
 
 from aladdin.lib.arg_tools import CURRENT_NAMESPACE
 from aladdin.lib.aws.certificate import search_certificate_arn, new_certificate_arn
+from aladdin.lib.utils import singleton
 from aladdin.config import load_cluster_config, load_namespace_override_config
 
 
+@singleton
 class ClusterRules(object):
-    def __init__(self, rules, namespace=CURRENT_NAMESPACE):
-        self.rules = rules
+    def __init__(self, cluster=None, namespace=CURRENT_NAMESPACE):
+        self.rules = _cluster_rules(cluster=cluster, namespace=namespace)
         self._namespace = namespace
 
     def __getattr__(self, attr):
@@ -117,7 +119,7 @@ class ClusterRules(object):
         return boto3.Session(profile_name=self.aws_profile)
 
 
-def cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE):
+def _cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE) -> dict:
 
     if cluster is None:
         cluster = os.environ["CLUSTER_CODE"]
@@ -150,7 +152,7 @@ def cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE):
     if allowed_namespaces != ["*"] and namespace not in allowed_namespaces:
         raise KeyError(f"Namespace {namespace} is not allowed on cluster {cluster}")
 
-    return ClusterRules(rules, namespace)
+    return rules
 
 
 def _update_rules(rules, override):
