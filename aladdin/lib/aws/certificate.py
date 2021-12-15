@@ -6,6 +6,7 @@ import re
 from hashlib import md5
 
 from aladdin.lib.aws.dns_mapping import fill_hostedzone
+from aladdin.lib.cluster_rules import ClusterRules
 
 
 def search_certificate_arn(boto_session, dns_name):
@@ -106,3 +107,22 @@ def _search_certificate(client, domain_name, **filters):
         for cert in page["CertificateSummaryList"]:
             if cert["DomainName"] == domain_name:
                 return cert["CertificateArn"]
+
+
+def get_service_certificate_arn(certificate_scope: str = None) -> str:
+    certificate_scope = certificate_scope or ClusterRules().service_certificate_scope
+    return _get_certificate_arn(certificate_scope)
+
+def get_cluster_certificate_arn(certificate_scope: str = None) -> str:
+    certificate_scope = certificate_scope or ClusterRules().cluster_certificate_scope
+    return _get_certificate_arn(certificate_scope)
+
+def _get_certificate_arn(certificate_scope) -> str:
+
+    cert = search_certificate_arn(ClusterRules().boto, certificate_scope)
+
+    # Check against None to allow empty string
+    if cert is None:
+        cert = new_certificate_arn(ClusterRules().boto, certificate_scope)
+
+    return cert

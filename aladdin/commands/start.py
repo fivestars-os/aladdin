@@ -4,6 +4,7 @@ import os
 from aladdin.lib.arg_tools import (
     COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHARTS_OPTION_PARSER, container_command
 )
+from aladdin.lib.aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
 from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.lib.helm_rules import HelmRules
@@ -64,8 +65,8 @@ def start(
     }
     if cr.certificate_lookup:
         values.update({
-            "service.certificateArn": cr.get_service_certificate_arn(),
-            "service.clusterCertificateArn": cr.get_cluster_certificate_arn(),
+            "service.certificateArn": get_service_certificate_arn(),
+            "service.clusterCertificateArn": get_cluster_certificate_arn(),
         })
     # Update with cluster rule values
     values.update(cr.values)

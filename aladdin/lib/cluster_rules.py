@@ -4,7 +4,6 @@ from distutils.util import strtobool
 from functools import cached_property
 
 from aladdin.lib.arg_tools import CURRENT_NAMESPACE
-from aladdin.lib.aws.certificate import search_certificate_arn, new_certificate_arn
 from aladdin.lib.utils import singleton
 from aladdin.config import load_cluster_config, load_namespace_override_config
 
@@ -21,22 +20,6 @@ class ClusterRules(object):
         raise AttributeError(
             "'{}' object has no attribute '{}'".format(self.__class__.__name__, attr)
         )
-
-    def get_service_certificate_arn(self) -> str:
-        return self._get_certificate_arn(self.service_certificate_scope)
-
-    def get_cluster_certificate_arn(self) -> str:
-        return self._get_certificate_arn(self.cluster_certificate_scope)
-
-    def _get_certificate_arn(self, certificate_scope) -> str:
-
-        cert = search_certificate_arn(self.boto, certificate_scope)
-
-        # Check against None to allow empty string
-        if cert is None:
-            cert = new_certificate_arn(self.boto, certificate_scope)
-
-        return cert
 
     @property
     def cluster_certificate_scope(self):
