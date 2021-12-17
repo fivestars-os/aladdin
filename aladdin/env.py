@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 def configure_env():
     set_repo_path("ALADDIN_PLUGIN_DIR", "plugin_dir", "plugin_repo", required=False)
+    set_repo_path("ALADDIN_BASH_PROFILE_DIR", "bash_profile_dir", "bash_profile_repo", required=False)
     user_config = {}
     with suppress(FileNotFoundError):
         user_config = config.load_user_config()

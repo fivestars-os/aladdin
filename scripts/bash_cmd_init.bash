@@ -13,3 +13,8 @@ source /etc/profile.d/bash_completion.sh
 source <(kubectl completion bash)
 source <(helm completion bash)
 complete -C "$(which aws_completer)" aws
+
+# if we have the directory /root/aladdin-bash-profile, source all files in that directory
+if  [[ -d /root/aladdin-bash-profile ]]; then
+    for f in $(ls /root/aladdin-bash-profile); do source "/root/aladdin-bash-profile/$f"; done
+fi
