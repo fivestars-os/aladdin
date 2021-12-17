@@ -220,6 +220,10 @@ function prepare_volume_mount_options() {
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
+    if [[ -n "$ALADDIN_BASH_PROFILE_DIR" ]]; then
+        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm $ALADDIN_BASH_PROFILE_DIR):/root/aladdin-bash-profile"
+    fi
+
     if "$ALADDIN_DEV" || "$IS_LOCAL"; then
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $HOST_DIR:/aladdin_root$HOST_DIR"
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -w /aladdin_root$(pathnorm "$PWD")"
