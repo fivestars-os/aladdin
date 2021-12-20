@@ -51,13 +51,18 @@ def load_config():
 
 
 def load_user_config() -> dict:
-    home = pathlib.Path.home()
-    return load_config_from_file(home / ".aladdin/config/config.json")
+    path = pathlib.Path.home() / ".aladdin/config/config.json"
+    try:
+        return load_config_from_file(path)
+    except FileNotFoundError:
+        set_user_config_file({})
+        return {}
 
 
 def set_user_config_file(config: dict):
-    home = pathlib.Path.home()
-    with open(home / ".aladdin/config/config.json", "w") as json_file:
+    path = pathlib.Path.home() / ".aladdin/config"
+    pathlib.Path(path).mkdir(parents=True, exist_ok=True)
+    with open(path / "config.json", "w") as json_file:
         json.dump(config, json_file, indent=2)
 
 
