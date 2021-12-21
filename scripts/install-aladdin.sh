@@ -5,7 +5,7 @@ curl -s https://api.github.com/repos/fivestars-os/aladdin/releases/latest | \
 python3 -c 'import json,sys;print(json.load(sys.stdin)["tag_name"])' || \
 echo -n "master")}
 
-if ! command -v pipx &> /dev/null
+if ! command -v pipx &> /dev/null || python3 -m pip list --outdated | grep pipx &> /dev/null
 then
     python3 -m pip install --user --upgrade pipx
     python3 -m pipx ensurepath
