@@ -7,7 +7,8 @@ import tempfile
 from aladdin.lib.arg_tools import (
     COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHART_OPTION_PARSER, container_command
 )
-from aladdin.lib.cluster_rules import cluster_rules
+from aladdin.lib.aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
+from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.config import load_git_configs
 from aladdin.lib.helm_rules import HelmRules
@@ -69,7 +70,7 @@ def deploy(
     with tempfile.TemporaryDirectory() as tmpdirname:
         pr = PublishRules()
         helm = Helm()
-        cr = cluster_rules(namespace=namespace)
+        cr = ClusterRules(namespace=namespace)
         helm_chart_path = "{}/{}".format(tmpdirname, chart or project)
         hr = HelmRules(cr, chart or project)
         git_account = load_git_configs()["account"]
@@ -104,8 +105,8 @@ def deploy(
         }
         if cr.certificate_lookup:
             values.update({
-                "service.certificateArn": cr.get_service_certificate_arn(),
-                "service.clusterCertificateArn": cr.get_cluster_certificate_arn(),
+                "service.certificateArn": get_service_certificate_arn(),
+                "service.clusterCertificateArn": get_cluster_certificate_arn(),
             })
         # Update with cluster rule values
         values.update(cr.values)

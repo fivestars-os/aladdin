@@ -5,7 +5,8 @@ import logging
 import re
 from hashlib import md5
 
-from aladdin.lib.aws.dns_mapping import create_hostedzone, fill_dns_dict, get_hostedzone
+from aladdin.lib.aws.dns_mapping import fill_hostedzone
+from aladdin.lib.cluster_rules import ClusterRules
 
 
 def search_certificate_arn(boto_session, dns_name):
@@ -20,7 +21,7 @@ def search_certificate_arn(boto_session, dns_name):
 
     certicate = _search_certificate(acm, dns_name, CertificateStatuses=["PENDING_VALIDATION"])
     if certicate:
-        _validate_certificate_with_retry(boto_session, dns_name, certicate)
+        _validate_certificate_with_retry(boto_session, certicate)
 
         # Warn that certificate is in pending state, so https will not work until certificate is
         # in issued state and project is redeployed
@@ -58,7 +59,7 @@ def new_certificate_arn(boto_session, dns_name):
         ],  # leave the default there
     )["CertificateArn"]
 
-    _validate_certificate_with_retry(boto_session, dns_name, arn)
+    _validate_certificate_with_retry(boto_session, arn)
 
     # Warn that certificate is in pending state yet, so https will not work until certificate is
     # in issued state and project is redeployed
@@ -71,20 +72,14 @@ def new_certificate_arn(boto_session, dns_name):
     return ""
 
 
-def _validate_certificate_with_retry(boto_session, dns_name, arn, max_retries=20):
+def _validate_certificate_with_retry(boto_session, arn, max_retries=20):
     """Validate new certificate using DNS validation"""
     log = logging.getLogger(__name__)
-
-    # Create the hosted zone for later dns validation
-    hostedzone_name = ".".join(dns_name.split(".")[1:])
-    hostedzone = get_hostedzone(boto_session, hostedzone_name) or create_hostedzone(
-        boto_session, hostedzone_name
-    )
-
     acm = boto_session.client("acm")
 
+    cname_record = None
     retry_count = 0
-    while retry_count < max_retries:
+    while not cname_record and retry_count < max_retries:
         try:
             cname_info = acm.describe_certificate(CertificateArn=arn)["Certificate"][
                 "DomainValidationOptions"
@@ -92,17 +87,17 @@ def _validate_certificate_with_retry(boto_session, dns_name, arn, max_retries=20
             cname_record = {cname_info["Name"][:-1]: cname_info["Value"]}
         except (KeyError, IndexError):
             retry_count += 1
-        else:
-            break
-    if retry_count == max_retries:
+
+    if cname_record:
+        # Create the hosted zone and add the cname used for dns validation
+        fill_hostedzone(boto_session, cname_record)
+    else:
         log.warning(
             f"Unable to validate certificate {arn} via DNS at this time. Please try again"
             " later by rerunning your aladdin command or by manually validating using the"
             " instructions here:"
             " https://github.com/fivestars/aladdin-fs/blob/master/doc/dns_and_certificate.md."
         )
-    else:
-        fill_dns_dict(boto_session, hostedzone, cname_record)
 
 
 def _search_certificate(client, domain_name, **filters):
@@ -112,3 +107,22 @@ def _search_certificate(client, domain_name, **filters):
         for cert in page["CertificateSummaryList"]:
             if cert["DomainName"] == domain_name:
                 return cert["CertificateArn"]
+
+
+def get_service_certificate_arn(certificate_scope: str = None) -> str:
+    certificate_scope = certificate_scope or ClusterRules().service_certificate_scope
+    return _get_certificate_arn(certificate_scope)
+
+def get_cluster_certificate_arn(certificate_scope: str = None) -> str:
+    certificate_scope = certificate_scope or ClusterRules().cluster_certificate_scope
+    return _get_certificate_arn(certificate_scope)
+
+def _get_certificate_arn(certificate_scope) -> str:
+
+    cert = search_certificate_arn(ClusterRules().boto, certificate_scope)
+
+    # Check against None to allow empty string
+    if cert is None:
+        cert = new_certificate_arn(ClusterRules().boto, certificate_scope)
+
+    return cert

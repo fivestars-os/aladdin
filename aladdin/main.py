@@ -125,17 +125,20 @@ def cli():
     if not sys.argv[1:] or sys.argv[1] in ["-h", "--help"]:
         return parser.print_help()
 
-    if not env.set_config_path():
+
+    cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
+    command = cmd_args[0] if cmd_args else None
+
+    if not env.set_config_path() and command != "config":
         return sys.exit(1)
     env.configure_env()
 
     # if it's not a command we know about it might be a plugin
     # currently the bash scripts handle plugins
-    cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
-    if not cmd_args or cmd_args[0] not in subparsers._name_parser_map:
+    if not command or command not in subparsers._name_parser_map:
         return bash_wrapper()
 
-    if cmd_args and cmd_args[0] in bash_command_names:
+    if command and command in bash_command_names:
         return bash_wrapper()
 
     args = parser.parse_args()
