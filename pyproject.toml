@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aladdin"
-version = "1.19.7.19"
+version = "1.19.7.20"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
 include = [
@@ -24,6 +24,7 @@ jinja2 = "^2.11.2"
 lazy-object-proxy = "^1.5.1"
 urllib3 = "1.26.6"
 importlib-metadata = {version = "^1.0", python = "<3.8"}
+"backports.cached-property" = {version = "^1.0.1", python = "<3.8"}
 
 [tool.poetry.dev-dependencies]
 
