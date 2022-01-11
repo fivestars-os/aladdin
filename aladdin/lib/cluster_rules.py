@@ -4,6 +4,7 @@ from distutils.util import strtobool
 try:
     from functools import cached_property
 except ImportError:
+    # Running on pre-3.8 Python; use backport
     from backports.cached_property import cached_property
 
 from aladdin.lib.arg_tools import CURRENT_NAMESPACE
