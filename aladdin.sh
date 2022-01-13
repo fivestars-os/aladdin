@@ -114,6 +114,10 @@ function _start_k3d() {
 }
 
 function check_or_start_k3d() {
+    if docker info | grep "Cgroup Version: 2" > /dev/null && [[ "$KUBERNETES_VERSION" == "1.19.7" ]]; then
+        echo "ERROR: Current version of k3d is not compatible with cgroups v2"
+        echo "ERROR: If using Docker Desktop please downgrade to v4.2.0"
+    fi
     if ! k3d cluster list | grep LOCAL > /dev/null; then
         echo "Starting k3d LOCAL cluster... (this will take a moment)"
         _start_k3d
