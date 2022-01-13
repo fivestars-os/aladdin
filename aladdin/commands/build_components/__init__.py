@@ -19,7 +19,6 @@ import typing
 
 import jinja2
 import networkx
-from orderedset import OrderedSet
 
 from aladdin.lib import logging
 from .configuration import BuildConfig, ComponentConfig, ConfigurationException
@@ -167,12 +166,10 @@ def validate_component_dependencies(components: typing.List[str]) -> networkx.Di
     :returns: The component dependency graph
     """
     # Copy for destructive operations
-    components = OrderedSet(components)
-
+    components = components.copy()
     # Create the component dependency graph
     component_graph = networkx.DiGraph()
-
-    visited = OrderedSet()
+    visited = set()
     while components:
         component = components.pop()
         if component not in visited:
@@ -189,7 +186,7 @@ def validate_component_dependencies(components: typing.List[str]) -> networkx.Di
             )
 
             # Add any dependencies to the list of components to traverse to
-            components.update(config.dependencies)
+            components.extend(config.dependencies)
 
     # Check the graph for cycles
     try:

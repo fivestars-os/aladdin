@@ -1,5 +1,5 @@
 from aladdin.lib.arg_tools import add_namespace_argument, container_command
-from aladdin.lib.cluster_rules import cluster_rules
+from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import deploy
 from aladdin.lib.k8s.helm import Helm
 
@@ -29,8 +29,7 @@ def namespace_init_args(args):
 @container_command
 def namespace_init(namespace, force=False):
     helm = Helm()
-    cr = cluster_rules(namespace=namespace)
-    namespace_init_projects = cr.namespace_init
+    namespace_init_projects = ClusterRules(namespace=namespace).namespace_init
     for project in namespace_init_projects:
         project_name = project["project"]
         ref = project["ref"]

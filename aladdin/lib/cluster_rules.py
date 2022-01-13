@@ -1,15 +1,21 @@
 import os
 import boto3
 from distutils.util import strtobool
+try:
+    from functools import cached_property
+except ImportError:
+    # Running on pre-3.8 Python; use backport
+    from backports.cached_property import cached_property
 
 from aladdin.lib.arg_tools import CURRENT_NAMESPACE
-from aladdin.lib.aws.certificate import search_certificate_arn, new_certificate_arn
+from aladdin.lib.utils import singleton
 from aladdin.config import load_cluster_config, load_namespace_override_config
 
 
+@singleton
 class ClusterRules(object):
-    def __init__(self, rules, namespace=CURRENT_NAMESPACE):
-        self.rules = rules
+    def __init__(self, cluster=None, namespace=CURRENT_NAMESPACE):
+        self.rules = _cluster_rules(cluster=cluster, namespace=namespace)
         self._namespace = namespace
 
     def __getattr__(self, attr):
@@ -18,22 +24,6 @@ class ClusterRules(object):
         raise AttributeError(
             "'{}' object has no attribute '{}'".format(self.__class__.__name__, attr)
         )
-
-    def get_service_certificate_arn(self) -> str:
-        return self._get_certificate_arn(self.service_certificate_scope)
-
-    def get_cluster_certificate_arn(self) -> str:
-        return self._get_certificate_arn(self.cluster_certificate_scope)
-
-    def _get_certificate_arn(self, certificate_scope) -> str:
-
-        cert = search_certificate_arn(self.boto, certificate_scope)
-
-        # Check against None to allow empty string
-        if cert is None:
-            cert = new_certificate_arn(self.boto, certificate_scope)
-
-        return cert
 
     @property
     def cluster_certificate_scope(self):
@@ -112,12 +102,12 @@ class ClusterRules(object):
             return False
         return self.rules.get("certificate_lookup", True)
 
-    @property
+    @cached_property
     def boto(self):
         return boto3.Session(profile_name=self.aws_profile)
 
 
-def cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE):
+def _cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE) -> dict:
 
     if cluster is None:
         cluster = os.environ["CLUSTER_CODE"]
@@ -150,7 +140,7 @@ def cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE):
     if allowed_namespaces != ["*"] and namespace not in allowed_namespaces:
         raise KeyError(f"Namespace {namespace} is not allowed on cluster {cluster}")
 
-    return ClusterRules(rules, namespace)
+    return rules
 
 
 def _update_rules(rules, override):

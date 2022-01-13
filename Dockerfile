@@ -10,17 +10,16 @@ RUN apt-get update && \
     curl
 
 RUN python -m venv /root/.venv
-ENV PATH /root/.venv/bin:$PATH
 
-ARG POETRY_VERSION=1.1.10
-ENV PATH /root/.local/bin:$PATH
+ENV PATH /root/.venv/bin:$PATH
+# also specified around line 45
+ARG POETRY_VERSION=1.1.12
 RUN pip install --upgrade pip && \
-    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py -o install-poetry.py && \
-    python install-poetry.py --version $POETRY_VERSION
-ENV POETRY_VIRTUALENVS_CREATE="false"
-ENV POETRY_INSTALLER_PARALLEL="false"
+    pip install poetry==$POETRY_VERSION
+ARG POETRY_VIRTUALENVS_CREATE="false"
+ARG POETRY_INSTALLER_PARALLEL="false"
 # Poetry needs this to find the venv we created
-ENV VIRTUAL_ENV=/root/.venv
+ARG VIRTUAL_ENV=/root/.venv
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root --no-dev
@@ -43,7 +42,10 @@ RUN apt-get update && \
     curl \
     ssh
 
-RUN pip install --no-cache-dir pip==21.2.4
+# also specified around line 15
+ARG POETRY_VERSION=1.1.12
+RUN pip install --upgrade pip && \
+    pip install poetry==$POETRY_VERSION
 
 # Update all needed tool versions here
 
@@ -69,7 +71,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-he
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}
 
-ARG KOPS_VERSION=1.19.1
+ARG KOPS_VERSION=1.21.1
 RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VERSION/kops-linux-$(dpkg --print-architecture) && \
     chmod +x ./kops && \
     mv ./kops /usr/local/bin/
@@ -83,12 +85,11 @@ RUN curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=
 
 WORKDIR /root/aladdin
 
-COPY --from=build /root/.local /root/.local
 COPY --from=build /root/.venv /root/.venv
-ENV PATH /root/.venv/bin:/root/.local/bin:$PATH
+ENV PATH /root/.venv/bin:$PATH
 # Install aladdin
 COPY . .
-ENV POETRY_VIRTUALENVS_CREATE="false"
+ARG POETRY_VIRTUALENVS_CREATE="false"
 # Poetry needs this to find the venv we created
-ENV VIRTUAL_ENV=/root/.venv
+ARG VIRTUAL_ENV=/root/.venv
 RUN poetry install --no-dev

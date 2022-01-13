@@ -1,8 +1,9 @@
 import argparse
 import time
 
-from aladdin.lib.cluster_rules import cluster_rules
+from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.lib.arg_tools import add_namespace_argument, container_command, expand_namespace
+from aladdin.lib.aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
 
 
 def parse_args(parser):
@@ -41,14 +42,14 @@ def get_certificate(
     wait: int = 0,
     poll_interval: int = 10
 ):
-    cr = cluster_rules(namespace=namespace)
+    cr = ClusterRules(namespace=namespace)
     cert = None
     timeout_start = time.time()
     while not cert:
         if for_cluster:
-            cert = cr.get_cluster_certificate_arn()
+            cert = get_cluster_certificate_arn()
         else:
-            cert = cr.get_service_certificate_arn()
+            cert = get_service_certificate_arn()
         if not wait:
             return cert
         if wait > 0 and time.time() - timeout_start > wait:

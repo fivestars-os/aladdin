@@ -15,35 +15,16 @@ NAMESPACE=default
 IS_TERMINAL=true
 SKIP_PROMPTS=false
 KUBERNETES_VERSION="1.19.7"
-MANAGE_SOFTWARE_DEPENDENCIES=true
 
 # Set key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" ; pwd)"
 SCRIPT_DIR="$ALADDIN_DIR/scripts"
-ALADDIN_PLUGIN_DIR=
 
 ALADDIN_BIN="$HOME/.aladdin/bin"
 PATH="$ALADDIN_BIN":"$PATH"
 
 source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
 
-function get_plugin_dir() {
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        ALADDIN_PLUGIN_DIR=$(jq -r .plugin_dir $HOME/.aladdin/config/config.json)
-        if [[ "$ALADDIN_PLUGIN_DIR" == null ]]; then
-            ALADDIN_PLUGIN_DIR=
-        fi
-    fi
-}
-
-function get_manage_software_dependencies() {
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        MANAGE_SOFTWARE_DEPENDENCIES=$(jq -r .manage.software_dependencies $HOME/.aladdin/config/config.json)
-        if [[ "$MANAGE_SOFTWARE_DEPENDENCIES" == null ]]; then
-            MANAGE_SOFTWARE_DEPENDENCIES=true
-        fi
-    fi
-}
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
     cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_DIR/config.json")
@@ -90,7 +71,8 @@ function check_and_handle_init() {
     # Check if we need to force initialization
     local last_launched_file init_every current_time previous_run
     last_launched_file="$HOME/.infra/last_checked_${NAMESPACE}_${CLUSTER_CODE}"
-    init_every=3600
+    # once per day
+    init_every=$((3600 * 24))
     current_time="$(date +'%s')"
     # create last launched file if it doesn't exit
     mkdir -p "$(dirname "$last_launched_file")" && touch "$last_launched_file"
@@ -98,27 +80,23 @@ function check_and_handle_init() {
     if [[ "$current_time" -gt "$((${previous_run:-0}+init_every))" || "$previous_run" -gt "$current_time" ]]; then
         INIT=true
     fi
-    # Handle initialization logic
-    if "$INIT"; then
-        if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
-            "$SCRIPT_DIR"/infra_k8s_check.sh --force
-        fi
-        check_or_start_k3d
+    if ! docker image inspect $ALADDIN_IMAGE &> /dev/null; then
         readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_DIR/config.json")"
         if [[ "$repo_login_command" != "null" ]]; then
             eval "$repo_login_command"
         fi
-        local aladdin_image="$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_DIR/config.json"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_DIR/config.json")"
-        if [[ $aladdin_image == *"/"* ]]; then
-            docker pull "$aladdin_image"
-        fi
-        echo "$current_time" > "$last_launched_file"
-    else
-        if "$MANAGE_SOFTWARE_DEPENDENCIES"; then
-            "$SCRIPT_DIR"/infra_k8s_check.sh
-        fi
-        check_or_start_k3d
+        docker pull "$ALADDIN_IMAGE"
     fi
+    # Handle initialization logic
+    local infra_k8s_check_args=""
+    if "$INIT"; then
+        infra_k8s_check_args="--force"
+        echo "$current_time" > "$last_launched_file"
+    fi
+    if "$ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"; then
+        "$SCRIPT_DIR"/infra_k8s_check.sh $infra_k8s_check_args
+    fi
+    check_or_start_k3d
 }
 
 function _start_k3d() {
@@ -136,6 +114,10 @@ function _start_k3d() {
 }
 
 function check_or_start_k3d() {
+    if docker info | grep "Cgroup Version: 2" > /dev/null && [[ "$KUBERNETES_VERSION" == "1.19.7" ]]; then
+        echo "ERROR: Current version of k3d is not compatible with cgroups v2"
+        echo "ERROR: If using Docker Desktop please downgrade to v4.2.0"
+    fi
     if ! k3d cluster list | grep LOCAL > /dev/null; then
         echo "Starting k3d LOCAL cluster... (this will take a moment)"
         _start_k3d
@@ -284,8 +266,6 @@ function enter_docker_container() {
         FLAGS+="t"
     fi
 
-    local aladdin_image="${IMAGE:-"$(jq -r '.aladdin.repo' "$ALADDIN_CONFIG_DIR/config.json"):$(jq -r '.aladdin.tag' "$ALADDIN_CONFIG_DIR/config.json")"}"
-
     docker run $FLAGS \
         `# Environment` \
         -e "ALADDIN_DEV=$ALADDIN_DEV" \
@@ -309,7 +289,7 @@ function enter_docker_container() {
         -v /var/run/docker.sock:/var/run/docker.sock \
         ${VOLUME_MOUNTS_OPTIONS} \
         ${SSH_OPTIONS} \
-        "$aladdin_image" \
+        "$ALADDIN_IMAGE" \
         `# Finally, launch the command` \
         /root/aladdin/aladdin-container.sh "$@"
 }
@@ -323,10 +303,6 @@ while [[ $# -gt 0 ]]; do
         ;;
         -n|--namespace)
             NAMESPACE="$2"
-            shift # past argument
-        ;;
-        --image)
-            IMAGE="$2"
             shift # past argument
         ;;
         -i|--init)
@@ -348,9 +324,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 exec_host_command "$@"
-get_plugin_dir
 get_host_addr
-get_manage_software_dependencies
 exec_host_plugin "$@"
 check_cluster_alias
 get_config_variables

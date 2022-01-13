@@ -33,7 +33,7 @@ class Kubernetes(object):
         self.kubeconfig = kubeconfig or os.getenv("KUBECONFIG")
         try:
             config.load_kube_config(self.kubeconfig)
-        except IOError:
+        except Exception:
             try:
                 config.load_incluster_config()  # How to set up the client from within a k8s pod
             except config.config_exception.ConfigException:

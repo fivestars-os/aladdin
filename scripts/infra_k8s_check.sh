@@ -77,12 +77,6 @@ if [[ "${1:-}" == "--force" ]] ;then
     NEED_INSTALL=true
 fi
 
-
-# Where we are
-DIR_PATH="$(cd "$(dirname $0)" ; pwd)"
-FILES_DIR="$DIR_PATH/infra_k8s_check_files"
-
-
 platform=""
 bin_path=""
 install_cmd=""
@@ -470,3 +464,6 @@ function main(){
 
 
 main
+if ! ${ALADDIN_DEV:-false} ; then
+    "$(cd "$(dirname $0)" ; pwd)"/install-aladdin.sh
+fi

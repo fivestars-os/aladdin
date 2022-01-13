@@ -3,7 +3,9 @@ set -eu -o pipefail
 
 function create_namespace {
     kubectl create namespace $1 --dry-run=client -o yaml | kubectl apply -f -
-    kubectl label --overwrite namespace $1 owner=$2 || true
+    if [ -z "$2" ]; then
+    	kubectl label --overwrite namespace $1 owner=$2 || true
+    fi
 }
 
 function usage {
@@ -15,7 +17,7 @@ function usage {
 		  owner                 the owner of the namespace (applied as a label)
 		                        ideally using the format First.Last
 		                        if not supplied then retrieved from `whoami`
-          
+
 		optional arguments:
 		  -h, --help            show this help message and exit
 	EOF
@@ -24,7 +26,7 @@ function usage {
 if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]]; then
     usage
 elif [[ $# -eq 1 ]]; then
-	owner="$(aws sts get-caller-identity --query 'UserId' --output text | awk -F ':' '{print$2}' || echo nobody)"
+	owner="$(aws sts get-caller-identity --query 'UserId' --output text | awk -F ':' '{print$2}' || echo '')"
     create_namespace $1 $owner
 else
     create_namespace $@

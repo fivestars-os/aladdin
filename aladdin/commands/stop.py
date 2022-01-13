@@ -2,7 +2,7 @@
 import os
 
 from aladdin.lib.arg_tools import CHARTS_OPTION_PARSER, COMMON_OPTION_PARSER, container_command
-from aladdin.lib.cluster_rules import cluster_rules
+from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.k8s.helm import Helm
@@ -26,7 +26,7 @@ def stop(namespace, charts):
     pc = ProjectConf()
     helm = Helm()
 
-    cr = cluster_rules(namespace=namespace)
+    cr = ClusterRules(namespace=namespace)
 
     if charts is None:
         # Stop each of the project's charts
