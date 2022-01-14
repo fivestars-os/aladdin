@@ -162,7 +162,7 @@ function populate {
     sleep 1
     for ns in $(cat "$path_to_resources/namespaces.txt")
     do
-        kubectl create namespace "$ns" || true
+        kubectl create namespace "$ns" --dry-run=client -o yaml | kubectl apply -f -
         kubectl apply -f "$path_to_resources/$ns.yaml" || true
     done
 

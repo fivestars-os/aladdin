@@ -2,7 +2,7 @@
 set -eu -o pipefail
 
 function create_namespace {
-    kubectl create namespace $1
+    kubectl create namespace $1 --dry-run=client -o yaml | kubectl apply -f -
     if [ -z "$2" ]; then
     	kubectl label --overwrite namespace $1 owner=$2 || true
     fi
