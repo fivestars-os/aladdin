@@ -47,7 +47,8 @@ def load_config_from_file(file):
 
 
 def load_config():
-    return load_config_from_file(f'{os.environ["ALADDIN_CONFIG_DIR"]}/config.json')
+    config_dir = os.getenv("ALADDIN_CONFIG_DIR")
+    return load_config_from_file(f"{config_dir}/config.json")
 
 
 def load_user_config() -> dict:
