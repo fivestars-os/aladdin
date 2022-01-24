@@ -129,6 +129,9 @@ def cli():
     cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
     command = cmd_args[0] if cmd_args else None
 
+    # ordering here is important
+    # don't try to set config_path if the user is trying
+    # to configure the aladdin config
     if command != "config" and not env.set_config_path():
         return sys.exit(1)
     env.configure_env()
