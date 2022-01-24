@@ -31,8 +31,11 @@ def configure_env():
     if not (os.getenv("ALADDIN_IMAGE") and config.ALADDIN_DEV):
         # Set ALADDIN_IMAGE from the "aladdin.repo" config (or config.ALADDIN_DOCKER_REPO) and
         # use the aladdin version as the image tag
+        image = config.ALADDIN_DOCKER_REPO
+        with suppress(FileNotFoundError):
+            image = search("aladdin.repo", config.load_config()) or config.ALADDIN_DOCKER_REPO
         os.environ["ALADDIN_IMAGE"] = "{}:{}".format(
-            search("aladdin.repo", config.load_config()) or config.ALADDIN_DOCKER_REPO,
+            image,
             __version__
         )
 

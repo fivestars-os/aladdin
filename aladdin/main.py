@@ -129,7 +129,7 @@ def cli():
     cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
     command = cmd_args[0] if cmd_args else None
 
-    if not env.set_config_path() and command != "config":
+    if command != "config" and not env.set_config_path():
         return sys.exit(1)
     env.configure_env()
 
