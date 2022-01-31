@@ -239,12 +239,12 @@ function prepare_ssh_options() {
             echo >&2 "Aladdin is configured to use the host's ssh agent (ssh.agent == true) but SSH_AUTH_SOCK is empty."
             exit 1
         fi
-        case "$OSTYPE" in
-            # docker-desktop on mac only supports this "magic" ssh-agent socket
-            # https://github.com/docker/for-mac/issues/410
-            darwin*) SSH_OPTIONS="-e SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock -v /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock" ;;
-            *)       SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AUTH_SOCK} -v ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}" ;;
-        esac
+        SSH_AGENT_SOCKET=$SSH_AUTH_SOCK
+        if [[ $OSTYPE =~ darwin* ]]; then
+            LIMA_HOME="$HOME/Library/Application Support/rancher-desktop/lima"
+            SSH_AGENT_SOCKET=$("/Applications/Rancher Desktop.app/Contents/Resources/resources/darwin/lima/bin/limactl" shell 0 echo -n "\$SSH_AUTH_SOCK")
+        fi
+        SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AGENT_SOCKET} -v ${SSH_AGENT_SOCKET}:${SSH_AGENT_SOCKET}"
     else
         # Default behavior is to attempt to mount the host's .ssh directory into root's home.
         case "$OSTYPE" in
