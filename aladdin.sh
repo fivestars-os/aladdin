@@ -96,7 +96,7 @@ function check_and_handle_init() {
     if "$ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"; then
         "$SCRIPT_DIR"/infra_k8s_check.sh $infra_k8s_check_args
     fi
-    check_or_start_k3d
+    # check_or_start_k3d
 }
 
 function _start_k3d() {
