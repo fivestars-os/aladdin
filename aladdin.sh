@@ -239,11 +239,16 @@ function prepare_ssh_options() {
             echo >&2 "Aladdin is configured to use the host's ssh agent (ssh.agent == true) but SSH_AUTH_SOCK is empty."
             exit 1
         fi
-        SSH_AGENT_SOCKET=$SSH_AUTH_SOCK
-        if [[ $OSTYPE =~ darwin* ]]; then
-            LIMA_HOME="$HOME/Library/Application Support/rancher-desktop/lima"
-            SSH_AGENT_SOCKET=$("/Applications/Rancher Desktop.app/Contents/Resources/resources/darwin/lima/bin/limactl" shell 0 echo -n "\$SSH_AUTH_SOCK")
+        LIMA_HOME="$HOME/Library/Application Support/rancher-desktop/lima"
+        if [[ ! -f "$LIMA_HOME/_config/override.yaml" ]]; then
+            cat <<EOT >> $LIMA_HOME/_config/override.yaml
+ssh:
+  loadDotSSHPubKeys: true
+  forwardAgent: true
+EOT
+            echo "Rancher Desktop (Lima) overrides applied, you might need to restart for overrides to take effect"
         fi
+        SSH_AGENT_SOCKET=$("/Applications/Rancher Desktop.app/Contents/Resources/resources/darwin/lima/bin/limactl" shell 0 echo -n "\$SSH_AUTH_SOCK")
         SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AGENT_SOCKET} -v ${SSH_AGENT_SOCKET}:${SSH_AGENT_SOCKET}"
     else
         # Default behavior is to attempt to mount the host's .ssh directory into root's home.
