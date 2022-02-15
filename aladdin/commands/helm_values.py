@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 import tempfile
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qsl
 
 from aladdin.config import PROJECT_ROOT, load_git_configs
 from aladdin.lib.arg_tools import (
@@ -31,7 +31,7 @@ def parse_args(sub_parser):
         parents=[COMMON_OPTION_PARSER],
     )
     parser.set_defaults(func=helm_values)
-    parser.add_argument("uri", help="aladdin://CLUSTER_CODE/REPO_NAME/path/to/chart")
+    parser.add_argument("uri", help="aladdin://CLUSTER_CODE/REPO_NAME?chart=path/to/chart")
     parser.add_argument(
         "git_ref",
         help="which git hash or tag or branch to get values from",
@@ -42,8 +42,10 @@ def parse_args(sub_parser):
 @expand_namespace
 def helm_values(uri: str, namespace: str, git_ref: str):
     uri = urlparse(uri)
+    params = dict(parse_qsl(uri.query))
+    CHART_PATH = params.get("chart")
     os.environ["CLUSTER_CODE"] = uri.netloc
-    REPO_NAME, CHART_PATH = uri.path.lstrip("/").split("/", 1)
+    REPO_NAME = uri.path.lstrip("/")
     ClusterRules(namespace=namespace)
     GIT_ACCOUNT = load_git_configs()["account"]
     git_url = f"git@github.com:{GIT_ACCOUNT}/{REPO_NAME}.git"
@@ -83,6 +85,8 @@ def helm_values(uri: str, namespace: str, git_ref: str):
 
         with working_directory(tmpdirname):
             values["project.name"] = ProjectConf().name
+            if not CHART_PATH:
+                CHART_PATH = ProjectConf().get_default_helm_chart()
             args = [
                 f"--values={values_file}"
                 for values_file in Helm().find_values(
