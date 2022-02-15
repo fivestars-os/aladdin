@@ -86,12 +86,13 @@ class ProjectConf:
             paths = [paths]
         return [os.path.join(self.path, path) for path in paths]
 
-    def get_default_helm_chart(self):
+    def get_helm_chart_path(self, chart_name: str = None):
         charts = self.get_helm_chart_paths()
         for chart in charts:
-            if chart.endswith(self.name):
+            if chart.endswith(chart_name or self.name):
                 return chart
-        return charts[0]
+        if not chart_name:
+            return charts[0]
 
     def lamp_checker(self):
         try:

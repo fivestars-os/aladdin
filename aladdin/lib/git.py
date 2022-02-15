@@ -2,7 +2,7 @@ import subprocess
 from aladdin.lib.utils import working_directory
 
 
-class Git(object):
+class Git:
     SHORT_HASH_SIZE = 10
 
     @classmethod

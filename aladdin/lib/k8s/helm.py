@@ -45,7 +45,7 @@ class Helm:
         finally:
             os.remove(package_path)
 
-    def pull_packages(self, project_name, publish_rules, git_ref, extract_dir):
+    def pull_packages(self, project_name, publish_rules, git_ref, extract_dir, chart_name=None):
         """
         Retrieve all charts published for this project at this git_ref.
 
@@ -55,6 +55,7 @@ class Helm:
         :param publish_rules: Details for accessing the S3 bucket.
         :param git_ref: The version of the chart(s) to retrieve.
         :param extract_dir: Where to place the downloaded charts.
+        :param chart_name: Specific chart to pull.
         """
         # List the contents of the publish "directory" and find
         # everything that looks like a chart.
@@ -63,11 +64,11 @@ class Helm:
             for obj in publish_rules.s3_bucket.objects.filter(
                 Prefix=self.PACKAGE_DIR_PATH.format(project_name=project_name, git_ref=git_ref)
             )
-            if obj.key.endswith(f".{git_ref}.tgz")
+            if obj.key.endswith(f"{chart_name}.{git_ref}.tgz" if chart_name else f".{git_ref}.tgz")
         ]
 
         if not package_keys:
-            logger.error(f"No published charts found for: {project_name} at {git_ref}")
+            logger.error(f"No published charts found for: {chart_name or project_name} in {project_name}@{git_ref}")
             sys.exit(1)
 
         # Download the chart archives and extract the contents into their own chart sub-directories
