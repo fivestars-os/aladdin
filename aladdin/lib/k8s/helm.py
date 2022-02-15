@@ -3,9 +3,9 @@ import json
 import os
 import subprocess
 import sys
+from os.path import join
 
 from botocore.exceptions import ClientError
-from os.path import join
 
 from aladdin.lib import logging
 
