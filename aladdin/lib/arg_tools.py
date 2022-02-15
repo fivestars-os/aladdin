@@ -14,12 +14,14 @@ from aladdin.config import PROJECT_ROOT
 
 
 def get_current_namespace():
-    namespace = os.getenv("NAMESPACE")
+    namespace = None
+
+    with suppress(KeyError, kube_config.config_exception.ConfigException):
+        _, active_context = kube_config.list_kube_config_contexts()
+        namespace = active_context["context"]["namespace"]
 
     if not namespace:
-        with suppress(KeyError, kube_config.config_exception.ConfigException):
-            _, active_context = kube_config.list_kube_config_contexts()
-            namespace = active_context["context"]["namespace"]
+        namespace = os.getenv("NAMESPACE")
 
     if not namespace:
         namespace = "default"
@@ -145,7 +147,7 @@ def expand_namespace(func=None):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if len(args) == 1 and isinstance(args[0], argparse.Namespace):
-            nmspace = vars(args[0])
+            nmspace = {k.replace("-", "_"): v for (k, v) in vars(args[0]).items()}
             allowed = list(signature(func).parameters.keys())
             return func(**{k: v for (k, v) in nmspace.items() if k in allowed})
         return func(*args, **kwargs)
