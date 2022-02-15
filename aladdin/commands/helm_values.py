@@ -5,7 +5,7 @@ import tempfile
 from urllib.parse import urlparse
 
 from aladdin.config import load_git_configs
-from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, expand_namespace, container_command
+from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, expand_namespace
 from aladdin.lib.aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
 from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.lib.git import Git
@@ -28,7 +28,6 @@ def parse_args(sub_parser):
     subparser.add_argument("git_ref", help="which git hash or tag or branch to deploy")
 
 
-@container_command
 @expand_namespace
 def helm_values(
     uri, namespace, git_ref
