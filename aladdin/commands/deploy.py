@@ -42,7 +42,7 @@ def deploy_args(args):
         args.project,
         args.git_ref,
         args.namespace,
-        args.chart,
+        args.chart or args.project,
         args.dry_run,
         args.force,
         args.force_helm,
@@ -71,8 +71,8 @@ def deploy(
         pr = PublishRules()
         helm = Helm()
         cr = ClusterRules(namespace=namespace)
-        helm_chart_path = "{}/{}".format(tmpdirname, chart or project)
-        hr = HelmRules(cr, chart or project)
+        helm_chart_path = "{}/{}".format(tmpdirname, chart)
+        hr = HelmRules(cr, chart)
         git_account = load_git_configs()["account"]
         repo = repo or project
         git_url = f"git@github.com:{git_account}/{repo}.git"
@@ -86,7 +86,7 @@ def deploy(
             )
             sys.exit(1)
 
-        helm.pull_packages(project, pr, git_ref, tmpdirname)
+        helm.pull_packages(project, pr, git_ref, tmpdirname, chart_name=chart)
 
         # We need to use --set-string in case the git ref is all digits
         helm_args = ["--set-string", f"deploy.imageTag={git_ref}"]
