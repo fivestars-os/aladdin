@@ -25,14 +25,14 @@ from aladdin.lib.utils import working_directory
 
 
 def parse_args(sub_parser):
-    subparser: argparse.ArgumentParser = sub_parser.add_parser(
+    parser: argparse.ArgumentParser = sub_parser.add_parser(
         "helm-values",
         help="Start the helm chart in non local environments",
         parents=[COMMON_OPTION_PARSER],
     )
-    subparser.set_defaults(func=helm_values)
-    subparser.add_argument("uri", help="aladdin://CLUSTER_CODE/REPO_NAME/path/to/chart")
-    subparser.add_argument(
+    parser.set_defaults(func=helm_values)
+    parser.add_argument("uri", help="aladdin://CLUSTER_CODE/REPO_NAME/path/to/chart")
+    parser.add_argument(
         "git_ref",
         help="which git hash or tag or branch to get values from",
     )
