@@ -27,7 +27,7 @@ from aladdin.lib.utils import working_directory
 def parse_args(sub_parser):
     parser: argparse.ArgumentParser = sub_parser.add_parser(
         "helm-values",
-        help="Start the helm chart in non local environments",
+        help="Given a git ref, compute helm values for the given cluster, repo, and chart",
         parents=[COMMON_OPTION_PARSER],
     )
     parser.set_defaults(func=helm_values)
