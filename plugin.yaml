@@ -1,0 +1,9 @@
+name: "aladdin"
+version: "0.0.1"
+usage: "get values from aladdin"
+description: "get values from aladdin"
+command: $HELM_PLUGIN_DIR/scripts/helm_plugin.sh
+downloaders:
+- command: scripts/helm_plugin.sh
+  protocols:
+  - "aladdin"

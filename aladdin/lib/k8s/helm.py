@@ -12,7 +12,7 @@ from aladdin.lib import logging
 logger = logging.getLogger(__name__)
 
 
-class Helm(object):
+class Helm:
     PACKAGE_DIR_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/"
     PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{chart_name}.{git_ref}.tgz"
 
