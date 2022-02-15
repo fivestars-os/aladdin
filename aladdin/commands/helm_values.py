@@ -33,16 +33,14 @@ def parse_args(sub_parser):
         parents=[COMMON_OPTION_PARSER, CHART_OPTION_PARSER],
     )
     parser.set_defaults(func=helm_values)
+    parser.add_argument("uri", help="aladdin://CLUSTER_CODE/REPO_NAME?chart=chart_name&git-ref=ref")
     parser.add_argument(
-        "uri",
-        help="aladdin://CLUSTER_CODE/REPO_NAME?chart=chart_name"
-    )
-    parser.add_argument(
-        "git-ref",
+        "--git-ref",
         help="which git hash or tag or branch to get values from",
     )
     parser.add_argument(
-        "-A", "--all",
+        "-A",
+        "--all",
         help="show all values, including default values",
         dest="all_values",
         action="store_true",
@@ -51,7 +49,13 @@ def parse_args(sub_parser):
 
 @container_command
 @expand_namespace
-def helm_values(uri: str, namespace: str, git_ref: str, chart: str = None, all_values: bool = False):
+def helm_values(
+    namespace: str,
+    uri: str,
+    git_ref: str = None,
+    chart: str = None,
+    all_values: bool = False,
+):
     uri = urlparse(uri)
     params = dict(parse_qsl(uri.query))
     os.environ["CLUSTER_CODE"] = uri.netloc
@@ -59,7 +63,10 @@ def helm_values(uri: str, namespace: str, git_ref: str, chart: str = None, all_v
     ClusterRules(namespace=namespace)
     GIT_ACCOUNT = load_git_configs()["account"]
     git_url = f"git@github.com:{GIT_ACCOUNT}/{REPO_NAME}.git"
-    git_ref = Git.extract_hash(git_ref, git_url)
+    git_ref = Git.extract_hash(
+        git_ref or params.get("git-ref") or Git.get_full_hash(),
+        git_url
+    )
 
     values = {
         "deploy.ecr": PublishRules().docker_registry,
@@ -101,12 +108,16 @@ def helm_values(uri: str, namespace: str, git_ref: str, chart: str = None, all_v
             args = []
             if all_values:
                 args.append(f"--values={CHART_PATH}/values.yaml")
-            args.extend([
-                f"--values={values_file}"
-                for values_file in Helm().find_values(
-                    CHART_PATH, ClusterRules().cluster_name, ClusterRules().namespace
-                )
-            ])
+            args.extend(
+                [
+                    f"--values={values_file}"
+                    for values_file in Helm().find_values(
+                        CHART_PATH,
+                        ClusterRules().cluster_name,
+                        ClusterRules().namespace,
+                    )
+                ]
+            )
             for key, value in values.items():
                 args.extend(["--set", f"{key}={value}"])
 
