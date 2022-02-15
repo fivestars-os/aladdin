@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 from urllib.parse import urlparse
 
-from aladdin.config import load_git_configs
+from aladdin.config import PROJECT_ROOT, load_git_configs
 from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, expand_namespace
 from aladdin.lib.aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
 from aladdin.lib.cluster_rules import ClusterRules
@@ -86,7 +86,7 @@ def helm_values(
 
             args.extend(["--set-string", f"deploy.imageTag={git_ref}"])
             subprocess.run(
-                ["helm", "merge-values", *args],
+                ["helm", "template", PROJECT_ROOT / "aladdin/charts/merger", *args],
                 capture_output=False,
                 check=True,
             )
