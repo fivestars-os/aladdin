@@ -86,7 +86,7 @@ def helm_values(uri: str, namespace: str, git_ref: str):
         with working_directory(tmpdirname):
             values["project.name"] = ProjectConf().name
             if not CHART_PATH:
-                CHART_PATH = ProjectConf().get_default_helm_chart()
+                CHART_PATH = os.path.relpath(ProjectConf().get_default_helm_chart())
             args = [
                 f"--values={values_file}"
                 for values_file in Helm().find_values(
