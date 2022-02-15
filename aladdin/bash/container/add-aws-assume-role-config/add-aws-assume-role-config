@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
+source "$SCRIPT_DIR/shared.sh"
 
 function add_aws_assume_role_config {
     # This command edits your aws config and credentials file to add aws_access_key_id,
@@ -8,7 +9,7 @@ function add_aws_assume_role_config {
     # $4 seconds.
 
     if ! "$BASTION_ACCOUNT_ENABLED"; then
-        echo >&2 "aladdin: error: bastion account is not enabled currently. update your aladdin-config to enable"
+        echoerr "aladdin: error: bastion account is not enabled currently. update your aladdin-config to enable"
         exit 1
     fi
 
@@ -26,7 +27,7 @@ function add_aws_assume_role_config {
             --query 'MFADevices[0].SerialNumber' --output text)"
 
         # Ask the user for their MFA token in yellow color
-        echo -ne '\e[33mPlease enter your AWS MFA token: \e[0m'; read -r token
+        echoerr -ne '\e[33mPlease enter your AWS MFA token: \e[0m'; read -r token
 
         payload="$(aws --profile $BASTION_ACCOUNT_PROFILE sts assume-role  \
             --role-arn $role --duration-seconds $duration --serial-number $mfa_serial \
