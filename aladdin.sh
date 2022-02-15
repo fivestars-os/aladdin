@@ -10,8 +10,8 @@ trap ctrl_trap INT
 # Set defaults on command line args
 ALADDIN_DEV=${ALADDIN_DEV:-false}
 INIT=false
-CLUSTER_CODE=LOCAL
-NAMESPACE=default
+CLUSTER_CODE=${CLUSTER_CODE:-LOCAL}
+NAMESPACE=${NAMESPACE:-default}
 IS_TERMINAL=true
 SKIP_PROMPTS=false
 KUBERNETES_VERSION="1.19.7"
@@ -39,7 +39,7 @@ function get_config_variables() {
         HOST_DIR=$(jq -r .host_dir $HOME/.aladdin/config/config.json)
         if [[ "$HOST_DIR" == null ]]; then
             # defaults to osx
-            HOST_DIR="/Users"
+            HOST_DIR="$HOME"
         fi
     fi
     # Get k3d service port
