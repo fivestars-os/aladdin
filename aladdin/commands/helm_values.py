@@ -1,66 +1,94 @@
+import logging
 import os
 import subprocess
-import sys
+import tempfile
 from urllib.parse import urlparse
 
-from aladdin.lib.arg_tools import expand_namespace, container_command
+from aladdin.config import load_git_configs
+from aladdin.lib.arg_tools import COMMON_OPTION_PARSER, expand_namespace, container_command
 from aladdin.lib.aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
 from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.lib.git import Git
 from aladdin.lib.k8s.helm import Helm
+from aladdin.lib.project_conf import ProjectConf
 from aladdin.lib.publish_rules import PublishRules
+from aladdin.lib.utils import working_directory
 
 
 def parse_args(sub_parser):
     subparser = sub_parser.add_parser(
         "helm-values", help="Start the helm chart in non local environments",
+        parents=[COMMON_OPTION_PARSER]
     )
     subparser.set_defaults(func=helm_values)
-    subparser.add_argument("uri", help="which project to deploy")
+    subparser.add_argument(
+        "uri",
+        help="aladdin://CLUSTER_CODE/REPO_NAME/path/to/chart"
+    )
+    subparser.add_argument("git_ref", help="which git hash or tag or branch to deploy")
 
 
 @container_command
 @expand_namespace
 def helm_values(
-    uri,
+    uri, namespace, git_ref
 ):
     uri = urlparse(uri)
     os.environ["CLUSTER_CODE"] = uri.netloc
-    ARGOCD_APP_NAME = os.getenv("ARGOCD_APP_NAME") or "mission-control"
-    NAMESPACE = os.getenv("HELM_NAMESPACE") or os.getenv("ARGOCD_APP_NAMESPACE") or "default"
-    ARGOCD_APP_REVISION = os.getenv("ARGOCD_APP_REVISION") or "main"
-    git_ref = ARGOCD_APP_REVISION[:Git.SHORT_HASH_SIZE]
-    cr = ClusterRules(namespace=NAMESPACE)
-    pr = PublishRules()
+    REPO_NAME, CHART_PATH = uri.path.lstrip("/").split("/", 1)
+    ClusterRules(namespace=namespace)
+    GIT_ACCOUNT = load_git_configs()["account"]
+    git_url = f"git@github.com:{GIT_ACCOUNT}/{REPO_NAME}.git"
+    git_ref = Git.extract_hash(git_ref, git_url)
 
     values = {
-        "deploy.ecr": pr.docker_registry,
-        "deploy.namespace": NAMESPACE,
-        "project.name": ARGOCD_APP_NAME,
-        "service.certificateScope": cr.service_certificate_scope,
-        "service.domainName": cr.service_domain_name_suffix,
-        "service.clusterCertificateScope": cr.cluster_certificate_scope,
-        "service.clusterDomainName": cr.cluster_domain_name_suffix,
-        "service.clusterName": cr.cluster_domain_name,  # aka root_dns
+        "deploy.ecr": PublishRules().docker_registry,
+        "deploy.namespace": ClusterRules().namespace,
+        "service.certificateScope": ClusterRules().service_certificate_scope,
+        "service.domainName": ClusterRules().service_domain_name_suffix,
+        "service.clusterCertificateScope": ClusterRules().cluster_certificate_scope,
+        "service.clusterDomainName": ClusterRules().cluster_domain_name_suffix,
+        "service.clusterName": ClusterRules().cluster_domain_name,  # aka root_dns
     }
-    if cr.certificate_lookup:
+    if ClusterRules().certificate_lookup:
         values.update({
             "service.certificateArn": get_service_certificate_arn(),
             "service.clusterCertificateArn": get_cluster_certificate_arn(),
         })
-    # Update with cluster rule values
-    values.update(cr.values)
+    values.update(ClusterRules().values)
 
 
-    args = [
-        f"--values={f}" for f in Helm().find_values("helm/mission-control", cr.cluster_name, NAMESPACE)
-    ]
-    for key, value in values.items():
-        args.extend(["--set", f"{key}={value}"])
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        try:
+            Git().clone(git_url, tmpdirname)
+        except subprocess.CalledProcessError:
+            logging.warn(f"Could not clone repo {git_url}. Does it exist?")
+            return
+        try:
+            Git().checkout(tmpdirname, git_ref)
+        except subprocess.CalledProcessError:
+            logging.warn(
+                f"Could not checkout to ref {git_ref} in repo {git_url}. Have you pushed it to remote?"
+            )
+            return
 
-    subprocess.run(
-        ["helm", "merge-values", *args, "--set-string", f"deploy.imageTag={git_ref}"],
-        capture_output=False,
-        check=True,
-    )
+        with working_directory(tmpdirname):
+            values["project.name"] = ProjectConf().name
+            args = [
+                f"--values={f}"
+                for f in Helm().find_values(
+                    CHART_PATH,
+                    ClusterRules().cluster_name,
+                    ClusterRules().namespace
+                )
+            ]
+            for key, value in values.items():
+                args.extend(["--set", f"{key}={value}"])
+
+            args.extend(["--set-string", f"deploy.imageTag={git_ref}"])
+            subprocess.run(
+                ["helm", "merge-values", *args],
+                capture_output=False,
+                check=True,
+            )
 

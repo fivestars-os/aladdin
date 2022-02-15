@@ -6,6 +6,7 @@ import sys
 from collections import namedtuple
 
 from aladdin.lib import logging
+from aladdin.lib.utils import singleton
 
 from jmespath import search
 
@@ -15,7 +16,8 @@ HelmContext = namedtuple("HelmContext", ["chart_home", "values_files", "name"])
 logger = logging.getLogger(__name__)
 
 
-class ProjectConf(object):
+@singleton
+class ProjectConf:
     """
     Manage the config of a project through the lamp.json file
     """
