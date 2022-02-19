@@ -192,7 +192,7 @@ class Helm:
         command = ["helm", "rollback", release_name, str(revision), "--namespace", namespace]
         subprocess.run(command, check=True)
 
-    def start(
+    def upgrade(
         self, release_name, chart_path, cluster_name, namespace, force=False, helm_args=None, **values
     ):
         if helm_args is None:
@@ -200,35 +200,47 @@ class Helm:
         if force:
             helm_args.append("--force")
         logger.info("Installing release %s in namespace %s", release_name, namespace)
-        return self._run(release_name, chart_path, cluster_name, namespace, helm_args, **values)
+        return self._upgrade(release_name, chart_path, cluster_name, namespace, helm_args, **values)
 
-    def dry_run(self, release_name, chart_path, cluster_name, namespace, helm_args=None, **values):
+    def dry_run(
+        self, release_name, chart_path, cluster_name, namespace, helm_args=None, **values
+    ):
         if helm_args is None:
             helm_args = []
         helm_args += ["--dry-run", "--debug"]
         logger.info(
             "Dry run installing release %s in namespace %s", release_name, namespace
         )
-        return self._run(release_name, chart_path, cluster_name, namespace, helm_args, **values)
+        return self._upgrade(release_name, chart_path, cluster_name, namespace, helm_args, **values)
 
-    def _run(self, release_name, chart_path, cluster_name, namespace, helm_args=None, **values):
+    def prepare_command(
+        self, base_command, chart_path, cluster_name, namespace, helm_args=None, **values
+    ):
+        for path in self.find_values(chart_path, cluster_name, namespace):
+            base_command.append("--values={}".format(path))
+
+        for set_name, set_val in values.items():
+            base_command.extend(["--set", "{}={}".format(set_name, set_val)])
+
+        if helm_args:
+            base_command.extend(helm_args)
+
+        return base_command
+
+    def _upgrade(
+        self, release_name, chart_path, cluster_name, namespace, helm_args=None, **values
+    ):
         command = [
-            "helm",
             "upgrade",
             release_name,
             chart_path,
             "--install",
-            "--namespace={}".format(namespace),
+            f"--namespace={namespace}",
         ]
 
-        for path in self.find_values(chart_path, cluster_name, namespace):
-            command.append("--values={}".format(path))
-
-        for set_name, set_val in values.items():
-            command.extend(["--set", "{}={}".format(set_name, set_val)])
-
-        if helm_args:
-            command.extend(helm_args)
+        command = self.prepare_command(
+            command, chart_path, cluster_name, namespace, helm_args=helm_args, **values
+        )
 
         logger.info("Executing: %s", " ".join(command))
-        subprocess.run(command, check=True)
+        subprocess.run(["helm", *command], check=True)

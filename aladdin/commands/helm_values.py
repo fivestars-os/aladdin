@@ -55,16 +55,14 @@ def helm_values(
     uri = urlparse(uri)
     params = dict(parse_qsl(uri.query))
     os.environ["CLUSTER_CODE"] = uri.netloc
-    REPO_NAME = uri.path.lstrip("/")
+    repo_name = uri.path.lstrip("/")
     ClusterRules(namespace=namespace)
-    GIT_ACCOUNT = load_git_configs()["account"]
-    git_url = f"git@github.com:{GIT_ACCOUNT}/{REPO_NAME}.git"
+    git_account = load_git_configs()["account"]
+    git_url = f"git@github.com:{git_account}/{repo_name}.git"
     git_ref = Git.extract_hash(
         git_ref or params.get("git-ref") or Git.get_full_hash(),
         git_url
     )
-
-    values = HelmRules.get_helm_values()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         try:
@@ -81,33 +79,27 @@ def helm_values(
             return sys.exit(1)
 
         with working_directory(tmpdirname):
-            values["project.name"] = ProjectConf().name
-            CHART_PATH = os.path.relpath(
+            chart_path = os.path.relpath(
                 ProjectConf().get_helm_chart_path(chart or params.get("chart"))
             )
-            args = []
-            if all_values:
-                args.append(f"--values={CHART_PATH}/values.yaml")
-            args.extend(
-                [
-                    f"--values={values_file}"
-                    for values_file in Helm().find_values(
-                        CHART_PATH,
-                        ClusterRules().cluster_name,
-                        ClusterRules().namespace,
-                    )
-                ]
-            )
-            for key, value in values.items():
-                args.extend(["--set", f"{key}={value}"])
-
-            args.extend(["--set-string", f"deploy.imageTag={git_ref}"])
             command = [
                 "helm",
                 "template",
                 str(PROJECT_ROOT / "aladdin/charts/merger"),
-                *args,
+                f"--namespace={namespace}"
             ]
+            if all_values:
+                command.append(f"--values={chart_path}/values.yaml")
+
+            command = Helm().prepare_command(
+                command,
+                chart_path,
+                ClusterRules().cluster_name,
+                ClusterRules().namespace,
+                helm_args=["--set-string", f"deploy.imageTag={git_ref}"],
+                **HelmRules.get_helm_values(),
+            )
+
             logging.info("Executing: %s", " ".join(command))
             subprocess.run(
                 command,

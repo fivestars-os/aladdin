@@ -71,7 +71,7 @@ def start(
                         helm_args=helm_args, **values
                     )
                 else:
-                    helm.start(
+                    helm.upgrade(
                         release_name, chart_path, cr.cluster_name, namespace,
                         force=force_helm, helm_args=helm_args, **values
                     )

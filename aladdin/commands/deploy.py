@@ -108,7 +108,7 @@ def deploy(
                 **values
             )
         else:
-            helm.start(
+            helm.upgrade(
                 HelmRules.get_release_name(chart),
                 helm_chart_path,
                 cr.cluster_name,
