@@ -192,11 +192,19 @@ function _handle_aws_config() {
         publish_profile="$(jq -r '.aws_profile' <<< $publish_config)"
         publish_role="$(jq -r '.aws_role_to_assume' <<< $publish_config)"
         publish_mfa_enabled="$(jq -r '.aws_role_mfa_required' <<< $publish_config)"
+        if aws configure list --profile "$publish_profile" >/dev/null; then
+            echo "Conflicting AWS profile already exists: $publish_profile; please check your ~/.aws/config and ~/.aws/credentials files"
+            exit 1
+        fi
         "$add_assume_role_config" "$publish_role" "$publish_profile" "$publish_mfa_enabled" 3600 # 1 hour
         # Need to add aws configuration for current cluster's aws account
         aws_profile="$(_extract_cluster_config_value bastion_account_profile_to_assume)"
         aws_role="$(_extract_cluster_config_value bastion_account_role_to_assume)"
         aws_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled)"
+        if aws configure list --profile "$aws_profile" >/dev/null; then
+            echo "Conflicting AWS profile already exists: $aws_profile; please check your ~/.aws/config and ~/.aws/credentials files"
+            exit 1
+        fi
         "$add_assume_role_config" "$aws_role" "$aws_profile" "$aws_mfa_enabled" 3600 # 1 hour
         # We reset AWS_DEFAULT_PROFILE here because that entry will be present in aws config files now
         export AWS_DEFAULT_PROFILE="$aws_default_profile_temp"
