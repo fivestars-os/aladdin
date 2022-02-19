@@ -1,5 +1,4 @@
 from aladdin.lib.arg_tools import add_namespace_argument, container_command
-from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.k8s.helm import Helm
@@ -26,9 +25,7 @@ def rollback_args(args):
 def rollback(project, num_versions, namespace, chart=None):
     helm = Helm()
 
-    hr = HelmRules(ClusterRules(namespace=namespace), chart or project)
-
-    helm.rollback_relative(hr, num_versions, namespace)
+    helm.rollback_relative(HelmRules.get_release_name(chart or project), num_versions, namespace)
 
     sync_ingress.sync_ingress(namespace)
     sync_dns.sync_dns(namespace)

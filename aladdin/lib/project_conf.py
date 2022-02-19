@@ -41,11 +41,10 @@ class ProjectConf:
             if os.path.isfile(lamp_path):
                 return cur_path, lamp_path
             cur_path, tail = os.path.split(cur_path)
-        logger.error(
+        raise FileNotFoundError(
             "Could not find lamp.json file. Please create one or retry from a project "
             "with a lamp.json file."
         )
-        sys.exit()
 
     def __init__(self, path="."):
         self.path, lamp_path = self.project_root_locate(path)

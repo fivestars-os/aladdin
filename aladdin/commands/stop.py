@@ -25,8 +25,7 @@ def stop_args(args):
 def stop(namespace, charts):
     pc = ProjectConf()
     helm = Helm()
-
-    cr = ClusterRules(namespace=namespace)
+    ClusterRules(namespace=namespace)
 
     if charts is None:
         # Stop each of the project's charts
@@ -37,8 +36,8 @@ def stop(namespace, charts):
         for chart_path in pc.get_helm_chart_paths():
             chart_name = os.path.basename(chart_path)
             if chart_name in charts:
-                hr = HelmRules(cr, chart_name)
-                helm.stop(hr, namespace)
+                release_name = HelmRules.get_release_name(chart_name)
+                helm.stop(release_name, namespace)
                 sync_required = True
     finally:
         # Sync if any helm.stop() call succeeded, even if a subsequent one failed

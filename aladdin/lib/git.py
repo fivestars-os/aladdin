@@ -58,8 +58,11 @@ class Git:
         """
         try:
             output = (
-                subprocess.check_output(["git", "ls-remote", url, ref], stderr=subprocess.DEVNULL)
-                .decode("utf-8")
+                subprocess.check_output(
+                    ["git", "ls-remote", url, ref],
+                    stderr=subprocess.DEVNULL,
+                    encoding="utf-8",
+                )
                 .split()
             )
             return output[0] if output else None

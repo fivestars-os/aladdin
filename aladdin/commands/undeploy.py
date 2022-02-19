@@ -25,11 +25,9 @@ def undeploy_args(args):
 @container_command
 def undeploy(project, namespace, chart=None):
     helm = Helm()
+    ClusterRules(namespace=namespace)
 
-    cr = ClusterRules(namespace=namespace)
-    hr = HelmRules(cr, chart or project)
-
-    helm.stop(hr, namespace)
+    helm.stop(HelmRules.get_release_name(chart or project), namespace)
 
     sync_ingress.sync_ingress(namespace)
     sync_dns.sync_dns(namespace)

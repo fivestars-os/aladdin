@@ -152,8 +152,7 @@ class Helm:
 
         return values
 
-    def stop(self, helm_rules, namespace):
-        release_name = helm_rules.release_name
+    def stop(self, release_name, namespace):
 
         command = ["helm", "delete", release_name, "--namespace", namespace]
 
@@ -177,8 +176,7 @@ class Helm:
         else:
             return False
 
-    def rollback_relative(self, helm_rules, num_versions, namespace):
-        release_name = helm_rules.release_name
+    def rollback_relative(self, release_name, num_versions, namespace):
 
         helm_list_command = ["helm", "list", "--namespace", namespace, "-o", "json"]
         output = json.loads(subprocess.run(helm_list_command, capture_output=True).stdout)
@@ -188,35 +186,32 @@ class Helm:
             logger.warning("Can't rollback that far")
             return
 
-        self.rollback(helm_rules, current_revision - num_versions, namespace)
+        self.rollback(release_name, current_revision - num_versions, namespace)
 
-    def rollback(self, helm_rules, revision, namespace):
-        release_name = helm_rules.release_name
+    def rollback(self, release_name, revision, namespace):
         command = ["helm", "rollback", release_name, str(revision), "--namespace", namespace]
         subprocess.run(command, check=True)
 
     def start(
-        self, helm_rules, chart_path, cluster_name, namespace, force=False, helm_args=None, **values
+        self, release_name, chart_path, cluster_name, namespace, force=False, helm_args=None, **values
     ):
         if helm_args is None:
             helm_args = []
         if force:
             helm_args.append("--force")
-        logger.info("Installing release %s in namespace %s", helm_rules.release_name, namespace)
-        return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
+        logger.info("Installing release %s in namespace %s", release_name, namespace)
+        return self._run(release_name, chart_path, cluster_name, namespace, helm_args, **values)
 
-    def dry_run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
+    def dry_run(self, release_name, chart_path, cluster_name, namespace, helm_args=None, **values):
         if helm_args is None:
             helm_args = []
         helm_args += ["--dry-run", "--debug"]
         logger.info(
-            "Dry run installing release %s in namespace %s", helm_rules.release_name, namespace
+            "Dry run installing release %s in namespace %s", release_name, namespace
         )
-        return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
+        return self._run(release_name, chart_path, cluster_name, namespace, helm_args, **values)
 
-    def _run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
-        release_name = helm_rules.release_name
-
+    def _run(self, release_name, chart_path, cluster_name, namespace, helm_args=None, **values):
         command = [
             "helm",
             "upgrade",

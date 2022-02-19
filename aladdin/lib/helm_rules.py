@@ -1,12 +1,44 @@
-class HelmRules(object):
-    def __init__(self, cluster_rules, chart_name):
-        self._cluster_rules = cluster_rules
-        self._chart_name = chart_name
+from contextlib import suppress
 
-    @property
-    def release_name(self):
+from .aws.certificate import (
+    get_cluster_certificate_arn,
+    get_service_certificate_arn,
+)
+from .cluster_rules import ClusterRules
+from .project_conf import ProjectConf
+from .publish_rules import PublishRules
+
+
+class HelmRules:
+    @staticmethod
+    def get_release_name(chart_name: str):
         # TODO there is a limit on the name size, we should check that
-        return "{0}-{1}".format(self._chart_name, self._cluster_rules.namespace)
+        return f"{chart_name}-{ClusterRules().namespace}"
 
-    def helm_values(self):
-        return dict()
+    @staticmethod
+    def get_helm_values():
+        values = {
+            "deploy.ecr": PublishRules().docker_registry,
+            "deploy.namespace": ClusterRules().namespace,
+            "service.certificateScope": ClusterRules().service_certificate_scope,
+            "service.domainName": ClusterRules().service_domain_name_suffix,
+            "service.clusterCertificateScope": ClusterRules().cluster_certificate_scope,
+            "service.clusterDomainName": ClusterRules().cluster_domain_name_suffix,
+            "service.clusterName": ClusterRules().cluster_domain_name,  # aka root_dns
+        }
+        if ClusterRules().certificate_lookup:
+            values.update(
+                {
+                    "service.certificateArn": get_service_certificate_arn(),
+                    "service.clusterCertificateArn": get_cluster_certificate_arn(),
+                }
+            )
+
+        with suppress(FileNotFoundError):
+            values.update({
+                "project.name": ProjectConf().name,
+            })
+
+        values.update(ClusterRules().values)
+
+        return values
