@@ -13,15 +13,11 @@ from aladdin.lib.arg_tools import (
     expand_namespace,
     container_command,
 )
-from aladdin.lib.aws.certificate import (
-    get_cluster_certificate_arn,
-    get_service_certificate_arn,
-)
 from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.lib.git import Git
+from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.project_conf import ProjectConf
-from aladdin.lib.publish_rules import PublishRules
 from aladdin.lib.utils import working_directory
 
 
@@ -68,23 +64,7 @@ def helm_values(
         git_url
     )
 
-    values = {
-        "deploy.ecr": PublishRules().docker_registry,
-        "deploy.namespace": ClusterRules().namespace,
-        "service.certificateScope": ClusterRules().service_certificate_scope,
-        "service.domainName": ClusterRules().service_domain_name_suffix,
-        "service.clusterCertificateScope": ClusterRules().cluster_certificate_scope,
-        "service.clusterDomainName": ClusterRules().cluster_domain_name_suffix,
-        "service.clusterName": ClusterRules().cluster_domain_name,  # aka root_dns
-    }
-    if ClusterRules().certificate_lookup:
-        values.update(
-            {
-                "service.certificateArn": get_service_certificate_arn(),
-                "service.clusterCertificateArn": get_cluster_certificate_arn(),
-            }
-        )
-    values.update(ClusterRules().values)
+    values = HelmRules.get_helm_values()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         try:
