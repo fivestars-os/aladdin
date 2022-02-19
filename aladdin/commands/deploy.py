@@ -98,24 +98,16 @@ def deploy(
         # Update with --set-override-values
         values.update(dict(value.split("=") for value in set_override_values))
 
-        if dry_run:
-            helm.dry_run(
-                HelmRules.get_release_name(chart),
-                helm_chart_path,
-                cr.cluster_name,
-                namespace,
-                helm_args=helm_args,
-                **values
-            )
-        else:
-            helm.upgrade(
-                HelmRules.get_release_name(chart),
-                helm_chart_path,
-                cr.cluster_name,
-                namespace,
-                force_helm,
-                helm_args=helm_args,
-                **values,
-            )
+        helm.upgrade(
+            HelmRules.get_release_name(chart),
+            helm_chart_path,
+            cr.cluster_name,
+            namespace,
+            force=force_helm,
+            dry_run=dry_run,
+            helm_args=helm_args,
+            **values,
+        )
+        if not dry_run:
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)

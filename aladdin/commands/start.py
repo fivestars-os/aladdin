@@ -55,7 +55,6 @@ def start(
     # Update with --set-override-values
     values.update(dict(value.split("=") for value in set_override_values))
 
-    sync_required = False
     try:
         for chart_path in pc.get_helm_chart_paths():
             chart_name = os.path.basename(chart_path)
@@ -65,19 +64,12 @@ def start(
                     helm_args.append(f"--values={os.path.join(chart_path, 'values', file_path)}")
             if chart_name in charts:
                 release_name = HelmRules.get_release_name(chart_name)
-                if dry_run:
-                    helm.dry_run(
-                        release_name, chart_path, cr.cluster_name, namespace,
-                        helm_args=helm_args, **values
-                    )
-                else:
-                    helm.upgrade(
-                        release_name, chart_path, cr.cluster_name, namespace,
-                        force=force_helm, helm_args=helm_args, **values
-                    )
-                    sync_required = True
+                helm.upgrade(
+                    release_name, chart_path, cr.cluster_name, namespace,
+                    force=force_helm, dry_run=dry_run, helm_args=helm_args, **values
+                )
     finally:
         # Sync if any helm.start() call succeeded, even if a subsequent one failed
-        if sync_required:
+        if not dry_run:
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)

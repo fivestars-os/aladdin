@@ -193,43 +193,22 @@ class Helm:
         subprocess.run(command, check=True)
 
     def upgrade(
-        self, release_name, chart_path, cluster_name, namespace, force=False, helm_args=None, **values
+        self,
+        release_name: str,
+        chart_path: str,
+        cluster_name: str,
+        namespace: str,
+        force=False,
+        dry_run=False,
+        helm_args: list = None,
+        **values,
     ):
         if helm_args is None:
             helm_args = []
         if force:
             helm_args.append("--force")
-        logger.info("Installing release %s in namespace %s", release_name, namespace)
-        return self._upgrade(release_name, chart_path, cluster_name, namespace, helm_args, **values)
-
-    def dry_run(
-        self, release_name, chart_path, cluster_name, namespace, helm_args=None, **values
-    ):
-        if helm_args is None:
-            helm_args = []
-        helm_args += ["--dry-run", "--debug"]
-        logger.info(
-            "Dry run installing release %s in namespace %s", release_name, namespace
-        )
-        return self._upgrade(release_name, chart_path, cluster_name, namespace, helm_args, **values)
-
-    def prepare_command(
-        self, base_command, chart_path, cluster_name, namespace, helm_args=None, **values
-    ):
-        for path in self.find_values(chart_path, cluster_name, namespace):
-            base_command.append("--values={}".format(path))
-
-        for set_name, set_val in values.items():
-            base_command.extend(["--set", "{}={}".format(set_name, set_val)])
-
-        if helm_args:
-            base_command.extend(helm_args)
-
-        return base_command
-
-    def _upgrade(
-        self, release_name, chart_path, cluster_name, namespace, helm_args=None, **values
-    ):
+        if dry_run:
+            helm_args.extend(["--dry-run", "--debug"])
         command = [
             "upgrade",
             release_name,
@@ -243,4 +222,24 @@ class Helm:
         )
 
         logger.info("Executing: %s", " ".join(command))
-        subprocess.run(["helm", *command], check=True)
+        return subprocess.run(["helm", *command], check=True)
+
+    def prepare_command(
+        self,
+        base_command: list,
+        chart_path: str,
+        cluster_name: str,
+        namespace: str,
+        helm_args: list = None,
+        **values,
+    ):
+        for path in self.find_values(chart_path, cluster_name, namespace):
+            base_command.append("--values={}".format(path))
+
+        for set_name, set_val in values.items():
+            base_command.extend(["--set", "{}={}".format(set_name, set_val)])
+
+        if helm_args:
+            base_command.extend(helm_args)
+
+        return base_command
