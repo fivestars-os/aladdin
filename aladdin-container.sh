@@ -87,7 +87,8 @@ function environment_init() {
 
     # Make sure we are on local or that cluster has been created before creating namespaces, etc
     if _is_cluster_ready; then
-        if [ ! -f $HOME/.ssh/config ]
+        # If we're doing ssh-agent forwarding add a dummy ssh config
+        if [ ! -f $HOME/.ssh/config ] && [ ! -z "$SSH_AUTH_SOCK" ]
         then
             mkdir -p $HOME/.ssh/
             git config --global url.ssh://git@github.com/.insteadOf https://github.com/
