@@ -108,7 +108,7 @@ case "$OSTYPE" in
       bin_path="$HOME"
       install_cmd="apt-get install -y"
       ;;
-    *) echoerr "Operating system not supported" >&2 ; exit 1 ;;
+    *) echoerr "Operating system not supported" ; exit 1 ;;
 esac
 
 ##################
