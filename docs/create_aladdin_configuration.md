@@ -126,7 +126,7 @@ The config.json file in each of your subdirectories in your config folder will c
 - root_dns section: the dns for your cluster. This should match the DNS_ZONE from your env.sh file in most cases. This is used by aladdin when it maps dns for each of your externally accessible services.
 - service_dns_suffix section: aladdin maps your services to `{service name}.{namespace}.{root_dns}`, and thus, will request a certificate for `*.{namespace}.{root_dns}`. By setting this, it will instead request a certificate for `*.{service_dns_suffix}`. Note that you will still need manually to map your service from `{service name}.{service_dns_suffix}` to `{service name}.{namespace}.{root_dns}`.
 - allowed_namespaces section: which namespaces you are allowed to interact with in this cluster
-- check_branch section (not shown in example): which branch on your remote repo to check against before deploying (e.g. set this to master for your production cluster)
+- check_branch section (not shown in example): check that the deployment hash matches the repository default branch
 - cluster_init section: which projects to install when running `aladdin cluster init`. You must specify the project, ref, and namespace.
 - namespace_init section (not shown in example): whenever a namespace is created, install any projects in this section. You must specify a project and a ref.
 - dual_dns_prefix_annotation_name section: you can use this annotation (in this example, it is "dns-name") in your service.yaml files to change the prefix for the dns your service is mapped to

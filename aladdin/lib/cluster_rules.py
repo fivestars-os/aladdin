@@ -70,7 +70,7 @@ class ClusterRules(object):
 
     @property
     def check_branch(self):
-        return self.rules.get("check_branch", None)
+        return bool(self.rules.get("check_branch", False))
 
     @property
     def is_local(self):

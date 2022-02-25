@@ -4,7 +4,6 @@ import os
 from aladdin.lib.arg_tools import (
     COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHARTS_OPTION_PARSER, container_command
 )
-from aladdin.lib.aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
 from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.lib.helm_rules import HelmRules
@@ -51,30 +50,11 @@ def start(
         # Start each of the project's charts
         charts = [os.path.basename(chart_path) for chart_path in pc.get_helm_chart_paths()]
 
-    # Values precedence is command < cluster rules < --set-override-values
-    # Start command values
-    values = {
-        "deploy.imageTag": "local",
-        "deploy.namespace": namespace,
-        "project.name": pc.name,
-        "service.certificateScope": cr.service_certificate_scope,
-        "service.domainName": cr.service_domain_name_suffix,
-        "service.clusterCertificateScope": cr.cluster_certificate_scope,
-        "service.clusterDomainName": cr.cluster_domain_name_suffix,
-        "service.clusterName": cr.cluster_domain_name,  # aka root_dns
-    }
-    if cr.certificate_lookup:
-        values.update({
-            "service.certificateArn": get_service_certificate_arn(),
-            "service.clusterCertificateArn": get_cluster_certificate_arn(),
-        })
-    # Update with cluster rule values
-    values.update(cr.values)
+    values = HelmRules.get_helm_values()
     helm_args = []
     # Update with --set-override-values
     values.update(dict(value.split("=") for value in set_override_values))
 
-    sync_required = False
     try:
         for chart_path in pc.get_helm_chart_paths():
             chart_name = os.path.basename(chart_path)
@@ -83,20 +63,13 @@ def start(
                 for file_path in values_files:
                     helm_args.append(f"--values={os.path.join(chart_path, 'values', file_path)}")
             if chart_name in charts:
-                hr = HelmRules(cr, chart_name)
-                if dry_run:
-                    helm.dry_run(
-                        hr, chart_path, cr.cluster_name, namespace,
-                        helm_args=helm_args, **values
-                    )
-                else:
-                    helm.start(
-                        hr, chart_path, cr.cluster_name, namespace,
-                        force=force_helm, helm_args=helm_args, **values
-                    )
-                    sync_required = True
+                release_name = HelmRules.get_release_name(chart_name)
+                helm.upgrade(
+                    release_name, chart_path, cr.cluster_name, namespace,
+                    force=force_helm, dry_run=dry_run, helm_args=helm_args, **values
+                )
     finally:
         # Sync if any helm.start() call succeeded, even if a subsequent one failed
-        if sync_required:
+        if not dry_run:
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)

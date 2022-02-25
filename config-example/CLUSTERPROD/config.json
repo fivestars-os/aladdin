@@ -1,5 +1,5 @@
 {
-    "check_branch": "master",
+    "check_branch": true,
     "service_dns_suffix": "example.com",
     "cluster_name": "CLUSTERPROD",
     "root_dns": "clusterprod.example.com",

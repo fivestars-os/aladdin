@@ -12,3 +12,6 @@ function _extract_cluster_config_value() {
         "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json" "$ALADDIN_CONFIG_DIR/default/config.json" \
         "$ALADDIN_CONFIG_DIR/config.json"
 }
+
+
+function echoerr() { cat <<< "$@" 1>&2; }

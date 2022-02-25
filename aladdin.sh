@@ -10,8 +10,8 @@ trap ctrl_trap INT
 # Set defaults on command line args
 ALADDIN_DEV=${ALADDIN_DEV:-false}
 INIT=false
-CLUSTER_CODE=LOCAL
-NAMESPACE=default
+CLUSTER_CODE=${CLUSTER_CODE:-LOCAL}
+NAMESPACE=${NAMESPACE:-default}
 IS_TERMINAL=true
 SKIP_PROMPTS=false
 KUBERNETES_VERSION="1.19.7"
@@ -23,7 +23,7 @@ SCRIPT_DIR="$ALADDIN_DIR/scripts"
 ALADDIN_BIN="$HOME/.aladdin/bin"
 PATH="$ALADDIN_BIN":"$PATH"
 
-source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
+source "$SCRIPT_DIR/shared.sh"
 
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
@@ -39,7 +39,7 @@ function get_config_variables() {
         HOST_DIR=$(jq -r .host_dir $HOME/.aladdin/config/config.json)
         if [[ "$HOST_DIR" == null ]]; then
             # defaults to osx
-            HOST_DIR="/Users"
+            HOST_DIR="$HOME"
         fi
     fi
     # Get k3d service port
@@ -115,15 +115,15 @@ function _start_k3d() {
 
 function check_or_start_k3d() {
     if docker info | grep "Cgroup Version: 2" > /dev/null && [[ "$KUBERNETES_VERSION" == "1.19.7" ]]; then
-        echo "ERROR: Current version of k3d is not compatible with cgroups v2"
-        echo "ERROR: If using Docker Desktop please downgrade to v4.2.0"
+        echoerr "ERROR: Current version of k3d is not compatible with cgroups v2"
+        echoerr "ERROR: If using Docker Desktop please downgrade to v4.2.0"
     fi
     if ! k3d cluster list | grep LOCAL > /dev/null; then
-        echo "Starting k3d LOCAL cluster... (this will take a moment)"
+        echoerr "Starting k3d LOCAL cluster... (this will take a moment)"
         _start_k3d
     else
         if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" > /dev/null; then
-            echo "k3d detected on the incorrect version, stopping and restarting"
+            echoerr "k3d detected on the incorrect version, stopping and restarting"
             k3d cluster delete LOCAL > /dev/null
             check_or_start_k3d
         fi
@@ -175,14 +175,14 @@ function pathnorm(){
 
 function confirm_production() {
     if $IS_TERMINAL ; then  # if this is an interactive shell and not jenkins or piped input, then verify
-        echo "Script is running in a terminal. Let us make user aware that this is production";
-        echo -ne '\033[;31mYou are on production. Please type "production" to continue: \033[0m'; read -r
+        echoerr "Script is running in a terminal. Let us make user aware that this is production";
+        echoerr -ne '\033[;31mYou are on production. Please type "production" to continue: \033[0m'; read -r
         if [[ ! $REPLY = "production" ]]; then
-            echo 'Exiting since you did not type production'
+            echoerr 'Exiting since you did not type production'
             exit 0
         fi
     else
-        echo "This is production environment. This script is NOT running in a terminal, hence supressing user prompt to type 'production'";
+        echoerr "This is production environment. This script is NOT running in a terminal, hence supressing user prompt to type 'production'";
     fi
 }
 
@@ -199,12 +199,12 @@ function handle_ostypes() {
             }
         ;;
         win*|bsd*|solaris*) # Windows
-            echo "Not sure how to launch docker here. Exiting ..."
+            echoerr "Not sure how to launch docker here. Exiting ..."
             return 1
         ;;
         *)
-            echo "unknown OS: $OSTYPE"
-            echo "Not sure how to launch docker here. Exiting ..."
+            echoerr "unknown OS: $OSTYPE"
+            echoerr "Not sure how to launch docker here. Exiting ..."
             return 1
         ;;
     esac
@@ -236,7 +236,7 @@ function prepare_ssh_options() {
     if $(jq -r '.ssh.agent // false' $HOME/.aladdin/config/config.json ); then
         # Give the container access to the agent socket and tell it where to find it
         if [[ -z ${SSH_AUTH_SOCK:-} ]]; then
-            echo >&2 "Aladdin is configured to use the host's ssh agent (ssh.agent == true) but SSH_AUTH_SOCK is empty."
+            echoerr "Aladdin is configured to use the host's ssh agent (ssh.agent == true) but SSH_AUTH_SOCK is empty."
             exit 1
         fi
         case "$OSTYPE" in

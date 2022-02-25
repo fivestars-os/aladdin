@@ -6,6 +6,7 @@ import sys
 from collections import namedtuple
 
 from aladdin.lib import logging
+from aladdin.lib.utils import singleton
 
 from jmespath import search
 
@@ -15,7 +16,8 @@ HelmContext = namedtuple("HelmContext", ["chart_home", "values_files", "name"])
 logger = logging.getLogger(__name__)
 
 
-class ProjectConf(object):
+@singleton
+class ProjectConf:
     """
     Manage the config of a project through the lamp.json file
     """
@@ -39,11 +41,10 @@ class ProjectConf(object):
             if os.path.isfile(lamp_path):
                 return cur_path, lamp_path
             cur_path, tail = os.path.split(cur_path)
-        logger.error(
+        raise FileNotFoundError(
             "Could not find lamp.json file. Please create one or retry from a project "
             "with a lamp.json file."
         )
-        sys.exit()
 
     def __init__(self, path="."):
         self.path, lamp_path = self.project_root_locate(path)
@@ -83,6 +84,14 @@ class ProjectConf(object):
         if isinstance(paths, str):
             paths = [paths]
         return [os.path.join(self.path, path) for path in paths]
+
+    def get_helm_chart_path(self, chart_name: str = None):
+        charts = self.get_helm_chart_paths()
+        for chart in charts:
+            if chart.endswith(chart_name or self.name):
+                return chart
+        if not chart_name:
+            return charts[0]
 
     def lamp_checker(self):
         try:
