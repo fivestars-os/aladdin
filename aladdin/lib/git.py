@@ -2,7 +2,7 @@ import subprocess
 from aladdin.lib.utils import working_directory
 
 
-class Git(object):
+class Git:
     SHORT_HASH_SIZE = 10
 
     @classmethod
@@ -58,8 +58,11 @@ class Git(object):
         """
         try:
             output = (
-                subprocess.check_output(["git", "ls-remote", url, ref], stderr=subprocess.DEVNULL)
-                .decode("utf-8")
+                subprocess.check_output(
+                    ["git", "ls-remote", url, ref],
+                    stderr=subprocess.DEVNULL,
+                    encoding="utf-8",
+                )
                 .split()
             )
             return output[0] if output else None

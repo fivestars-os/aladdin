@@ -55,7 +55,7 @@ function which_exists(){
     done
     return 1
 }
-
+function echoerr() { cat <<< "$@" 1>&2; }
 
 
 hash_cmd="$(which_exists md5sum md5)"
@@ -106,14 +106,10 @@ case "$OSTYPE" in
     jenkins*)
       platform=jenkins
       bin_path="$HOME"
-      echo $bin_path
       install_cmd="apt-get install -y"
       ;;
-    *) echo "Operating system not supported" >&2 ; exit 1 ;;
+    *) echoerr "Operating system not supported" ; exit 1 ;;
 esac
-
-# We could do that
-#bin_path="$(echo "$PATH" | cut -d: -f1)"
 
 ##################
 # Output functions
@@ -386,7 +382,7 @@ function main(){
 
       mkdir -p "$ALADDIN_BIN"
 
-      echo "platform is $platform"
+      echoerr "platform is $platform"
         # Launch the checks
         case "$platform" in
             win)

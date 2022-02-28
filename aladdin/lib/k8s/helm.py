@@ -3,16 +3,16 @@ import json
 import os
 import subprocess
 import sys
+from os.path import join
 
 from botocore.exceptions import ClientError
-from os.path import join
 
 from aladdin.lib import logging
 
 logger = logging.getLogger(__name__)
 
 
-class Helm(object):
+class Helm:
     PACKAGE_DIR_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/"
     PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{chart_name}.{git_ref}.tgz"
 
@@ -45,7 +45,7 @@ class Helm(object):
         finally:
             os.remove(package_path)
 
-    def pull_packages(self, project_name, publish_rules, git_ref, extract_dir):
+    def pull_packages(self, project_name, publish_rules, git_ref, extract_dir, chart_name=None):
         """
         Retrieve all charts published for this project at this git_ref.
 
@@ -55,6 +55,7 @@ class Helm(object):
         :param publish_rules: Details for accessing the S3 bucket.
         :param git_ref: The version of the chart(s) to retrieve.
         :param extract_dir: Where to place the downloaded charts.
+        :param chart_name: Specific chart to pull.
         """
         # List the contents of the publish "directory" and find
         # everything that looks like a chart.
@@ -63,11 +64,11 @@ class Helm(object):
             for obj in publish_rules.s3_bucket.objects.filter(
                 Prefix=self.PACKAGE_DIR_PATH.format(project_name=project_name, git_ref=git_ref)
             )
-            if obj.key.endswith(f".{git_ref}.tgz")
+            if obj.key.endswith(f"{chart_name}.{git_ref}.tgz" if chart_name else f".{git_ref}.tgz")
         ]
 
         if not package_keys:
-            logger.error(f"No published charts found for: {project_name} at {git_ref}")
+            logger.error(f"No published charts found for: {chart_name or project_name} in {project_name}@{git_ref}")
             sys.exit(1)
 
         # Download the chart archives and extract the contents into their own chart sub-directories
@@ -151,8 +152,7 @@ class Helm(object):
 
         return values
 
-    def stop(self, helm_rules, namespace):
-        release_name = helm_rules.release_name
+    def stop(self, release_name, namespace):
 
         command = ["helm", "delete", release_name, "--namespace", namespace]
 
@@ -176,8 +176,7 @@ class Helm(object):
         else:
             return False
 
-    def rollback_relative(self, helm_rules, num_versions, namespace):
-        release_name = helm_rules.release_name
+    def rollback_relative(self, release_name, num_versions, namespace):
 
         helm_list_command = ["helm", "list", "--namespace", namespace, "-o", "json"]
         output = json.loads(subprocess.run(helm_list_command, capture_output=True).stdout)
@@ -187,52 +186,60 @@ class Helm(object):
             logger.warning("Can't rollback that far")
             return
 
-        self.rollback(helm_rules, current_revision - num_versions, namespace)
+        self.rollback(release_name, current_revision - num_versions, namespace)
 
-    def rollback(self, helm_rules, revision, namespace):
-        release_name = helm_rules.release_name
+    def rollback(self, release_name, revision, namespace):
         command = ["helm", "rollback", release_name, str(revision), "--namespace", namespace]
         subprocess.run(command, check=True)
 
-    def start(
-        self, helm_rules, chart_path, cluster_name, namespace, force=False, helm_args=None, **values
+    def upgrade(
+        self,
+        release_name: str,
+        chart_path: str,
+        cluster_name: str,
+        namespace: str,
+        force=False,
+        dry_run=False,
+        helm_args: list = None,
+        **values,
     ):
         if helm_args is None:
             helm_args = []
         if force:
             helm_args.append("--force")
-        logger.info("Installing release %s in namespace %s", helm_rules.release_name, namespace)
-        return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
-
-    def dry_run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
-        if helm_args is None:
-            helm_args = []
-        helm_args += ["--dry-run", "--debug"]
-        logger.info(
-            "Dry run installing release %s in namespace %s", helm_rules.release_name, namespace
-        )
-        return self._run(helm_rules, chart_path, cluster_name, namespace, helm_args, **values)
-
-    def _run(self, helm_rules, chart_path, cluster_name, namespace, helm_args=None, **values):
-        release_name = helm_rules.release_name
-
+        if dry_run:
+            helm_args.extend(["--dry-run", "--debug"])
         command = [
-            "helm",
             "upgrade",
             release_name,
             chart_path,
             "--install",
-            "--namespace={}".format(namespace),
+            f"--namespace={namespace}",
         ]
 
-        for path in self.find_values(chart_path, cluster_name, namespace):
-            command.append("--values={}".format(path))
-
-        for set_name, set_val in values.items():
-            command.extend(["--set", "{}={}".format(set_name, set_val)])
-
-        if helm_args:
-            command.extend(helm_args)
+        command = self.prepare_command(
+            command, chart_path, cluster_name, namespace, helm_args=helm_args, **values
+        )
 
         logger.info("Executing: %s", " ".join(command))
-        subprocess.run(command, check=True)
+        return subprocess.run(["helm", *command], check=True)
+
+    def prepare_command(
+        self,
+        base_command: list,
+        chart_path: str,
+        cluster_name: str,
+        namespace: str,
+        helm_args: list = None,
+        **values,
+    ):
+        for path in self.find_values(chart_path, cluster_name, namespace):
+            base_command.append("--values={}".format(path))
+
+        for set_name, set_val in values.items():
+            base_command.extend(["--set", "{}={}".format(set_name, set_val)])
+
+        if helm_args:
+            base_command.extend(helm_args)
+
+        return base_command

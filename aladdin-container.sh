@@ -17,24 +17,24 @@ export SCRIPT_DIR
 export ALADDIN_CONFIG_DIR
 export PY_MAIN
 
-source "$SCRIPT_DIR/shared.sh" # to load _extract_cluster_config_value
+source "$SCRIPT_DIR/shared.sh"
 
 # Test user's aws configuration
 function _test_aws_config() {
     # Test aws configuration for a given profile: $1
-    echo "Testing aws configuration..."
+    echoerr "Testing aws configuration..."
     local profile=$1
     # See if we the current aws profile configured
     if ! aws configure list --profile "$profile" >/dev/null; then
-        echo "Could not find aws profile: $profile; please check your ~/.aws/config and ~/.aws/credentials files"
+        echoerr "Could not find aws profile: $profile; please check your ~/.aws/config and ~/.aws/credentials files"
         exit 1
     fi
     # Do a test aws cli call for the current aws profile
     if ! aws sts get-caller-identity --profile "$profile" >/dev/null; then
-        echo "Your aws $profile credentials or config may be malformed; please check your ~/.aws/config and ~/.aws/credentials files"
+        echoerr "Your aws $profile credentials or config may be malformed; please check your ~/.aws/config and ~/.aws/credentials files"
         exit 1
     fi
-    echo "aws configuration check successful!"
+    echoerr "aws configuration check successful!"
 }
 
 function source_cluster_env() {
@@ -43,11 +43,11 @@ function source_cluster_env() {
 
     # check which env it is and import appropriate environment variables
     if [ ! -f "$env_file_path" ]; then
-        echo "Error: Unable to find environment file ${env_file_path} for specified cluster ${CLUSTER_CODE}"
+        echoerr "Error: Unable to find environment file ${env_file_path} for specified cluster ${CLUSTER_CODE}"
         exit 1
     fi
 
-    echo "Including environment variables from script ${env_file_path}"
+    echoerr "Including environment variables from script ${env_file_path}"
     source "$env_file_path"
 }
 
@@ -71,13 +71,13 @@ function exec_command_or_plugin() {
         exec "$plugin_path" "$@"
     fi
 
-    echo "Error: unknown command $command for aladdin"
+    echoerr "Error: unknown command $command for aladdin"
 }
 
 function environment_init() {
-    echo "START ENVIRONMENT CONFIGURATION============================================="
-    echo "CLUSTER_CODE = $CLUSTER_CODE"
-    echo "NAMESPACE = $NAMESPACE"
+    echoerr "START ENVIRONMENT CONFIGURATION============================================="
+    echoerr "CLUSTER_CODE = $CLUSTER_CODE"
+    echoerr "NAMESPACE = $NAMESPACE"
 
     _handle_aws_config
 
@@ -87,7 +87,13 @@ function environment_init() {
 
     # Make sure we are on local or that cluster has been created before creating namespaces, etc
     if _is_cluster_ready; then
-
+        # If we're doing ssh-agent forwarding add a dummy ssh config
+        if [ ! -f $HOME/.ssh/config ] && [ ! -z "$SSH_AUTH_SOCK" ]
+        then
+            mkdir -p $HOME/.ssh/
+            git config --global url.ssh://git@github.com/.insteadOf https://github.com/
+            echo -e "Host github.com\n\tStrictHostKeyChecking no\n\tForwardAgent yes\n" > $HOME/.ssh/config
+        fi
         if "$IS_LOCAL"; then
             mkdir -p $HOME/.kube/
             sed 's/127.0.0.1/172.17.0.1/g' $HOME/.kube_local/config > $HOME/.kube/config
@@ -107,7 +113,7 @@ function environment_init() {
         fi
     fi
 
-    echo "END ENVIRONMENT CONFIGURATION==============================================="
+    echoerr "END ENVIRONMENT CONFIGURATION==============================================="
 
 }
 
@@ -187,12 +193,22 @@ function _handle_aws_config() {
         publish_profile="$(jq -r '.aws_profile' <<< $publish_config)"
         publish_role="$(jq -r '.aws_role_to_assume' <<< $publish_config)"
         publish_mfa_enabled="$(jq -r '.aws_role_mfa_required' <<< $publish_config)"
+        if aws configure list --profile "$publish_profile" &> /dev/null; then
+            echoerr "Conflicting AWS profile already exists: $publish_profile; please check your ~/.aws/config and ~/.aws/credentials files"
+            exit 1
+        fi
         "$add_assume_role_config" "$publish_role" "$publish_profile" "$publish_mfa_enabled" 3600 # 1 hour
-        # Need to add aws configuration for current cluster's aws account
         aws_profile="$(_extract_cluster_config_value bastion_account_profile_to_assume)"
-        aws_role="$(_extract_cluster_config_value bastion_account_role_to_assume)"
-        aws_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled)"
-        "$add_assume_role_config" "$aws_role" "$aws_profile" "$aws_mfa_enabled" 3600 # 1 hour
+        if [[ ! "$publish_profile" == "$aws_profile" ]]; then
+            # Need to add aws configuration for current cluster's aws account
+            aws_role="$(_extract_cluster_config_value bastion_account_role_to_assume)"
+            aws_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled)"
+            if aws configure list --profile "$aws_profile" &> /dev/null; then
+                echoerr "Conflicting AWS profile already exists: $aws_profile; please check your ~/.aws/config and ~/.aws/credentials files"
+                exit 1
+            fi
+            "$add_assume_role_config" "$aws_role" "$aws_profile" "$aws_mfa_enabled" 3600 # 1 hour
+        fi
         # We reset AWS_DEFAULT_PROFILE here because that entry will be present in aws config files now
         export AWS_DEFAULT_PROFILE="$aws_default_profile_temp"
     else

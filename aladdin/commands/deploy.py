@@ -7,7 +7,6 @@ import tempfile
 from aladdin.lib.arg_tools import (
     COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHART_OPTION_PARSER, container_command
 )
-from aladdin.lib.aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
 from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import sync_ingress, sync_dns
 from aladdin.config import load_git_configs
@@ -42,7 +41,7 @@ def deploy_args(args):
         args.project,
         args.git_ref,
         args.namespace,
-        args.chart,
+        args.chart or args.project,
         args.dry_run,
         args.force,
         args.force_helm,
@@ -71,45 +70,27 @@ def deploy(
         pr = PublishRules()
         helm = Helm()
         cr = ClusterRules(namespace=namespace)
-        helm_chart_path = "{}/{}".format(tmpdirname, chart or project)
-        hr = HelmRules(cr, chart or project)
+        helm_chart_path = "{}/{}".format(tmpdirname, chart)
         git_account = load_git_configs()["account"]
         repo = repo or project
         git_url = f"git@github.com:{git_account}/{repo}.git"
         git_ref = Git.extract_hash(git_ref, git_url)
 
-        if not force and cr.check_branch and Git.extract_hash(cr.check_branch, git_url) != git_ref:
+        if not force and cr.check_branch and Git.extract_hash("HEAD", git_url) != git_ref:
             logging.error(
-                f"You are deploying hash {git_ref} which does not match branch"
-                f" {cr.check_branch} on cluster {cr.cluster_name} for project"
-                f" {project}... exiting"
+                f"You are deploying hash {git_ref} which does not match default branch"
+                f" on cluster {cr.cluster_name} for project {project}... exiting"
             )
             sys.exit(1)
 
-        helm.pull_packages(project, pr, git_ref, tmpdirname)
+        helm.pull_packages(project, pr, git_ref, tmpdirname, chart_name=chart)
 
         # We need to use --set-string in case the git ref is all digits
         helm_args = ["--set-string", f"deploy.imageTag={git_ref}"]
-
-        # Values precedence is command < cluster rules < --set-override-values
-        # Deploy command values
-        values = {
-            "deploy.ecr": pr.docker_registry,
-            "deploy.namespace": namespace,
+        values = HelmRules.get_helm_values()
+        values.update({
             "project.name": project,
-            "service.certificateScope": cr.service_certificate_scope,
-            "service.domainName": cr.service_domain_name_suffix,
-            "service.clusterCertificateScope": cr.cluster_certificate_scope,
-            "service.clusterDomainName": cr.cluster_domain_name_suffix,
-            "service.clusterName": cr.cluster_domain_name,  # aka root_dns
-        }
-        if cr.certificate_lookup:
-            values.update({
-                "service.certificateArn": get_service_certificate_arn(),
-                "service.clusterCertificateArn": get_cluster_certificate_arn(),
-            })
-        # Update with cluster rule values
-        values.update(cr.values)
+        })
         # Add user-specified values files
         if values_files:
             for file_path in values_files:
@@ -117,24 +98,16 @@ def deploy(
         # Update with --set-override-values
         values.update(dict(value.split("=") for value in set_override_values))
 
-        if dry_run:
-            helm.dry_run(
-                hr,
-                helm_chart_path,
-                cr.cluster_name,
-                namespace,
-                helm_args=helm_args,
-                **values
-            )
-        else:
-            helm.start(
-                hr,
-                helm_chart_path,
-                cr.cluster_name,
-                namespace,
-                force_helm,
-                helm_args=helm_args,
-                **values,
-            )
+        helm.upgrade(
+            HelmRules.get_release_name(chart),
+            helm_chart_path,
+            cr.cluster_name,
+            namespace,
+            force=force_helm,
+            dry_run=dry_run,
+            helm_args=helm_args,
+            **values,
+        )
+        if not dry_run:
             sync_ingress.sync_ingress(namespace)
             sync_dns.sync_dns(namespace)

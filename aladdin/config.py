@@ -9,7 +9,7 @@ from aladdin.lib import logging
 logger = logging.getLogger(__name__)
 
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
+PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 ALADDIN_DOCKER_REPO = "fivestarsos/aladdin"
 
 

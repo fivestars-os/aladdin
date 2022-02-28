@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
+source "$SCRIPT_DIR/shared.sh"
 
 function run_bash {
     if "$IS_PROD"; then
@@ -7,7 +8,7 @@ function run_bash {
     else
         export PS1="$CLUSTER_CODE:$NAMESPACE> "
     fi
-    echo "Launching bash shell. Press CTRL+D to exit."
+    echoerr "Launching bash shell. Press CTRL+D to exit."
 
     # If authentication is enabled, switch to the AUTHENTICATION_DEFAULT_ROLE level
     if "$AUTHENTICATION_ENABLED"; then
