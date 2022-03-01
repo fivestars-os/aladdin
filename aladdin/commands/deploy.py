@@ -41,7 +41,7 @@ def deploy_args(args):
         args.project,
         args.git_ref,
         args.namespace,
-        args.chart or args.project,
+        args.chart,
         args.dry_run,
         args.force,
         args.force_helm,
@@ -64,6 +64,7 @@ def deploy(
     set_override_values=None,
     values_files=None
 ):
+    chart = chart or project
     if set_override_values is None:
         set_override_values = []
     with tempfile.TemporaryDirectory() as tmpdirname:
