@@ -54,6 +54,9 @@ def start(
     helm_args = []
     # Update with --set-override-values
     values.update(dict(value.split("=") for value in set_override_values))
+    values.update({
+        "deploy.imageTag": "local",
+    })
 
     try:
         for chart_path in pc.get_helm_chart_paths():
