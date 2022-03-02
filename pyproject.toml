@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aladdin"
-version = "1.19.7.23"
+version = "1.19.7.24"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
 include = [
