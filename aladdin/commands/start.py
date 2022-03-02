@@ -52,6 +52,9 @@ def start(
 
     values = HelmRules.get_helm_values()
     helm_args = []
+    values.update({
+        "deploy.imageTag": "local",
+    })
     # Update with --set-override-values
     values.update(dict(value.split("=") for value in set_override_values))
 
