@@ -45,7 +45,7 @@ class Git:
         """
         if not git_url:
             # There is no way to check anything
-            return value
+            return cls._full_hash_to_short_hash(str(value))
 
         ls_remote_res = cls._get_hash_ls_remote(value, git_url)
         if ls_remote_res:

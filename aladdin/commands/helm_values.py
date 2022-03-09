@@ -59,10 +59,9 @@ def helm_values(
     repo_name = uri.path.lstrip("/")
     ClusterRules(namespace=namespace)
     git_account = load_git_configs()["account"]
-    git_url = f"git@github.com:{git_account}/{repo_name}.git"
     git_ref = Git.extract_hash(
         git_ref or params.get("git-ref") or Git.get_full_hash(),
-        git_url
+        f"git@github.com:{git_account}/{repo_name}.git" if repo_name else None
     )
 
     with clone_and_checkout(repo_name, git_ref) as repo_dir:
