@@ -113,6 +113,10 @@ def clone_and_checkout(repo_name, githash):
         yield Git.get_base_directory()
         return
 
+    if not repo_name:
+        logging.error(f"No repo found or specified")
+        return sys.exit(1)
+
     git_account = load_git_configs()["account"]
     git_url = f"git@github.com:{git_account}/{repo_name}.git"
 
