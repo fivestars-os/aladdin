@@ -36,7 +36,7 @@ class Git:
     @classmethod
     def clean_working_tree(cls):
         try:
-            subprocess.check_output(["git", "diff" "--exit-code" "--quiet"], encoding="utf-8")
+            subprocess.check_output(["git", "diff", "--exit-code", "--quiet"], encoding="utf-8")
         except subprocess.CalledProcessError:
             return False
         else:
