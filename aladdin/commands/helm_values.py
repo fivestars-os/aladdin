@@ -103,13 +103,14 @@ def clone_and_checkout(repo_name, githash):
         current_repo = Git.get_repo()
         current_hash = Git.get_hash()
 
-    if all([
-        current_hash,
-        current_repo,
-        current_repo == repo_name or not repo_name,
-        current_hash == githash,
-    ]):
-        yield os.getcwd()
+    if (
+        current_hash and
+        current_repo and
+        (not repo_name or current_repo == repo_name) and
+        current_hash == githash and
+        Git.clean_working_tree()
+    ):
+        yield Git.get_base_directory()
         return
 
     git_account = load_git_configs()["account"]

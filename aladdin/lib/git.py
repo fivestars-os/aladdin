@@ -34,6 +34,19 @@ class Git:
         return subprocess.check_output(["git", "rev-parse", "HEAD"], encoding="utf-8").rstrip()
 
     @classmethod
+    def clean_working_tree(cls):
+        try:
+            subprocess.check_output(["git", "diff" "--exit-code" "--quiet"], encoding="utf-8")
+        except subprocess.CalledProcessError:
+            return False
+        else:
+            return True
+
+    @classmethod
+    def get_base_directory(cls):
+        return subprocess.check_output(["git", "rev-parse", "--show-toplevel"], encoding="utf-8").strip()
+
+    @classmethod
     def _full_hash_to_short_hash(cls, full_hash):
         return full_hash[: cls.SHORT_HASH_SIZE]
 
