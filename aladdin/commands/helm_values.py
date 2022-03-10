@@ -64,7 +64,7 @@ def helm_values(
         f"git@github.com:{git_account}/{repo_name}.git" if repo_name else None
     )
 
-    with clone_and_checkout(repo_name, git_ref) as repo_dir:
+    with clone_and_checkout(git_ref, repo_name) as repo_dir:
         with working_directory(repo_dir):
             chart_path = os.path.relpath(
                 ProjectConf().get_helm_chart_path(chart or params.get("chart"))
@@ -96,7 +96,7 @@ def helm_values(
 
 
 @contextmanager
-def clone_and_checkout(repo_name, githash):
+def clone_and_checkout(githash, repo_name=None):
     current_hash = None
     current_repo = None
     with suppress(subprocess.CalledProcessError):
@@ -106,7 +106,7 @@ def clone_and_checkout(repo_name, githash):
     if (
         current_hash and
         current_repo and
-        (not repo_name or current_repo == repo_name) and
+        (current_repo == repo_name or not repo_name) and
         current_hash == githash and
         Git.clean_working_tree()
     ):
