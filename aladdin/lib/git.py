@@ -21,9 +21,10 @@ class Git:
             subprocess.check_call(["git", "checkout", ref])
 
     @classmethod
-    def get_repo(cls):
+    def get_repo_name(cls):
         origin = subprocess.check_output(["git", "remote", "get-url", "origin"], encoding="utf-8").strip()
-        return os.path.basename(origin)[:-4]
+        slug = os.path.basename(origin)
+        return slug[:-4] if slug.endswith(".git") else slug
 
     @classmethod
     def get_hash(cls):

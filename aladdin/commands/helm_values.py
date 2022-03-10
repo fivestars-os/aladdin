@@ -100,7 +100,7 @@ def clone_and_checkout(githash, repo_name=None):
     current_hash = None
     current_repo = None
     with suppress(subprocess.CalledProcessError):
-        current_repo = Git.get_repo()
+        current_repo = Git.get_repo_name()
         current_hash = Git.get_hash()
 
     if (
