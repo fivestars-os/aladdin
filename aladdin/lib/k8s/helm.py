@@ -33,7 +33,7 @@ class Helm:
             version,
             "--app-version",
             git_hash,
-            chart_path
+            "."
         ], cwd=chart_path)
 
         try:
