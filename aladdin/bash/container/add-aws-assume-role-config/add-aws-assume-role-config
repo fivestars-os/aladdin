@@ -27,7 +27,7 @@ function add_aws_assume_role_config {
             --query 'MFADevices[0].SerialNumber' --output text)"
 
         # Ask the user for their MFA token in yellow color
-        echoerr -ne '\e[33mPlease enter your AWS MFA token: \e[0m'; read -r token
+        >&2 echo -ne '\e[33mPlease enter your AWS MFA token: \e[0m'; read -r token
 
         payload="$(aws --profile $BASTION_ACCOUNT_PROFILE sts assume-role  \
             --role-arn $role --duration-seconds $duration --serial-number $mfa_serial \
