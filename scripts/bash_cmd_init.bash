@@ -14,4 +14,4 @@ source <(kubectl completion bash)
 source <(helm completion bash)
 complete -C "$(which aws_completer)" aws
 
-[ -f /etc/profile.d/.kubectl_aliases ] && source /etc/profile.d/.kubectl_aliases
+[ -f /etc/profile.d/kubectl_aliases.sh ] && source /etc/profile.d/kubectl_aliases.sh
