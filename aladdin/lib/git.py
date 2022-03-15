@@ -1,3 +1,4 @@
+import os
 import subprocess
 from aladdin.lib.utils import working_directory
 
@@ -20,27 +21,45 @@ class Git:
             subprocess.check_call(["git", "checkout", ref])
 
     @classmethod
+    def get_repo_name(cls):
+        origin = subprocess.check_output(["git", "remote", "get-url", "origin"], encoding="utf-8").strip()
+        slug = os.path.basename(origin)
+        return slug[:-4] if slug.endswith(".git") else slug
+
+    @classmethod
     def get_hash(cls):
         return cls._full_hash_to_short_hash(cls.get_full_hash())
 
     @classmethod
     def get_full_hash(cls):
-        cmd = ["git", "rev-parse", "HEAD"]
-        return subprocess.check_output(cmd).decode("utf-8").rstrip()
+        return subprocess.check_output(["git", "rev-parse", "HEAD"], encoding="utf-8").rstrip()
+
+    @classmethod
+    def clean_working_tree(cls):
+        try:
+            subprocess.check_output(["git", "diff", "--exit-code", "--quiet"], encoding="utf-8")
+        except subprocess.CalledProcessError:
+            return False
+        else:
+            return True
+
+    @classmethod
+    def get_base_directory(cls):
+        return subprocess.check_output(["git", "rev-parse", "--show-toplevel"], encoding="utf-8").strip()
 
     @classmethod
     def _full_hash_to_short_hash(cls, full_hash):
         return full_hash[: cls.SHORT_HASH_SIZE]
 
     @classmethod
-    def extract_hash(cls, value, git_url):
+    def extract_hash(cls, value, git_url=None):
         """
         Get a hash out of whatever is the value given.
         value: can be a branch name, part of a hash
         """
         if not git_url:
             # There is no way to check anything
-            return value
+            return cls._full_hash_to_short_hash(str(value))
 
         ls_remote_res = cls._get_hash_ls_remote(value, git_url)
         if ls_remote_res:

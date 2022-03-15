@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from contextlib import contextmanager, suppress
 from urllib.parse import urlparse, parse_qsl
 
 from aladdin.config import PROJECT_ROOT, load_git_configs
@@ -58,27 +59,13 @@ def helm_values(
     repo_name = uri.path.lstrip("/")
     ClusterRules(namespace=namespace)
     git_account = load_git_configs()["account"]
-    git_url = f"git@github.com:{git_account}/{repo_name}.git"
     git_ref = Git.extract_hash(
         git_ref or params.get("git-ref") or Git.get_full_hash(),
-        git_url
+        f"git@github.com:{git_account}/{repo_name}.git" if repo_name else None
     )
 
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        try:
-            Git.clone(git_url, tmpdirname)
-        except subprocess.CalledProcessError:
-            logging.warn(f"Could not clone repo {git_url}. Does it exist?")
-            return sys.exit(1)
-        try:
-            Git.checkout(tmpdirname, git_ref)
-        except subprocess.CalledProcessError:
-            logging.warn(
-                f"Could not checkout to ref '{git_ref}' in repo {git_url}. Have you pushed it to remote?"
-            )
-            return sys.exit(1)
-
-        with working_directory(tmpdirname):
+    with clone_and_checkout(git_ref, repo_name) as repo_dir:
+        with working_directory(repo_dir):
             chart_path = os.path.relpath(
                 ProjectConf().get_helm_chart_path(chart or params.get("chart"))
             )
@@ -106,3 +93,44 @@ def helm_values(
                 capture_output=False,
                 check=True,
             )
+
+
+@contextmanager
+def clone_and_checkout(githash, repo_name=None):
+    current_hash = None
+    current_repo = None
+    with suppress(subprocess.CalledProcessError):
+        current_repo = Git.get_repo_name()
+        current_hash = Git.get_hash()
+
+    if (
+        current_hash and
+        current_repo and
+        (current_repo == repo_name or not repo_name) and
+        current_hash == githash and
+        Git.clean_working_tree()
+    ):
+        yield Git.get_base_directory()
+        return
+
+    if not repo_name:
+        logging.error(f"No repo found or specified")
+        return sys.exit(1)
+
+    git_account = load_git_configs()["account"]
+    git_url = f"git@github.com:{git_account}/{repo_name}.git"
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        try:
+            Git.clone(git_url, tmpdirname)
+        except subprocess.CalledProcessError:
+            logging.warn(f"Could not clone repo {git_url}. Does it exist?")
+            return sys.exit(1)
+        try:
+            Git.checkout(tmpdirname, githash)
+        except subprocess.CalledProcessError:
+            logging.warn(
+                f"Could not checkout to ref '{githash}' in repo {git_url}. Have you pushed it to remote?"
+            )
+            return sys.exit(1)
+        yield tmpdirname
