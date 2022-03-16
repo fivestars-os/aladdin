@@ -5,6 +5,7 @@ import subprocess
 import sys
 from os.path import join
 
+import yaml
 from botocore.exceptions import ClientError
 
 from aladdin.lib import logging
@@ -22,7 +23,8 @@ class Helm:
 
         logger.info("Building package")
 
-        charts_dir, chart_name = os.path.split(chart_path)
+        with open(os.path.join(chart_path, "Chart.yaml")) as chart_manifest:
+            chart_name = yaml.safe_load(chart_manifest)["name"]
 
         subprocess.check_call([
             "helm",
@@ -31,11 +33,11 @@ class Helm:
             version,
             "--app-version",
             git_hash,
-            chart_name
-        ], cwd=charts_dir)
+            "."
+        ], cwd=chart_path)
 
         try:
-            package_path = join(charts_dir, "{}-{}.tgz".format(chart_name, version))
+            package_path = join(chart_path, "{}-{}.tgz".format(chart_name, version))
             bucket_path = self.PACKAGE_PATH.format(
                 project_name=project_name, chart_name=chart_name, git_ref=git_hash
             )
