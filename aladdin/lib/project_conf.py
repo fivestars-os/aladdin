@@ -88,7 +88,7 @@ class ProjectConf:
     def get_helm_chart_path(self, chart_name: str = None):
         charts = self.get_helm_chart_paths()
         for chart in charts:
-            if chart.endswith(chart_name or self.name):
+            if os.path.basename(chart) == (chart_name or self.name):
                 return chart
         if not chart_name:
             return charts[0]
