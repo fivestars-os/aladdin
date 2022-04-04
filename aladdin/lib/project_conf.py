@@ -90,7 +90,7 @@ class ProjectConf:
         for chart in charts:
             if os.path.basename(chart) == (chart_name or self.name):
                 return chart
-        if not chart_name:
+        if not chart_name or len(charts) == 1:
             return charts[0]
 
     def lamp_checker(self):
