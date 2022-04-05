@@ -6,6 +6,9 @@ import sys
 import tempfile
 from contextlib import contextmanager, suppress
 from urllib.parse import urlparse, parse_qsl
+from typing import Optional
+
+import yaml
 
 from aladdin.config import PROJECT_ROOT, load_git_configs
 from aladdin.lib.arg_tools import (
@@ -65,9 +68,10 @@ def helm_values(
     )
 
     with clone_and_checkout(git_ref, repo_name) as repo_dir:
+        current_chart_name = get_current_chart_name()
         with working_directory(repo_dir):
-            chart_path = os.path.relpath(
-                ProjectConf().get_helm_chart_path(chart or params.get("chart"))
+            chart_path = os.path.abspath(
+                ProjectConf().get_helm_chart_path(chart or params.get("chart") or current_chart_name)
             )
             command = [
                 "helm",
@@ -134,3 +138,9 @@ def clone_and_checkout(githash, repo_name=None):
             )
             return sys.exit(1)
         yield tmpdirname
+
+
+def get_current_chart_name() -> Optional[str]:
+    with suppress(FileNotFoundError):
+        with open("Chart.yaml") as chart_manifest:
+            return yaml.safe_load(chart_manifest)["name"]
