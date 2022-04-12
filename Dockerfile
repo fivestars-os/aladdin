@@ -40,7 +40,8 @@ RUN apt-get update && \
     openssl \
     vim-nox \
     curl \
-    ssh
+    ssh \
+    unzip
 
 # also specified around line 15
 ARG POETRY_VERSION=1.1.12
@@ -48,6 +49,12 @@ RUN pip install --upgrade pip && \
     pip install poetry==$POETRY_VERSION
 
 # Update all needed tool versions here
+
+ARG AWS_CLI_VERSION=2.5.1
+RUN curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64-$AWS_CLI_VERSION.zip -o awscliv2.zip && \
+    unzip awscliv2.zip && \
+    ./aws/install && \
+    rm -rf aws && rm awscliv2.zip
 
 ARG AWS_IAM_AUTHENTICATOR_VERSION=1.21.2
 RUN curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/$AWS_IAM_AUTHENTICATOR_VERSION/2021-07-05/bin/linux/$(dpkg --print-architecture)/aws-iam-authenticator && \
