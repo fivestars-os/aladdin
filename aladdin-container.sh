@@ -19,24 +19,6 @@ export PY_MAIN
 
 source "$SCRIPT_DIR/shared.sh"
 
-# Test user's aws configuration
-function _test_aws_config() {
-    # Test aws configuration for a given profile: $1
-    echoerr "Testing aws configuration..."
-    local profile=$1
-    # See if we the current aws profile configured
-    if ! aws configure list --profile "$profile" >/dev/null; then
-        echoerr "Could not find aws profile: $profile; please check your ~/.aws/config and ~/.aws/credentials files"
-        exit 1
-    fi
-    # Do a test aws cli call for the current aws profile
-    if ! aws sts get-caller-identity --profile "$profile" >/dev/null; then
-        echoerr "Your aws $profile credentials or config may be malformed; please check your ~/.aws/config and ~/.aws/credentials files"
-        exit 1
-    fi
-    echoerr "aws configuration check successful!"
-}
-
 function source_cluster_env() {
     local env_file_path
     env_file_path="$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/env.sh"
@@ -79,8 +61,6 @@ function environment_init() {
     echoerr "CLUSTER_CODE = $CLUSTER_CODE"
     echoerr "NAMESPACE = $NAMESPACE"
 
-    _handle_aws_config
-
     # export AUTHENTICATION_ENABLED for change-permissions and bash command. By default it is false.
     # It will only get set to true if the cluster is ready and it is enabled in aladdin-config
     export AUTHENTICATION_ENABLED=false
@@ -118,8 +98,13 @@ function environment_init() {
 }
 
 function _is_cluster_ready() {
-    # Cluster is ready if we are on LOCAL or if we can pull kube config via kops
-    "$IS_LOCAL" || kops export kubecfg --name $CLUSTER_NAME --admin
+    # If not local, check if we can pull kube config via kops to determine if remote cluster is ready
+    if ! "$IS_LOCAL"; then
+        # Allow to use a different aws profile from aladdin config for kops command
+        KOPS_AWS_PROFILE="$(_extract_cluster_config_value kops | jq -re .aws_profile)" || KOPS_AWS_PROFILE=$AWS_PROFILE
+        # if using SSO, AWS_SDK_LOAD_CONFIG needs to be true
+        AWS_SDK_LOAD_CONFIG=true AWS_PROFILE=$KOPS_AWS_PROFILE kops export kubecfg --name $CLUSTER_NAME --admin
+    fi
 }
 
 function _handle_authentication_config() {
@@ -156,69 +141,6 @@ function _add_authentication_user_to_kubeconfig() {
       - $role_arn
       command: aws-iam-authenticator
 EOT
-}
-
-function _handle_aws_config() {
-    # This function does quite a few things with aws credentials/config files:
-    # 1) Move the mounted aws creds to ~/.aws
-    # 2) Checks if we have the BASTION_ACCOUNT_ENABLED configuration from our aladdin-config
-    # 3) If we do:
-    #        - export appropriate BASTION_ variables for other aladdin commands
-    #        - sanity test our aws configuration for the bastion account if INIT and not IS_LOCAL
-    #        - appropriately update our credentials/config files with the desired possible roles
-    #            - here we are calling the add-aws-assume-role-config aladdin command
-    # 4) If we do not:
-    #        - sanity test our aws configuration for the cluster's current aws account if INIT and not IS_LOCAL
-    # 5) Export AWS_PROFILE=$AWS_DEFAULT_PROFILE because kops uses the former
-
-    # Move aws credentials away from mount so we don't edit the host's aws files
-    cp -r /root/tmp/.aws /root/.aws
-    # See if bastion account is enabled
-    export BASTION_ACCOUNT_ENABLED="$(_extract_cluster_config_value bastion_account_enabled)"
-    if "$BASTION_ACCOUNT_ENABLED"; then
-        # Export BASTION_ACCOUNT_PROFILE, needed by add-aws-assume-role-config command
-        export BASTION_ACCOUNT_PROFILE="$(_extract_cluster_config_value bastion_account_profile)"
-        # Need to unset AWS_DEFAULT_PROFILE because aws requires that entry to exist even if we
-        # are specifying --profile to a separate present entry, which is expected in the bastion case
-        local aws_default_profile_temp="$AWS_DEFAULT_PROFILE"
-        unset AWS_DEFAULT_PROFILE
-        # Test aws config for bastion account
-        "$INIT" && _test_aws_config "$BASTION_ACCOUNT_PROFILE"
-        # Alias the add assume role config command
-        add_assume_role_config="$ALADDIN_DIR/aladdin/bash/container/add-aws-assume-role-config/add-aws-assume-role-config"
-        # Need to add aws configuration based on publish configuration.
-        # We need to do this because the publish ECR may be a different aws account than the one
-        # your cluster is provisioned in
-        publish_config="$(_extract_cluster_config_value publish)"
-        publish_profile="$(jq -r '.aws_profile' <<< $publish_config)"
-        publish_role="$(jq -r '.aws_role_to_assume' <<< $publish_config)"
-        publish_mfa_enabled="$(jq -r '.aws_role_mfa_required' <<< $publish_config)"
-        if aws configure list --profile "$publish_profile" &> /dev/null; then
-            echoerr "Conflicting AWS profile already exists: $publish_profile; please check your ~/.aws/config and ~/.aws/credentials files"
-            exit 1
-        fi
-        "$add_assume_role_config" "$publish_role" "$publish_profile" "$publish_mfa_enabled" 3600 # 1 hour
-        aws_profile="$(_extract_cluster_config_value bastion_account_profile_to_assume)"
-        if [[ ! "$publish_profile" == "$aws_profile" ]]; then
-            # Need to add aws configuration for current cluster's aws account
-            aws_role="$(_extract_cluster_config_value bastion_account_role_to_assume)"
-            aws_mfa_enabled="$(_extract_cluster_config_value bastion_account_mfa_enabled)"
-            if aws configure list --profile "$aws_profile" &> /dev/null; then
-                echoerr "Conflicting AWS profile already exists: $aws_profile; please check your ~/.aws/config and ~/.aws/credentials files"
-                exit 1
-            fi
-            "$add_assume_role_config" "$aws_role" "$aws_profile" "$aws_mfa_enabled" 3600 # 1 hour
-        fi
-        # We reset AWS_DEFAULT_PROFILE here because that entry will be present in aws config files now
-        export AWS_DEFAULT_PROFILE="$aws_default_profile_temp"
-    else
-        # Test aws config for current cluster's aws account if INIT and not IS_LOCAL
-        if "$INIT" && ! "$IS_LOCAL"; then
-            _test_aws_config "$AWS_DEFAULT_PROFILE"
-        fi
-    fi
-    # Kops uses AWS_PROFILE instead of AWS_DEFAULT_PROFILE
-    export AWS_PROFILE="$AWS_DEFAULT_PROFILE"
 }
 
 source_cluster_env
