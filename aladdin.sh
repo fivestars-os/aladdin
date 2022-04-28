@@ -285,9 +285,7 @@ function enter_docker_container() {
         -e "HOST_ADDR=$HOST_ADDR" \
         -e "command=$command" \
         `# Mount host credentials` \
-        `# Mount destination for aws creds will not be /root/.aws because we will possibly make` \
-        `# changes there that we don't want propagated on the host's ~/.aws` \
-        -v "$(pathnorm ~/.aws):/root/tmp/.aws" \
+        -v "$(pathnorm ~/.aws):/root/.aws" \
         -v "$(pathnorm ~/.kube):/root/.kube_local" \
         -v "$(pathnorm ~/.aladdin):/root/.aladdin" \
         -v "$(pathnorm $ALADDIN_CONFIG_DIR):/root/aladdin-config" \
