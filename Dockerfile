@@ -1,4 +1,4 @@
-FROM python:3.8.12-buster as build
+FROM python:3.10.4-bullseye as build
 
 WORKDIR /root/aladdin
 
@@ -12,10 +12,12 @@ RUN apt-get update && \
 RUN python -m venv /root/.venv
 
 ENV PATH /root/.venv/bin:$PATH
-# also specified around line 45
-ARG POETRY_VERSION=1.1.12
-RUN pip install --upgrade pip && \
-    pip install poetry==$POETRY_VERSION
+# also specified around line 48
+ARG POETRY_VERSION=1.1.13
+ENV PATH /root/.local/bin:$PATH
+RUN pip install --upgrade pip setuptools wheel && \
+    curl -sSL https://install.python-poetry.org -o install-poetry.py && \
+    python install-poetry.py --version $POETRY_VERSION
 ARG POETRY_VIRTUALENVS_CREATE="false"
 ARG POETRY_INSTALLER_PARALLEL="false"
 # Poetry needs this to find the venv we created
@@ -24,7 +26,7 @@ ARG VIRTUAL_ENV=/root/.venv
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root --no-dev
 
-FROM python:3.8.12-slim-buster
+FROM python:3.10.4-slim-bullseye
 
 # Remove the default $PS1 manipulation
 RUN rm /etc/bash.bashrc
@@ -43,9 +45,11 @@ RUN apt-get update && \
     ssh
 
 # also specified around line 15
-ARG POETRY_VERSION=1.1.12
-RUN pip install --upgrade pip && \
-    pip install poetry==$POETRY_VERSION
+ARG POETRY_VERSION=1.1.13
+ENV PATH /root/.local/bin:$PATH
+RUN pip install --upgrade pip setuptools wheel && \
+    curl -sSL https://install.python-poetry.org -o install-poetry.py && \
+    python install-poetry.py --version $POETRY_VERSION
 
 # Update all needed tool versions here
 
@@ -93,6 +97,7 @@ ENV PATH /root/.venv/bin:$PATH
 # Install aladdin
 COPY . .
 ARG POETRY_VIRTUALENVS_CREATE="false"
+ARG POETRY_INSTALLER_PARALLEL="false"
 # Poetry needs this to find the venv we created
 ARG VIRTUAL_ENV=/root/.venv
 RUN poetry install --no-dev
