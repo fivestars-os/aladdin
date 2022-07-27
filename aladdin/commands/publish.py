@@ -1,4 +1,5 @@
 import logging
+import os
 import subprocess
 import tempfile
 
@@ -124,7 +125,7 @@ def publish_clean(
                 f"Could not checkout to ref {ref} in repo {git_url}. Have you pushed it to remote?"
             )
             return
-        if init_submodules:
+        if init_submodules or os.path.exists(f"{tmpdirname}/.gitmodules"):
             try:
                 g.init_submodules(tmpdirname)
             except subprocess.CalledProcessError:
