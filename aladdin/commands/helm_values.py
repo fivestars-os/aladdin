@@ -45,6 +45,13 @@ def parse_args(sub_parser):
         dest="all_values",
         action="store_true",
     )
+    parser.add_argument(
+        "-o",
+        "--output",
+        help="output values to a file",
+        dest="output",
+        default=None,
+    )
 
 
 @container_command
@@ -55,6 +62,7 @@ def helm_values(
     git_ref: str = None,
     chart: str = None,
     all_values: bool = False,
+    output: str = None,
 ):
     uri = urlparse(uri)
     params = dict(parse_qsl(uri.query))
@@ -92,11 +100,16 @@ def helm_values(
             )
 
             logging.info("Executing: %s", " ".join(command))
-            subprocess.run(
+            result = subprocess.run(
                 command,
-                capture_output=False,
+                capture_output=output is not None,
                 check=True,
+                encoding="utf-8",
             )
+            if output:
+                with open(output, "w") as outputfile:
+                    outputfile.write(result.stdout)
+                logging.info("Values saved in: %s", output)
 
 
 @contextmanager
