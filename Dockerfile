@@ -64,20 +64,23 @@ ARG AWS_IAM_AUTHENTICATOR_VERSION=1.21.2
 RUN curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/$AWS_IAM_AUTHENTICATOR_VERSION/2021-07-05/bin/linux/$(dpkg --print-architecture)/aws-iam-authenticator && \
     chmod 755 /usr/local/bin/aws-iam-authenticator
 
-ARG DOCKER_VERSION=20.10.2
-RUN curl -L -o- https://download.docker.com/linux/static/stable/x86_64/docker-$DOCKER_VERSION.tgz | tar -zxvf - && \
-    cp docker/docker /usr/local/bin/docker && \
-    chmod 755 /usr/local/bin/docker
+ARG DOCKER_VERSION=20.10.17
+RUN curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && \
+    VERSION=$DOCKER_VERSION sh /tmp/get-docker.sh
 
 ARG DOCKER_COMPOSE_VERSION=1.29.2
 RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
     chmod 755 /usr/local/bin/docker-compose
 
+ARG DOCKER_COMPOSE_2_VERSION=v2.9.0
+RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_2_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose-2 && \
+    chmod 755 /usr/local/bin/docker-compose-2
+
 ARG KUBE_VERSION=1.19.7
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
-ARG HELM_VERSION=3.5.2
+ARG HELM_VERSION=3.9.2
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o get-helm-3.sh && \
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}
