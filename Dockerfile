@@ -46,7 +46,7 @@ RUN apt-get update && \
     unzip
 
 # also specified around line 15
-ARG POETRY_VERSION=1.1.13
+ARG POETRY_VERSION=1.1.14
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -54,14 +54,16 @@ RUN pip install --upgrade pip setuptools wheel && \
 
 # Update all needed tool versions here
 
-ARG AWS_CLI_VERSION=2.5.1
+ARG AWS_CLI_VERSION=2.7.1
 RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-$AWS_CLI_VERSION.zip -o awscliv2.zip && \
     unzip awscliv2.zip && \
     ./aws/install && \
     rm -rf aws && rm awscliv2.zip
 
-ARG AWS_IAM_AUTHENTICATOR_VERSION=1.21.2
-RUN curl -o /usr/local/bin/aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/$AWS_IAM_AUTHENTICATOR_VERSION/2021-07-05/bin/linux/$(dpkg --print-architecture)/aws-iam-authenticator && \
+ARG AWS_IAM_AUTHENTICATOR_VERSION=0.5.9
+RUN curl -L \
+        "https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v$AWS_IAM_AUTHENTICATOR_VERSION/aws-iam-authenticator_$AWS_IAM_AUTHENTICATOR_VERSION_$(uname -s)_$(dpkg --print-architecture)" \
+        -o /usr/local/bin/aws-iam-authenticator && \
     chmod 755 /usr/local/bin/aws-iam-authenticator
 
 ARG DOCKER_VERSION=20.10.17
@@ -80,7 +82,7 @@ ARG KUBE_VERSION=1.19.7
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
-ARG HELM_VERSION=3.8.2
+ARG HELM_VERSION=3.9.2
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o get-helm-3.sh && \
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}
