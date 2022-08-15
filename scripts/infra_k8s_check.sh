@@ -13,7 +13,7 @@ VERSION_K3D="4.4.4"
 #- from : https://github.com/kubernetes/kubernetes/releases
 VERSION_KUBECTL="1.19.7"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="3.5.2"
+VERSION_HELM="3.8.2"
 
 
 # This script is meant to check and test the necessary tools for using the infra tools.
