@@ -132,7 +132,7 @@ function _add_authentication_user_to_kubeconfig() {
 - name: $name
   user:
     exec:
-      apiVersion: client.authentication.k8s.io/v1alpha1
+      apiVersion: client.authentication.k8s.io/v1beta1
       args:
       - token
       - -i
