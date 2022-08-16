@@ -124,8 +124,8 @@ def clone_and_checkout(githash, repo_name=None):
         current_hash and
         current_repo and
         (current_repo == repo_name or not repo_name) and
-        current_hash == githash and
-        Git.clean_working_tree()
+        current_hash == githash
+        # Git.clean_working_tree()
     ):
         yield Git.get_base_directory()
         return
