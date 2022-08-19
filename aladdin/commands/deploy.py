@@ -80,7 +80,7 @@ def deploy(
         if not force and cr.check_branch and Git.extract_hash("HEAD", git_url) != git_ref:
             logging.error(
                 f"You are deploying hash {git_ref} which does not match default branch"
-                f" on cluster {cr.cluster_name} for project {project}... exiting"
+                f" on cluster {cr.cluster_domain_name} for project {project}... exiting"
             )
             sys.exit(1)
 
@@ -102,7 +102,7 @@ def deploy(
         helm.upgrade(
             HelmRules.get_release_name(chart),
             helm_chart_path,
-            cr.cluster_name,
+            cr.values_files,
             namespace,
             force=force_helm,
             dry_run=dry_run,
