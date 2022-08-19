@@ -1,6 +1,7 @@
 import os
 import boto3
 from distutils.util import strtobool
+from typing import List
 try:
     from functools import cached_property
 except ImportError:
@@ -48,7 +49,7 @@ class ClusterRules(object):
         return self.rules.get("service_dns_suffix", self.namespace_domain_name)
 
     @property
-    def cluster_domain_name(self):
+    def cluster_domain_name(self) -> str:
         """
         Alias to aladdin "root_dns" config value.
 
@@ -56,6 +57,15 @@ class ClusterRules(object):
         more appropriate terminology here in the code.
         """
         return self.root_dns
+
+    @property
+    def values_files(self) -> List[str]:
+        """
+        Alias to aladdin "values_files" config value.
+
+        Defaults to aladdin "cluster_name" config value for backwards compatibility
+        """
+        return self.rules.get("values_files", [self.cluster_name])
 
     @property
     def namespace_domain_name(self):
