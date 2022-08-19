@@ -93,7 +93,7 @@ def helm_values(
             command = Helm().prepare_command(
                 command,
                 chart_path,
-                ClusterRules().cluster_name,
+                ClusterRules().values_files,
                 ClusterRules().namespace,
                 helm_args=["--set-string", f"deploy.imageTag={git_ref}"],
                 **HelmRules.get_helm_values(),

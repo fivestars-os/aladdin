@@ -69,7 +69,7 @@ def start(
             if chart_name in charts:
                 release_name = HelmRules.get_release_name(chart_name)
                 helm.upgrade(
-                    release_name, chart_path, cr.cluster_name, namespace,
+                    release_name, chart_path, cr.values_files, namespace,
                     force=force_helm, dry_run=dry_run, helm_args=helm_args, **values
                 )
     finally:

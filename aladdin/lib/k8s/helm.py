@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 from os.path import join
+from typing import List
 
 import yaml
 from botocore.exceptions import ClientError
@@ -89,7 +90,7 @@ class Helm:
                 except FileNotFoundError:
                     pass
 
-    def find_values(self, chart_path, cluster_name, namespace):
+    def find_values(self, chart_path: str, values_files: List[str], namespace: str):
         """
         Find all possible values yaml files for override in increasing priority
         Values and overrides are defined/specified in helm args in a specific order
@@ -106,20 +107,28 @@ class Helm:
         # cluster_name could be an alias, "CLUSTER_CODE" is what is used in aladdin-config
         cluster_code = os.environ["CLUSTER_CODE"]
 
-        cluster_values_path = join(chart_path, "values", f"values.{cluster_name}.yaml")
-        if os.path.isfile(cluster_values_path):
-            logger.info("Found cluster values file")
-            values.append(cluster_values_path)
+        for values_file in values_files:
+            cluster_values_path = join(chart_path, "values", f"values.{values_file}.yaml")
+            if os.path.isfile(cluster_values_path):
+                logger.info("Found cluster values file")
+                values.append(cluster_values_path)
 
-        cluster_namespace_values_path = join(
-            chart_path, "values", f"values.{cluster_name}.{namespace}.yaml"
-        )
-        if os.path.isfile(cluster_namespace_values_path):
-            logger.info("Found cluster namespace values file")
-            values.append(cluster_namespace_values_path)
+            cluster_namespace_values_path = join(
+                chart_path, "values", f"values.{values_file}.{namespace}.yaml"
+            )
+            if os.path.isfile(cluster_namespace_values_path):
+                logger.info("Found cluster namespace values file")
+                values.append(cluster_namespace_values_path)
+
+            cluster_custom_values_path = join(
+                chart_path, "values", values_file
+            )
+            if os.path.isfile(cluster_custom_values_path):
+                logger.info("Found cluster custom values file")
+                values.append(cluster_custom_values_path)
 
         site_values_path = join(chart_path, "values", "site.yaml")  # Only usable on LOCAL
-        if cluster_name == "LOCAL" and os.path.isfile(site_values_path):
+        if cluster_code == "LOCAL" and os.path.isfile(site_values_path):
             logger.info("Found site values file")
             values.append(site_values_path)
 
@@ -198,7 +207,7 @@ class Helm:
         self,
         release_name: str,
         chart_path: str,
-        cluster_name: str,
+        values_files: List[str],
         namespace: str,
         force=False,
         dry_run=False,
@@ -220,7 +229,7 @@ class Helm:
         ]
 
         command = self.prepare_command(
-            command, chart_path, cluster_name, namespace, helm_args=helm_args, **values
+            command, chart_path, values_files, namespace, helm_args=helm_args, **values
         )
 
         logger.info("Executing: %s", " ".join(command))
@@ -230,12 +239,12 @@ class Helm:
         self,
         base_command: list,
         chart_path: str,
-        cluster_name: str,
+        values_files: List[str],
         namespace: str,
         helm_args: list = None,
         **values,
     ):
-        for path in self.find_values(chart_path, cluster_name, namespace):
+        for path in self.find_values(chart_path, values_files, namespace):
             base_command.append("--values={}".format(path))
 
         for set_name, set_val in values.items():
