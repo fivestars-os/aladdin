@@ -13,7 +13,7 @@ RUN python -m venv /root/.venv
 
 ENV PATH /root/.venv/bin:$PATH
 # also specified around line 48
-ARG POETRY_VERSION=1.1.14
+ARG POETRY_VERSION=1.2.0
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -46,7 +46,7 @@ RUN apt-get update && \
     unzip
 
 # also specified around line 15
-ARG POETRY_VERSION=1.1.14
+ARG POETRY_VERSION=1.2.0
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \

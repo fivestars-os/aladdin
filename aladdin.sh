@@ -321,11 +321,11 @@ while [[ $# -gt 0 ]]; do
     shift # past argument or value
 done
 
-exec_host_command "$@"
 get_host_addr
-exec_host_plugin "$@"
 check_cluster_alias
 get_config_variables
+exec_host_command "$@"
+exec_host_plugin "$@"
 check_and_handle_init
 set_cluster_helper_vars
 handle_ostypes
