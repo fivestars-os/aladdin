@@ -248,17 +248,17 @@ format_nongpl = ["idna", "jsonpointer (>1.13)", "rfc3339-validator", "rfc3986-va
 
 [[package]]
 name = "kubernetes"
-version = "17.17.0"
+version = "20.13.0"
 description = "Kubernetes python client"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 
 [package.dependencies]
 certifi = ">=14.05.14"
 google-auth = ">=1.0.1"
 python-dateutil = ">=2.5.3"
-pyyaml = ">=3.12"
+pyyaml = ">=5.4.1"
 requests = "*"
 requests-oauthlib = "*"
 setuptools = ">=21.0.0"
@@ -503,7 +503,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=6)", "pytest-black (>=
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "1b9734494472a2c723dd90ba1409806b1cbd3505d386a697509a10f57c38097d"
+content-hash = "bf71f5e51a0d9f072f6670817d2163ba8609c184c865ca28ca2dec283fcc55ad"
 
 [metadata.files]
 attrs = [
@@ -587,8 +587,8 @@ jsonschema = [
     {file = "jsonschema-3.2.0.tar.gz", hash = "sha256:c8a85b28d377cc7737e46e2d9f2b4f44ee3c0e1deac6bf46ddefc7187d30797a"},
 ]
 kubernetes = [
-    {file = "kubernetes-17.17.0-py3-none-any.whl", hash = "sha256:225a95a0aadbd5b645ab389d941a7980db8cdad2a776fde64d1b43fc3299bde9"},
-    {file = "kubernetes-17.17.0.tar.gz", hash = "sha256:c69b318696ba797dcf63eb928a8d4370c52319f4140023c502d7dfdf2080eb79"},
+    {file = "kubernetes-20.13.0-py2.py3-none-any.whl", hash = "sha256:7d32ea7f555813a141a0e912e7695d88f7213bb632a860ba79a963b43f7a6b18"},
+    {file = "kubernetes-20.13.0.tar.gz", hash = "sha256:ce5e881c13dc56f21a243804f90bc3c507af93c380f505c00e392c823968e4de"},
 ]
 lazy-object-proxy = [
     {file = "lazy-object-proxy-1.7.1.tar.gz", hash = "sha256:d609c75b986def706743cdebe5e47553f4a5a1da9c5ff66d76013ef396b5a8a4"},
