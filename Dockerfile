@@ -43,7 +43,8 @@ RUN apt-get update && \
     vim-nox \
     curl \
     ssh \
-    unzip
+    unzip \
+    wget
 
 # also specified around line 15
 ARG POETRY_VERSION=1.2.1
