@@ -13,7 +13,7 @@ RUN python -m venv /root/.venv
 
 ENV PATH /root/.venv/bin:$PATH
 # also specified around line 48
-ARG POETRY_VERSION=1.1.14
+ARG POETRY_VERSION=1.2.1
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -43,10 +43,11 @@ RUN apt-get update && \
     vim-nox \
     curl \
     ssh \
-    unzip
+    unzip \
+    wget
 
 # also specified around line 15
-ARG POETRY_VERSION=1.1.14
+ARG POETRY_VERSION=1.2.1
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -54,7 +55,7 @@ RUN pip install --upgrade pip setuptools wheel && \
 
 # Update all needed tool versions here
 
-ARG AWS_CLI_VERSION=2.7.1
+ARG AWS_CLI_VERSION=2.7.24
 RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-$AWS_CLI_VERSION.zip -o awscliv2.zip && \
     unzip awscliv2.zip && \
     ./aws/install && \
@@ -74,7 +75,7 @@ ARG DOCKER_COMPOSE_VERSION=1.29.2
 RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
     chmod 755 /usr/local/bin/docker-compose
 
-ARG DOCKER_COMPOSE_2_VERSION=v2.9.0
+ARG DOCKER_COMPOSE_2_VERSION=v2.11.0
 RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_2_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose-2 && \
     chmod 755 /usr/local/bin/docker-compose-2
 
@@ -82,7 +83,7 @@ ARG KUBE_VERSION=1.19.7
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
-ARG HELM_VERSION=3.9.2
+ARG HELM_VERSION=3.9.4
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o get-helm-3.sh && \
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}
@@ -92,7 +93,7 @@ RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VE
     chmod +x ./kops && \
     mv ./kops /usr/local/bin/
 
-ARG ISTIO_VERSION=1.9.2
+ARG ISTIO_VERSION=1.13.7
 RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
     mv /istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
 

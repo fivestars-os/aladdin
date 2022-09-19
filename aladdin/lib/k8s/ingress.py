@@ -15,7 +15,9 @@ def _create_ingress_service_tuples(services, dual_dns_prefix_annotation_name):
             if dual_dns_prefix_annotation_name:
                 try:
                     # create service tuple from annotation dns
-                    annotation_name = service.metadata.annotations[dual_dns_prefix_annotation_name]
+                    annotation_name = service.metadata.annotations[
+                        dual_dns_prefix_annotation_name
+                    ]
                 except (AttributeError, KeyError, TypeError):
                     pass  # no annotation found
                 else:
@@ -26,33 +28,47 @@ def _create_ingress_service_tuples(services, dual_dns_prefix_annotation_name):
 
 
 def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress_info):
-    ingress = client.NetworkingV1beta1Ingress()
+    ingress = client.V1Ingress()
     # init metadata
     ingress.metadata = client.V1ObjectMeta()
     ingress.metadata.name = ingress_info["ingress_name"]
     # init spec
-    ingress.spec = client.NetworkingV1beta1IngressSpec()
+    ingress.spec = client.V1IngressSpec()
     ingress.spec.rules = []
-    service_tuples = _create_ingress_service_tuples(services, dual_dns_prefix_annotation_name)
+    service_tuples = _create_ingress_service_tuples(
+        services, dual_dns_prefix_annotation_name
+    )
     # A little bit of a hack to have the ingress put the port:443 entries before the port:80 entries,
     # so that the port:80 entries take precedence if the service name is the same. Without this
     # we get ssl errors when accessing services behind the ingress locally because of k3d internals
-    service_tuples = sorted(service_tuples, key = lambda x: x[1], reverse=True)
+    service_tuples = sorted(service_tuples, key=lambda x: x[1], reverse=True)
     for dns_prefix, port, service in service_tuples:
-        ingress_rule = client.NetworkingV1beta1IngressRule()
+        ingress_rule = client.V1IngressRule()
         ingress_rule.host = "%s.%s" % (dns_prefix, dns_suffix)
-        backend = client.NetworkingV1beta1IngressBackend(
-            service_name=service.metadata.name, service_port=port
+        backend = client.V1IngressBackend(
+            service=client.V1IngressServiceBackend(
+                port=client.V1ServiceBackendPort(
+                    number=port,
+                ),
+                name=service.metadata.name,
+            )
         )
-        ingress_path = [client.NetworkingV1beta1HTTPIngressPath(path="/", backend=backend)]
-        ingress_rule.http = client.NetworkingV1beta1HTTPIngressRuleValue(ingress_path)
+        ingress_rule.http = client.V1HTTPIngressRuleValue([
+            client.V1HTTPIngressPath(
+                path="/", backend=backend, path_type="ImplementationSpecific"
+            )
+        ])
 
         ingress.spec.rules.append(ingress_rule)
 
     if not ingress.spec.rules:
-        ingress_dummy_backend = client.NetworkingV1beta1IngressBackend(
-            service_name=ingress_info["ingress_controller_service_name"], service_port=80
+        ingress.spec.backend = client.V1IngressBackend(
+            service=client.V1IngressServiceBackend(
+                port=client.V1ServiceBackendPort(
+                    number=80,
+                ),
+                name=ingress_info["ingress_controller_service_name"],
+            )
         )
-        ingress.spec.backend = ingress_dummy_backend
 
     return ingress

@@ -2,7 +2,6 @@ import argparse
 import functools
 import json
 import os
-import subprocess
 import sys
 import pkg_resources
 from contextlib import suppress
@@ -43,7 +42,8 @@ def add_namespace_argument(arg_parser):
 def bash_wrapper():
     _, *args = sys.argv
     handler = PROJECT_ROOT / "aladdin.sh"
-    subprocess.run([str(handler), *args])
+    os.environ["PYTHONPATH"] = ":".join(sys.path)
+    os.execv(str(handler), ["aladdin.sh", *args])
 
 
 def container_command(func=None):
