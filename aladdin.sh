@@ -96,7 +96,9 @@ function check_and_handle_init() {
     if "$ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"; then
         "$SCRIPT_DIR"/infra_k8s_check.sh $infra_k8s_check_args
     fi
-    check_or_start_k3d
+    if "$IS_LOCAL"; then
+        check_or_start_k3d
+    fi
 }
 
 function _start_k3d() {
@@ -321,13 +323,13 @@ while [[ $# -gt 0 ]]; do
     shift # past argument or value
 done
 
-exec_host_command "$@"
+set_cluster_helper_vars
 get_host_addr
-exec_host_plugin "$@"
 check_cluster_alias
 get_config_variables
+exec_host_command "$@"
+exec_host_plugin "$@"
 check_and_handle_init
-set_cluster_helper_vars
 handle_ostypes
 prepare_volume_mount_options
 prepare_ssh_options

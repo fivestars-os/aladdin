@@ -41,7 +41,7 @@ class Kubernetes(object):
         configuration.assert_hostname = False
         self.core_v1_api = client.CoreV1Api()
         self.apps_v1_api = client.AppsV1Api()
-        self.networking_v1_beta1_api = client.NetworkingV1beta1Api()
+        self.networking_v1_api = client.NetworkingV1Api()
         self.namespace = namespace or get_current_namespace()
 
     def _kub_cmd(self, *args):
@@ -109,7 +109,7 @@ class Kubernetes(object):
         if obj_type == "deployment":
             get_func = getattr(self.apps_v1_api, get_func_name)
         elif obj_type == "ingress":
-            get_func = getattr(self.networking_v1_beta1_api, get_func_name)
+            get_func = getattr(self.networking_v1_api, get_func_name)
         else:
             get_func = getattr(self.core_v1_api, get_func_name)
         # Create a label selector filter if label_val was specified
@@ -260,13 +260,13 @@ class Kubernetes(object):
         return (self.get_ingresses(label_val, label_key) + [default])[0]
 
     def create_ingress(self, body):
-        self.networking_v1_beta1_api.create_namespaced_ingress(self.namespace, body)
+        self.networking_v1_api.create_namespaced_ingress(self.namespace, body)
 
     def update_ingress(self, name, body):
-        self.networking_v1_beta1_api.patch_namespaced_ingress(name, self.namespace, body)
+        self.networking_v1_api.patch_namespaced_ingress(name, self.namespace, body)
 
     def delete_ingress(self, name):
-        self.networking_v1_beta1_api.delete_namespaced_ingress(
+        self.networking_v1_api.delete_namespaced_ingress(
             name, self.namespace, body=client.V1DeleteOptions()
         )
 

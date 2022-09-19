@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aladdin"
-version = "1.19.7.35"
+version = "1.19.7.36"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
 include = [
@@ -12,16 +12,16 @@ include = [
 [tool.poetry.dependencies]
 python = "^3.7"
 boto3 = "^1.21.38"
-cached-property = "1.5.1"
-jmespath = "0.10.0"
-kubernetes = "12.0.01"
-coloredlogs = "^14.0"
+cached-property = "1.5.2"
+jmespath = "1.0.1"
+kubernetes = "20.13.0"
+coloredlogs = "^15.0.1"
 verboselogs = "^1.7"
-PyYAML = "^5.3.1"
+PyYAML = "^5.4.1"
 networkx = "^2.4"
 jinja2 = "^2.11.2"
 lazy-object-proxy = "^1.5.1"
-urllib3 = "1.26.6"
+urllib3 = "1.26.12"
 importlib-metadata = {version = "^1.0", python = "<3.8"}
 "backports.cached-property" = {version = "^1.0.1", python = "<3.8"}
 # jinja2 dependency, but there is a breaking change in v2.1.0
