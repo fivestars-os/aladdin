@@ -97,7 +97,7 @@ function check_and_handle_init() {
         "$SCRIPT_DIR"/infra_k8s_check.sh $infra_k8s_check_args
     fi
     if "$IS_LOCAL"; then
-        true || check_or_start_k3d
+        check_or_start_k3d
     fi
 }
 
