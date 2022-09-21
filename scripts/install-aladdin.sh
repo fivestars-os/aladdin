@@ -2,7 +2,7 @@
 
 ALADDIN_VERSION=${ALADDIN_VERSION:-$(\
 curl -s https://api.github.com/repos/fivestars-os/aladdin/releases/latest | \
-python3 -c 'import json,sys;print(json.load(sys.stdin)["tag_name"])' || \
+jq -r -j '.tag_name' || \
 echo -n "master")}
 
 INSTALLED_VERSION="$(python3 -m pipx list --json 2>/dev/null | jq -r -j '.venvs.aladdin.metadata.main_package.package_version // ""') || echo -n ''"
@@ -18,7 +18,7 @@ then
     python3 -m pipx ensurepath
 fi
 
-CURRENT_VERSION=$(python3 -m pipx list --json | jq -r .venvs.aladdin.metadata.main_package.package_version)
+CURRENT_VERSION=$(python3 -m pipx list --json | jq -r -j '.venvs.aladdin.metadata.main_package.package_version // ""')
 
 if [[ ! "$ALADDIN_VERSION" == "$CURRENT_VERSION" ]]; then
     python3 -m pipx install git+https://github.com/fivestars-os/aladdin.git@${ALADDIN_VERSION} --force
