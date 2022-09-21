@@ -67,7 +67,7 @@ RUN curl -L \
         -o /usr/local/bin/aws-iam-authenticator && \
     chmod 755 /usr/local/bin/aws-iam-authenticator
 
-ARG DOCKER_VERSION=20.10.17
+ARG DOCKER_VERSION=20.10.18
 RUN curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && \
     VERSION=$DOCKER_VERSION sh /tmp/get-docker.sh
 
