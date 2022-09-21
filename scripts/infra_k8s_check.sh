@@ -461,5 +461,5 @@ function main(){
 
 main
 if ! ${ALADDIN_DEV:-false} ; then
-    "$(cd "$(dirname $0)" ; pwd)"/install-aladdin.sh
+    env -u PYTHONPATH "$(cd "$(dirname $0)" ; pwd)"/install-aladdin.sh
 fi
