@@ -62,7 +62,7 @@ def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress
         ingress.spec.rules.append(ingress_rule)
 
     if not ingress.spec.rules:
-        ingress.spec.backend = client.V1IngressBackend(
+        ingress.spec.default_backend = client.V1IngressBackend(
             service=client.V1IngressServiceBackend(
                 port=client.V1ServiceBackendPort(
                     number=80,
