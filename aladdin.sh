@@ -27,6 +27,9 @@ source "$SCRIPT_DIR/shared.sh"
 
 # Check for cluster name aliases and alias them accordingly
 function check_cluster_alias() {
+    if [[ -z "${ALADDIN_CONFIG_DIR:-}" ]]; then
+        return 0
+    fi
     cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_DIR/config.json")
     if [[ $cluster_alias != null ]]; then
         export CLUSTER_CODE=$cluster_alias

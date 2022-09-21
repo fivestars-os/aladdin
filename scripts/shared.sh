@@ -8,6 +8,9 @@ function _extract_cluster_config_value() {
     # Try extracting config from cluster config.json, default config.json, then aladdin config.json
     local value
     value="$1"
+    if [[ -z "${ALADDIN_CONFIG_DIR:-}" ]]; then
+        return 0
+    fi
     jq -nr --arg value "$value" 'first(inputs | (if .[$value] == null then empty else .[$value] end))' \
         "$ALADDIN_CONFIG_DIR/$CLUSTER_CODE/config.json" "$ALADDIN_CONFIG_DIR/default/config.json" \
         "$ALADDIN_CONFIG_DIR/config.json"
