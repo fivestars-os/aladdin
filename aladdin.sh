@@ -352,6 +352,7 @@ done
 set_cluster_helper_vars
 get_host_addr
 check_cluster_alias
+get_config_variables
 exec_host_command "$@"
 exec_host_plugin "$@"
 check_and_handle_init
