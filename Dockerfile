@@ -13,7 +13,7 @@ RUN python -m venv /root/.venv
 
 ENV PATH /root/.venv/bin:$PATH
 # also specified around line 48
-ARG POETRY_VERSION=1.2.1
+ARG POETRY_VERSION=1.2.2
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -67,7 +67,7 @@ RUN curl -L \
         -o /usr/local/bin/aws-iam-authenticator && \
     chmod 755 /usr/local/bin/aws-iam-authenticator
 
-ARG DOCKER_VERSION=20.10.18
+ARG DOCKER_VERSION=20.10.20
 RUN curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && \
     VERSION=$DOCKER_VERSION sh /tmp/get-docker.sh
 
@@ -83,7 +83,7 @@ ARG KUBE_VERSION=1.23.10
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
-ARG HELM_VERSION=3.9.4
+ARG HELM_VERSION=3.10.1
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o get-helm-3.sh && \
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}

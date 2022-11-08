@@ -37,29 +37,9 @@ function check_cluster_alias() {
 }
 
 function get_config_variables() {
-    # Get host directory that will be mounted onto the docker container
+    LOCAL_CLUSTER_PROVIDER="k3d"
     if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        HOST_DIR=$(jq -r .host_dir $HOME/.aladdin/config/config.json)
-        if [[ "$HOST_DIR" == null ]]; then
-            # defaults to osx
-            HOST_DIR="$HOME"
-        fi
-    fi
-    # Get k3d service port
-    K3D_SERVICE_PORT=8081 # default value
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        K3D_SERVICE_PORT=$(jq -r .k3d.service_port $HOME/.aladdin/config/config.json)
-        if [[ "$K3D_SERVICE_PORT" == null ]]; then
-            K3D_SERVICE_PORT=8081
-        fi
-    fi
-    # Get k3d api port
-    K3D_API_PORT=6550 # default value
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        K3D_API_PORT=$(jq -r .k3d.api_port $HOME/.aladdin/config/config.json)
-        if [[ "$K3D_API_PORT" == null ]]; then
-            K3D_API_PORT=6550
-        fi
+        LOCAL_CLUSTER_PROVIDER=$(jq -r '.local_cluster_provider // "k3d"' $HOME/.aladdin/config/config.json)
     fi
 }
 
@@ -99,12 +79,22 @@ function check_and_handle_init() {
     if "$ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"; then
         "$SCRIPT_DIR"/infra_k8s_check.sh $infra_k8s_check_args
     fi
-    if "$IS_LOCAL"; then
+    if "$IS_LOCAL" && [[ "$LOCAL_CLUSTER_PROVIDER" == "k3d" ]]; then
         check_or_start_k3d
     fi
 }
 
 function _start_k3d() {
+    # Get k3d service port
+    K3D_SERVICE_PORT=8081 # default value
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        K3D_SERVICE_PORT=$(jq -r '.k3d.service_port // 8081' $HOME/.aladdin/config/config.json)
+    fi
+    # Get k3d api port
+    K3D_API_PORT=6550 # default value
+    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+        K3D_API_PORT=$(jq -r '.k3d.api_port // 6550' $HOME/.aladdin/config/config.json)
+    fi
     # start k3d cluster
     k3d cluster create LOCAL \
         --api-port "$K3D_API_PORT" \
@@ -230,6 +220,13 @@ function prepare_volume_mount_options() {
     fi
 
     if "$ALADDIN_DEV" || "$IS_LOCAL"; then
+        if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+            HOST_DIR=$(jq -r .host_dir $HOME/.aladdin/config/config.json)
+            if [[ "$HOST_DIR" == null ]]; then
+                # defaults to osx
+                HOST_DIR="$HOME"
+            fi
+        fi
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $HOST_DIR:/aladdin_root$HOST_DIR"
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -w /aladdin_root$(pathnorm "$PWD")"
     fi
@@ -244,17 +241,35 @@ function prepare_ssh_options() {
             echoerr "Aladdin is configured to use the host's ssh agent (ssh.agent == true) but SSH_AUTH_SOCK is empty."
             exit 1
         fi
-        LIMA_HOME="$HOME/Library/Application Support/rancher-desktop/lima"
-        if [[ ! -f "$LIMA_HOME/_config/override.yaml" ]]; then
-            cat <<-EOT >> $LIMA_HOME/_config/override.yaml
-				ssh:
-				  loadDotSSHPubKeys: true
-				  forwardAgent: true
-			EOT
-            echoerr "Rancher Desktop (Lima) overrides applied, you might need to restart for overrides to take effect"
+        if [[ "$LOCAL_CLUSTER_PROVIDER" == "rancher-desktop" ]]; then
+            case "$OSTYPE" in
+                darwin*) LIMA_HOME="$HOME/Library/Application Support/rancher-desktop/lima";;
+                linux*)
+                    LIMA_HOME="$HOME/.local/share/rancher-desktop/lima"
+                    if grep -i microsoft /proc/version &> /dev/null; then
+                        LIMA_HOME="$APPDATA/rancher-desktop/lima"
+                    fi
+                ;;
+            esac
+
+            if [[ ! -f "$LIMA_HOME/_config/override.yaml" ]]; then
+                cat <<-EOT >> $LIMA_HOME/_config/override.yaml
+					ssh:
+					  loadDotSSHPubKeys: true
+					  forwardAgent: true
+				EOT
+                echoerr "Rancher Desktop (Lima) overrides applied, you might need to restart for overrides to take effect"
+            fi
+            SSH_AGENT_SOCKET=$(rdctl shell bash -c "echo -n \$SSH_AUTH_SOCK")
+            SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AGENT_SOCKET} -v ${SSH_AGENT_SOCKET}:${SSH_AGENT_SOCKET}"
+        else
+            case "$OSTYPE" in
+                # docker-desktop on mac only supports this "magic" ssh-agent socket
+                # https://github.com/docker/for-mac/issues/410
+                darwin*) SSH_OPTIONS="-e SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock -v /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock" ;;
+                *)       SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AUTH_SOCK} -v ${SSH_AUTH_SOCK}:${SSH_AUTH_SOCK}" ;;
+            esac
         fi
-        SSH_AGENT_SOCKET=$("/Applications/Rancher Desktop.app/Contents/Resources/resources/darwin/lima/bin/limactl" shell 0 bash -c "echo -n \$SSH_AUTH_SOCK")
-        SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AGENT_SOCKET} -v ${SSH_AGENT_SOCKET}:${SSH_AGENT_SOCKET}"
     else
         # Default behavior is to attempt to mount the host's .ssh directory into root's home.
         case "$OSTYPE" in
@@ -334,7 +349,6 @@ done
 set_cluster_helper_vars
 get_host_addr
 check_cluster_alias
-get_config_variables
 exec_host_command "$@"
 exec_host_plugin "$@"
 check_and_handle_init
