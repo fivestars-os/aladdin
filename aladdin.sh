@@ -262,6 +262,10 @@ function prepare_ssh_options() {
             fi
             SSH_AGENT_SOCKET=$(rdctl shell bash -c "echo -n \$SSH_AUTH_SOCK")
             SSH_OPTIONS="-e SSH_AUTH_SOCK=${SSH_AGENT_SOCKET} -v ${SSH_AGENT_SOCKET}:${SSH_AGENT_SOCKET}"
+            if [[ -z ${SSH_AGENT_SOCKET:-} ]]; then
+                echoerr "Rancher Desktop (Lima) does not seem to be running an ssh agent"
+                exit 1
+            fi
         else
             case "$OSTYPE" in
                 # docker-desktop on mac only supports this "magic" ssh-agent socket
@@ -301,7 +305,6 @@ function enter_docker_container() {
         -e "IS_PROD=$IS_PROD" \
         -e "IS_TESTING=$IS_TESTING" \
         -e "SKIP_PROMPTS=$SKIP_PROMPTS" \
-        -e "K3D_API_PORT=$K3D_API_PORT" \
         -e "HOST_ADDR=$HOST_ADDR" \
         -e "command=$command" \
         `# Mount host credentials` \
