@@ -47,7 +47,7 @@ RUN apt-get update && \
     wget
 
 # also specified around line 15
-ARG POETRY_VERSION=1.2.1
+ARG POETRY_VERSION=1.2.2
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -55,7 +55,7 @@ RUN pip install --upgrade pip setuptools wheel && \
 
 # Update all needed tool versions here
 
-ARG AWS_CLI_VERSION=2.7.24
+ARG AWS_CLI_VERSION=2.8.11
 RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-$AWS_CLI_VERSION.zip -o awscliv2.zip && \
     unzip awscliv2.zip && \
     ./aws/install && \
@@ -67,7 +67,7 @@ RUN curl -L \
         -o /usr/local/bin/aws-iam-authenticator && \
     chmod 755 /usr/local/bin/aws-iam-authenticator
 
-ARG DOCKER_VERSION=20.10.20
+ARG DOCKER_VERSION=20.10.21
 RUN curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && \
     VERSION=$DOCKER_VERSION sh /tmp/get-docker.sh
 
@@ -75,7 +75,7 @@ ARG DOCKER_COMPOSE_VERSION=1.29.2
 RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
     chmod 755 /usr/local/bin/docker-compose
 
-ARG DOCKER_COMPOSE_2_VERSION=v2.11.0
+ARG DOCKER_COMPOSE_2_VERSION=v2.12.2
 RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_2_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose-2 && \
     chmod 755 /usr/local/bin/docker-compose-2
 
