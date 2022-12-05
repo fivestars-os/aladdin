@@ -110,6 +110,8 @@ class ClusterRules(object):
     def certificate_lookup(self):
         if strtobool(os.getenv("IS_LOCAL", "false")):
             return False
+        if strtobool(os.getenv("ALADDIN_DISABLE_CERTIFICATE_LOOKUP", "false")):
+            return False
         return self.rules.get("certificate_lookup", True)
 
     @cached_property
