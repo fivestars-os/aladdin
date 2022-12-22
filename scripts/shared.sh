@@ -6,7 +6,7 @@ set -eu -o pipefail
 
 function _extract_cluster_config_value() {
     # Try extracting config from cluster config.json, default config.json, then aladdin config.json
-    local path, default
+    local path default value
     path="$1"
     default="${2:-}"
     if [[ -z "${ALADDIN_CONFIG_DIR:-}" ]]; then
