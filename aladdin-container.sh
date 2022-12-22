@@ -75,10 +75,31 @@ function environment_init() {
             echo -e "Host github.com\n\tStrictHostKeyChecking no\n\tForwardAgent yes\n" > $HOME/.ssh/config
         fi
         if "$IS_LOCAL"; then
-            mkdir -p $HOME/.kube/
-            sed "s;https://0.0.0.0:$K3D_API_PORT;https://$HOST_ADDR:$K3D_API_PORT;g" $HOME/.kube_local/config > $HOME/.kube/config
-            kubectl config set-context "$NAMESPACE.k3d-$CLUSTER_NAME" --cluster "k3d-$CLUSTER_NAME" --namespace="$NAMESPACE" --user "admin@k3d-$CLUSTER_NAME"
-            kubectl config use-context "$NAMESPACE.k3d-$CLUSTER_NAME"
+            local cluster_provider="k3d"
+            if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+                cluster_provider=$(jq -r '.local_cluster_provider // "k3d"' $HOME/.aladdin/config/config.json)
+            fi
+            if [[ "$cluster_provider" == "rancher-desktop" ]]; then
+                mkdir -p $HOME/.kube/
+                sed 's/127.0.0.1/172.17.0.1/g' $HOME/.kube_local/config > $HOME/.kube/config
+                kubectl config set-context "rancher-desktop" --cluster "rancher-desktop" --namespace="$NAMESPACE" --user "rancher-desktop"
+                kubectl config use-context "rancher-desktop"
+            fi
+            if [[ "$cluster_provider" == "k3d" ]]; then
+                K3D_SERVICE_PORT=8081 # default value
+                if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+                    K3D_SERVICE_PORT=$(jq -r '.k3d.service_port // 8081' $HOME/.aladdin/config/config.json)
+                fi
+                # Get k3d api port
+                K3D_API_PORT=6550 # default value
+                if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+                    K3D_API_PORT=$(jq -r '.k3d.api_port // 6550' $HOME/.aladdin/config/config.json)
+                fi
+                mkdir -p $HOME/.kube/
+                sed "s;https://0.0.0.0:$K3D_API_PORT;https://$HOST_ADDR:$K3D_API_PORT;g" $HOME/.kube_local/config > $HOME/.kube/config
+                kubectl config set-context "$NAMESPACE.k3d-$CLUSTER_NAME" --cluster "k3d-$CLUSTER_NAME" --namespace="$NAMESPACE" --user "admin@k3d-$CLUSTER_NAME"
+                kubectl config use-context "$NAMESPACE.k3d-$CLUSTER_NAME"
+            fi
         else
             cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
             kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
