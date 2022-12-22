@@ -12,8 +12,7 @@ function run_bash {
 
     # If authentication is enabled, switch to the AUTHENTICATION_DEFAULT_ROLE level
     if "$AUTHENTICATION_ENABLED"; then
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
-            --namespace="$NAMESPACE" --user "$AUTHENTICATION_DEFAULT_ROLE"
+        kubectl config set-context --current --user "$AUTHENTICATION_DEFAULT_ROLE"
     fi
 
     # If we received a command, pass it through to the bash invocation with "-c".

@@ -126,7 +126,6 @@ function _get_kubeconfig() {
         AWS_SDK_LOAD_CONFIG=true AWS_PROFILE=$_AWS_PROFILE kops export kubecfg --name $CLUSTER_NAME --admin
     fi
     if [[ "$cluster_operator" == "eks" ]]; then
-        # if using SSO, AWS_SDK_LOAD_CONFIG needs to be true
         AWS_PROFILE=$_AWS_PROFILE aws eks update-kubeconfig \
             --region $AWS_REGION \
             --name $CLUSTER_NAME
@@ -135,10 +134,7 @@ function _get_kubeconfig() {
     # keep a copy of the original kubeconfig
     cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
 
-    if [[ "$cluster_operator" == "kops" ]]; then
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
-        kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
-    fi
+    kubectl config set-context --current --namespace $NAMESPACE
 }
 
 function _handle_authentication_config() {
@@ -155,7 +151,7 @@ function _handle_authentication_config() {
             role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $AUTHENTICATION_ROLES)"
             _add_authentication_user_to_kubeconfig "$name" "$role_arn"
         done
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE"
+        kubectl config set-context --current --user "$AUTHENTICATION_ALADDIN_ROLE"
     fi
 }
 
