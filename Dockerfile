@@ -43,7 +43,8 @@ RUN apt-get update && \
     curl \
     ssh \
     unzip \
-    wget
+    wget \
+    yq
 
 # also specified around line 15
 ARG POETRY_VERSION=1.3.1

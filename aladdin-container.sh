@@ -104,9 +104,9 @@ function environment_init() {
     fi
 
     _handle_authentication_config
-    kubectl cluster-info
 
     if $INIT; then
+        kubectl cluster-info
         $ALADDIN_DIR/aladdin/bash/container/create-namespace/create-namespace $NAMESPACE || true
         $PY_MAIN namespace-init --force
     fi
