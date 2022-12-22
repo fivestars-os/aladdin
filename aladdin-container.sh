@@ -101,9 +101,6 @@ function environment_init() {
         fi
     else
         _get_kubeconfig
-        cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
-        kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
     fi
 
     _handle_authentication_config
@@ -121,8 +118,8 @@ function environment_init() {
 function _get_kubeconfig() {
     local cluster_operator=$(_extract_cluster_config_value "cluster_operator" "kops")
 
-    # Allow to use a different aws profile from aladdin config
-    _AWS_PROFILE="$(_extract_cluster_config_value ${cluster_operator}.aws_profile)" || _AWS_PROFILE=$AWS_PROFILE
+    # Allow using a different aws profile from aladdin config
+    _AWS_PROFILE="$(_extract_cluster_config_value ${cluster_operator}.aws_profile $AWS_PROFILE)"
 
     if [[ "$cluster_operator" == "kops" ]]; then
         # if using SSO, AWS_SDK_LOAD_CONFIG needs to be true
@@ -133,6 +130,14 @@ function _get_kubeconfig() {
         AWS_PROFILE=$_AWS_PROFILE aws eks update-kubeconfig \
             --region $AWS_REGION \
             --name $CLUSTER_NAME
+    fi
+
+    # keep a copy of the original kubeconfig
+    cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
+
+    if [[ "$cluster_operator" == "kops" ]]; then
+        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
+        kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
     fi
 }
 
