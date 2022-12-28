@@ -27,15 +27,13 @@ def get_current_namespace():
     return namespace
 
 
-CURRENT_NAMESPACE = get_current_namespace()
-
-
 def add_namespace_argument(arg_parser):
+    _current_namespace = get_current_namespace()
     arg_parser.add_argument(
         "--namespace",
         "-n",
-        default=CURRENT_NAMESPACE,
-        help=f"namespace name, defaults to current: [{CURRENT_NAMESPACE}]",
+        default=_current_namespace,
+        help=f"namespace name, defaults to current: [{_current_namespace}]",
     )
 
 
@@ -129,12 +127,7 @@ CHARTS_OPTION_PARSER.add_argument(
 )
 
 COMMON_OPTION_PARSER = argparse.ArgumentParser(add_help=False)
-COMMON_OPTION_PARSER.add_argument(
-    "--namespace",
-    "-n",
-    default=CURRENT_NAMESPACE,
-    help=f"namespace name, defaults to current: [{CURRENT_NAMESPACE}]",
-)
+add_namespace_argument(COMMON_OPTION_PARSER)
 
 
 def expand_namespace(func=None):

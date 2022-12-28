@@ -8,16 +8,16 @@ except ImportError:
     # Running on pre-3.8 Python; use backport
     from backports.cached_property import cached_property
 
-from aladdin.lib.arg_tools import CURRENT_NAMESPACE
+from aladdin.lib.arg_tools import get_current_namespace
 from aladdin.lib.utils import singleton
 from aladdin.config import load_cluster_config, load_namespace_override_config
 
 
 @singleton
 class ClusterRules(object):
-    def __init__(self, cluster=None, namespace=CURRENT_NAMESPACE):
+    def __init__(self, cluster=None, namespace=None):
         self.rules = _cluster_rules(cluster=cluster, namespace=namespace)
-        self._namespace = namespace
+        self._namespace = namespace or get_current_namespace()
 
     def __getattr__(self, attr):
         if attr in self.rules:
@@ -119,8 +119,9 @@ class ClusterRules(object):
         return boto3.Session(profile_name=self.aws_profile)
 
 
-def _cluster_rules(cluster=None, namespace=CURRENT_NAMESPACE) -> dict:
-
+def _cluster_rules(cluster=None, namespace=None) -> dict:
+    if not namespace:
+        namespace = get_current_namespace()
     if cluster is None:
         cluster = os.environ["CLUSTER_CODE"]
 
