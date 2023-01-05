@@ -13,8 +13,7 @@ function change_permissions {
         echoerr "aladdin: error: this permission does not exist, or you are not allowed to change to it"
         exit 1
     fi
-    kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" \
-        --namespace="$NAMESPACE" --user "$1"
+    kubectl config set-context --current --user "$1"
 }
 
 function usage {

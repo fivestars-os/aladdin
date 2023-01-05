@@ -65,67 +65,76 @@ function environment_init() {
     # It will only get set to true if the cluster is ready and it is enabled in aladdin-config
     export AUTHENTICATION_ENABLED=false
 
-    # Make sure we are on local or that cluster has been created before creating namespaces, etc
-    if _is_cluster_ready; then
-        # If we're doing ssh-agent forwarding add a dummy ssh config
-        if [ ! -f $HOME/.ssh/config ] && [ ! -z "${SSH_AUTH_SOCK:-}" ]
-        then
-            mkdir -p $HOME/.ssh/
-            git config --global url.ssh://git@github.com/.insteadOf https://github.com/
-            echo -e "Host github.com\n\tStrictHostKeyChecking no\n\tForwardAgent yes\n" > $HOME/.ssh/config
+    # If we're doing ssh-agent forwarding add a dummy ssh config
+    if [ ! -f $HOME/.ssh/config ] && [ ! -z "${SSH_AUTH_SOCK:-}" ]
+    then
+        mkdir -p $HOME/.ssh/
+        git config --global url.ssh://git@github.com/.insteadOf https://github.com/
+        echo -e "Host github.com\n\tStrictHostKeyChecking no\n\tForwardAgent yes\n" > $HOME/.ssh/config
+    fi
+
+    if "$IS_LOCAL"; then
+        local cluster_provider="k3d"
+        if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+            cluster_provider=$(jq -r '.local_cluster_provider // "k3d"' $HOME/.aladdin/config/config.json)
         fi
-        if "$IS_LOCAL"; then
-            local cluster_provider="k3d"
+        if [[ "$cluster_provider" == "rancher-desktop" ]]; then
+            mkdir -p $HOME/.kube/
+            sed 's/127.0.0.1/172.17.0.1/g' $HOME/.kube_local/config > $HOME/.kube/config
+            kubectl config set-context "rancher-desktop" --cluster "rancher-desktop" --namespace="$NAMESPACE" --user "rancher-desktop"
+            kubectl config use-context "rancher-desktop"
+        fi
+        if [[ "$cluster_provider" == "k3d" ]]; then
+            K3D_SERVICE_PORT=8081 # default value
             if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-                cluster_provider=$(jq -r '.local_cluster_provider // "k3d"' $HOME/.aladdin/config/config.json)
+                K3D_SERVICE_PORT=$(jq -r '.k3d.service_port // 8081' $HOME/.aladdin/config/config.json)
             fi
-            if [[ "$cluster_provider" == "rancher-desktop" ]]; then
-                mkdir -p $HOME/.kube/
-                sed 's/127.0.0.1/172.17.0.1/g' $HOME/.kube_local/config > $HOME/.kube/config
-                kubectl config set-context "rancher-desktop" --cluster "rancher-desktop" --namespace="$NAMESPACE" --user "rancher-desktop"
-                kubectl config use-context "rancher-desktop"
+            # Get k3d api port
+            K3D_API_PORT=6550 # default value
+            if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
+                K3D_API_PORT=$(jq -r '.k3d.api_port // 6550' $HOME/.aladdin/config/config.json)
             fi
-            if [[ "$cluster_provider" == "k3d" ]]; then
-                K3D_SERVICE_PORT=8081 # default value
-                if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-                    K3D_SERVICE_PORT=$(jq -r '.k3d.service_port // 8081' $HOME/.aladdin/config/config.json)
-                fi
-                # Get k3d api port
-                K3D_API_PORT=6550 # default value
-                if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-                    K3D_API_PORT=$(jq -r '.k3d.api_port // 6550' $HOME/.aladdin/config/config.json)
-                fi
-                mkdir -p $HOME/.kube/
-                sed "s;https://0.0.0.0:$K3D_API_PORT;https://$HOST_ADDR:$K3D_API_PORT;g" $HOME/.kube_local/config > $HOME/.kube/config
-                kubectl config set-context "$NAMESPACE.k3d-$CLUSTER_NAME" --cluster "k3d-$CLUSTER_NAME" --namespace="$NAMESPACE" --user "admin@k3d-$CLUSTER_NAME"
-                kubectl config use-context "$NAMESPACE.k3d-$CLUSTER_NAME"
-            fi
-        else
-            cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
-            kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$CLUSTER_NAME"
-            kubectl config use-context "$NAMESPACE.$CLUSTER_NAME"
+            mkdir -p $HOME/.kube/
+            sed "s;https://0.0.0.0:$K3D_API_PORT;https://$HOST_ADDR:$K3D_API_PORT;g" $HOME/.kube_local/config > $HOME/.kube/config
+            kubectl config set-context "$NAMESPACE.k3d-$CLUSTER_NAME" --cluster "k3d-$CLUSTER_NAME" --namespace="$NAMESPACE" --user "admin@k3d-$CLUSTER_NAME"
+            kubectl config use-context "$NAMESPACE.k3d-$CLUSTER_NAME"
         fi
+    else
+        _get_kubeconfig
+    fi
 
-        _handle_authentication_config
+    _handle_authentication_config
 
-        if $INIT; then
-            $ALADDIN_DIR/aladdin/bash/container/create-namespace/create-namespace $NAMESPACE || true
-            $PY_MAIN namespace-init --force
-        fi
+    if $INIT; then
+        kubectl cluster-info
+        $ALADDIN_DIR/aladdin/bash/container/create-namespace/create-namespace $NAMESPACE || true
+        $PY_MAIN namespace-init --force
     fi
 
     echoerr "END ENVIRONMENT CONFIGURATION==============================================="
 
 }
 
-function _is_cluster_ready() {
-    # If not local, check if we can pull kube config via kops to determine if remote cluster is ready
-    if ! "$IS_LOCAL"; then
-        # Allow to use a different aws profile from aladdin config for kops command
-        KOPS_AWS_PROFILE="$(_extract_cluster_config_value kops | jq -re .aws_profile)" || KOPS_AWS_PROFILE=$AWS_PROFILE
+function _get_kubeconfig() {
+    local cluster_operator=$(_extract_cluster_config_value "cluster_operator" "kops")
+
+    # Allow using a different aws profile from aladdin config
+    _AWS_PROFILE="$(_extract_cluster_config_value ${cluster_operator}.aws_profile $AWS_PROFILE)"
+
+    if [[ "$cluster_operator" == "kops" ]]; then
         # if using SSO, AWS_SDK_LOAD_CONFIG needs to be true
-        AWS_SDK_LOAD_CONFIG=true AWS_PROFILE=$KOPS_AWS_PROFILE kops export kubecfg --name $CLUSTER_NAME --admin
+        AWS_SDK_LOAD_CONFIG=true AWS_PROFILE=$_AWS_PROFILE kops export kubecfg --name $CLUSTER_NAME --admin
     fi
+    if [[ "$cluster_operator" == "eks" ]]; then
+        AWS_PROFILE=$_AWS_PROFILE aws eks update-kubeconfig \
+            --region $AWS_REGION \
+            --name $CLUSTER_NAME
+    fi
+
+    # keep a copy of the original kubeconfig
+    cp $HOME/.kube/config $HOME/.kube_local/$CLUSTER_NAME.config
+
+    kubectl config set-context --current --namespace $NAMESPACE
 }
 
 function _handle_authentication_config() {
@@ -142,7 +151,7 @@ function _handle_authentication_config() {
             role_arn="$(jq -r --arg name "$name" '.[$name]' <<< $AUTHENTICATION_ROLES)"
             _add_authentication_user_to_kubeconfig "$name" "$role_arn"
         done
-        kubectl config set-context "$NAMESPACE.$CLUSTER_NAME" --cluster "$CLUSTER_NAME" --namespace="$NAMESPACE" --user "$AUTHENTICATION_ALADDIN_ROLE"
+        kubectl config set-context --current --user "$AUTHENTICATION_ALADDIN_ROLE"
     fi
 }
 
