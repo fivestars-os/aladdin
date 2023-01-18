@@ -12,18 +12,22 @@ def parse_args(sub_parser):
         "sync-dns", help="Synchronize the dns from the kubernetes services"
     )
     add_namespace_argument(subparser)
-    subparser.set_defaults(func=sync_dns_args)
-
-
-def sync_dns_args(args):
-    sync_dns(args.namespace)
+    subparser.add_argument(
+        "--force",
+        "-f",
+        action="store_true",
+        default=False,
+    )
+    subparser.set_defaults(
+        func=lambda args: sync_dns(args.namespace, force=args.force)
+    )
 
 
 @container_command
-def sync_dns(namespace):
+def sync_dns(namespace: str, force: bool = False):
     cr = ClusterRules(namespace=namespace)
-    if cr.is_local:
-        logging.info("Not syncing DNS because you are on local")
+    if not cr.dns_sync and not force:
+        logging.info("Not syncing DNS because it's disabled for this cluster")
         return
 
     k_utils = KubernetesUtils(Kubernetes(namespace=namespace))
