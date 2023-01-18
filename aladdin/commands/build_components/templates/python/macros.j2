@@ -21,9 +21,9 @@ COPY pip.conf /etc/pip.conf
 # We use the "exec" form of RUN to delegate this command to bash instead.
 # This is all because we have a pipe in this command and we wish to fail the build
 # if any command in the pipeline fails.
-RUN ["/bin/bash", "-c", "set -o pipefail && pip install --upgrade pip && curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_VERSION={{version}} python"]
+RUN ["/bin/bash", "-c", "set -o pipefail && pip install --upgrade pip && curl -sSL https://install.python-poetry.org | POETRY_VERSION={{version}} python3 -"]
 COPY poetry.toml /root/.config/pypoetry/config.toml
-ENV PATH=/root/.poetry/bin:$PATH
+ENV PATH=/root/.local/bin:$PATH
 {% endmacro %}
 
 
@@ -182,7 +182,7 @@ RUN groupadd -f {{user_info.group}} \
 # We also take care to add the poetry bin directory to the PATH, which is what "source $HOME/.poetry/env"
 # would accomplish in a normal installation scenario.
 COPY --from="builder-poetry" --chown={{user_info.chown}} /root/.poetry {{user_info.home}}/.poetry
-ENV PATH={{user_info.home}}/.poetry/bin:$PATH
+ENV PATH={{user_info.home}}/.local/bin:$PATH
 
 # Configure poetry (to avoid virtual env usage)
 COPY --from="builder-poetry" --chown={{user_info.chown}} /root/.config/pypoetry {{user_info.home}}/.config/pypoetry
