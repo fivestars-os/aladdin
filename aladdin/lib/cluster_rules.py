@@ -114,6 +114,14 @@ class ClusterRules(object):
             return False
         return self.rules.get("certificate_lookup", True)
 
+    @property
+    def dns_sync(self):
+        if strtobool(os.getenv("IS_LOCAL", "false")) or self.is_local:
+            return False
+        if strtobool(os.getenv("ALADDIN_DISABLE_DNS_SYNC", "false")):
+            return False
+        return self.rules.get("dns_sync", True)
+
     @cached_property
     def boto(self):
         return boto3.Session(profile_name=self.aws_profile)

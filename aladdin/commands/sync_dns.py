@@ -22,8 +22,8 @@ def sync_dns_args(args):
 @container_command
 def sync_dns(namespace):
     cr = ClusterRules(namespace=namespace)
-    if cr.is_local:
-        logging.info("Not syncing DNS because you are on local")
+    if not cr.dns_sync:
+        logging.info("Not syncing DNS because it's disabled for this cluster")
         return
 
     k_utils = KubernetesUtils(Kubernetes(namespace=namespace))
