@@ -25,9 +25,9 @@ def parse_args(sub_parser):
         help="only builds docker images in your LOCAL env with hash as tag",
     )
     exclude_steps_group.add_argument(
-        "--build-publish-ecr-only",
+        "--publish-container-images-only",
         action="store_true",
-        help="only build and publish docker images to ecr",
+        help="only publish docker images to ecr (not running build command)",
     )
     exclude_steps_group.add_argument(
         "--publish-helm-only",
@@ -66,11 +66,11 @@ def parse_args(sub_parser):
 @container_command
 def publish_args(args):
     if args.build_local:
-        publish(args.build_only, args.build_publish_ecr_only, args.publish_helm_only)
+        publish(args.build_only, args.publish_container_images_only, args.publish_helm_only)
     else:
         publish_clean(
             args.build_only,
-            args.build_publish_ecr_only,
+            args.publish_container_images_only,
             args.publish_helm_only,
             args.repo,
             args.git_ref,
@@ -78,7 +78,7 @@ def publish_args(args):
         )
 
 
-def publish(build_only, build_publish_ecr_only, publish_helm_only):
+def publish(build_only, publish_container_images_only, publish_helm_only):
     pc = ProjectConf()
     pr = PublishRules()
     d = DockerCommands()
@@ -87,25 +87,23 @@ def publish(build_only, build_publish_ecr_only, publish_helm_only):
     git_hash = Git.get_hash()
 
     if not publish_helm_only:
-        env = {"HASH": git_hash}
-        pc.build_docker(env)
+        if not publish_container_images_only:
+            pc.build_docker({"HASH": git_hash})
         if not build_only:
             images = pc.get_docker_images()
             image_tags = [Tag(image, git_hash) for image in images]
-            asso = {}
             d.login(pr)
             for image_tag in image_tags:
-                res = d.publish(pr, image_tag, login=False)
-                asso[image_tag] = res
+                d.publish(pr, image_tag, login=False)
 
-    if not build_only and not build_publish_ecr_only:
+    if not build_only:
         for path in pc.get_helm_chart_paths():
             h.publish(pc.name, pr, path, git_hash)
     logging.info(f"Ran publish on {pc.name} with git hash: {git_hash}")
 
 
 def publish_clean(
-    build_only, build_publish_ecr_only, publish_helm_only, repo, git_ref, init_submodules
+    build_only, publish_container_images_only, publish_helm_only, repo, git_ref, init_submodules
 ):
     g = Git()
     git_account = load_git_configs()["account"]
@@ -135,4 +133,4 @@ def publish_clean(
                 )
                 return
         with working_directory(tmpdirname):
-            publish(build_only, build_publish_ecr_only, publish_helm_only)
+            publish(build_only, publish_container_images_only, publish_helm_only)
