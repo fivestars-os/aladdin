@@ -13,7 +13,7 @@ RUN python -m venv /root/.venv
 
 ENV PATH /root/.venv/bin:$PATH
 # also specified around line 48
-ARG POETRY_VERSION=1.3.1
+ARG POETRY_VERSION=1.4.2
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -46,7 +46,7 @@ RUN apt-get update && \
     wget
 
 # also specified around line 15
-ARG POETRY_VERSION=1.3.1
+ARG POETRY_VERSION=1.4.2
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -82,7 +82,7 @@ ARG KUBE_VERSION=1.24.10
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
-ARG HELM_VERSION=3.10.3
+ARG HELM_VERSION=3.12.0
 RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 -o get-helm-3.sh && \
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}
