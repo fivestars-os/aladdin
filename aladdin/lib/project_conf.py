@@ -59,7 +59,7 @@ class ProjectConf:
 
     @property
     def build_command(self):
-        cmd = search("build_docker", self.lamp_content) or ["aladdin", "build-components"]
+        cmd = search("build_docker", self.lamp_content) or search("build", self.lamp_content)
         return [cmd] if isinstance(cmd, str) else cmd
 
     def build_docker(self, env=None, build_args=None):
