@@ -5,7 +5,7 @@ from aladdin.lib.arg_tools import (
     COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHARTS_OPTION_PARSER, container_command
 )
 from aladdin.lib.cluster_rules import ClusterRules
-from aladdin.commands import sync_ingress, sync_dns
+from aladdin.commands import sync_ingress
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.project_conf import ProjectConf
@@ -76,4 +76,3 @@ def start(
         # Sync if any helm.start() call succeeded, even if a subsequent one failed
         if not dry_run:
             sync_ingress.sync_ingress(namespace)
-            sync_dns.sync_dns(namespace)

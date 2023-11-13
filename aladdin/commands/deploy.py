@@ -8,7 +8,7 @@ from aladdin.lib.arg_tools import (
     COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHART_OPTION_PARSER, container_command
 )
 from aladdin.lib.cluster_rules import ClusterRules
-from aladdin.commands import sync_ingress, sync_dns
+from aladdin.commands import sync_ingress
 from aladdin.config import load_git_configs
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.git import Git
@@ -111,4 +111,3 @@ def deploy(
         )
         if not dry_run:
             sync_ingress.sync_ingress(namespace)
-            sync_dns.sync_dns(namespace)
