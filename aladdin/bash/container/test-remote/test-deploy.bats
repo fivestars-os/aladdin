@@ -18,8 +18,6 @@ load test_helper
     kubectl get hpa | grep "aladdin-test-hpa\s"
     # Let elb become ready by sleeping for a minute
     sleep 60
-    # Sync the dns after this in case it wasn't immediately ready
-    $PY_MAIN sync-dns
     # Verify sync-dns by checking if cname value equals service elb
     service_elb=$(get_elb aladdin-test-server)
     [[ $service_elb == $(get_cname_value aladdin-test-server "default.$DNS_ZONE") ]]
