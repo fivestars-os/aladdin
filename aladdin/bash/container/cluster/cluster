@@ -141,7 +141,7 @@ function populate {
     # This script pulls from your backup folder in your $CLUSTER_CODE directory in your config directory
     # It reads the namespaces.txt file and creates all those namepsaces, and then populates those
     # namespaces with each namespace's yaml files to create all the k8s resources.
-    # We then call sync-ingress and sync-dns to update the route 53 records and ingress resource if necessary.
+    # We then call sync-ingress to update ingress resource if necessary.
 
     if ! "$SKIP_PROMPTS"; then
         echo "Is the cluster you wish to populate $CLUSTER_CODE? [y/N] "
@@ -171,7 +171,6 @@ function populate {
     for ns in $(cat "$path_to_resources/namespaces.txt")
     do
         $PY_MAIN sync-ingress --namespace "$ns"
-        $PY_MAIN sync-dns --namespace "$ns"
     done
 }
 
