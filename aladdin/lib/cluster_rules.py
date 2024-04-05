@@ -1,6 +1,5 @@
 import os
 import boto3
-from distutils.util import strtobool
 from typing import List
 try:
     from functools import cached_property
@@ -9,7 +8,7 @@ except ImportError:
     from backports.cached_property import cached_property
 
 from aladdin.lib.arg_tools import get_current_namespace
-from aladdin.lib.utils import singleton
+from aladdin.lib.utils import singleton, strtobool
 from aladdin.config import load_cluster_config, load_namespace_override_config
 
 
