@@ -78,7 +78,7 @@ ARG DOCKER_COMPOSE_2_VERSION=v2.14.2
 RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_2_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose-2 && \
     chmod 755 /usr/local/bin/docker-compose-2
 
-ARG KUBE_VERSION=1.26.14
+ARG KUBE_VERSION=1.27.13
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
