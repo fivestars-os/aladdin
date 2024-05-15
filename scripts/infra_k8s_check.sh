@@ -330,7 +330,7 @@ function install_helm_win(){
 }
 function install_helm_mac(){
     typeset url="https://get.helm.sh/helm-v${VERSION_HELM}-darwin-$(uname -m).tar.gz"
-    install_url_tgz "helm" "darwin-amd64/helm" "$url"
+    install_url_tgz "helm" "darwin-$(uname -m)/helm" "$url"
 }
 function install_helm_alpine(){
     typeset url="https://get.helm.sh/helm-v${VERSION_HELM}-linux-amd64.tar.gz"
