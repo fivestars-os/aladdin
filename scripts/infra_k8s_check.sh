@@ -9,11 +9,11 @@ set -eu -o pipefail
 # To force the script to do the full check, use the parameter '--force'
 
 #- from : https://github.com/rancher/k3d/releases
-VERSION_K3D="4.4.4"
+VERSION_K3D="4.4.8"
 #- from : https://github.com/kubernetes/kubernetes/releases
-VERSION_KUBECTL="1.19.7"
+VERSION_KUBECTL="1.27.13"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="3.8.2"
+VERSION_HELM="3.12.0"
 
 
 # This script is meant to check and test the necessary tools for using the infra tools.
@@ -310,7 +310,7 @@ function install_kubectl_win(){
     install_url_tgz "kubectl.exe" "kubernetes/client/bin/kubectl.exe" "$url"
 }
 function install_kubectl_mac(){
-    typeset url="https://dl.k8s.io/v${VERSION_KUBECTL}/kubernetes-client-darwin-amd64.tar.gz"
+    typeset url="https://dl.k8s.io/v${VERSION_KUBECTL}/kubernetes-client-darwin-$(uname -m).tar.gz"
     install_url_tgz "kubectl" "kubernetes/client/bin/kubectl" "$url"
 }
 function install_kubectl_alpine(){
@@ -329,7 +329,7 @@ function install_helm_win(){
     install_url_zip "helm.exe" "windows-amd64/helm.exe" "$url"
 }
 function install_helm_mac(){
-    typeset url="https://get.helm.sh/helm-v${VERSION_HELM}-darwin-amd64.tar.gz"
+    typeset url="https://get.helm.sh/helm-v${VERSION_HELM}-darwin-$(uname -m).tar.gz"
     install_url_tgz "helm" "darwin-amd64/helm" "$url"
 }
 function install_helm_alpine(){
