@@ -14,7 +14,7 @@ CLUSTER_CODE=${CLUSTER_CODE:-LOCAL}
 NAMESPACE=${NAMESPACE:-default}
 IS_TERMINAL=true
 SKIP_PROMPTS=false
-KUBERNETES_VERSION="1.19.7"
+KUBERNETES_VERSION="1.27.13"
 
 # Set key directory paths
 ALADDIN_DIR="$(cd "$(dirname "$0")" ; pwd)"
