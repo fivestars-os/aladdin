@@ -9,11 +9,11 @@ set -eu -o pipefail
 # To force the script to do the full check, use the parameter '--force'
 
 #- from : https://github.com/rancher/k3d/releases
-VERSION_K3D="4.4.4"
+VERSION_K3D="4.4.8"
 #- from : https://github.com/kubernetes/kubernetes/releases
-VERSION_KUBECTL="1.19.7"
+VERSION_KUBECTL="1.27.13"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="3.8.2"
+VERSION_HELM="3.12.0"
 
 
 # This script is meant to check and test the necessary tools for using the infra tools.
