@@ -9,7 +9,6 @@ from aladdin import env
 from aladdin.lib.arg_tools import get_bash_commands, bash_wrapper
 from aladdin.commands import (
     build,
-    build_components,
     cluster_init,
     cmd,
     connect,
@@ -45,7 +44,6 @@ def cli():
     subparsers = parser.add_subparsers(help="aladdin commands")
     subcommands = [
         build,
-        build_components,
         cluster_init,
         cmd,
         connect,
