@@ -1,3 +1,4 @@
+import os
 from contextlib import suppress
 
 from .aws.certificate import (
@@ -6,10 +7,12 @@ from .aws.certificate import (
 )
 from .cluster_rules import ClusterRules
 from .project_conf import ProjectConf
-from .publish_rules import PublishRules
+from .utils import strtobool
 
 
 class HelmRules:
+    debug = strtobool(os.getenv("HELM_DEBUG", "false"))
+
     @staticmethod
     def get_release_name(chart_name: str):
         # TODO there is a limit on the name size, we should check that
@@ -18,7 +21,6 @@ class HelmRules:
     @staticmethod
     def get_helm_values():
         values = {
-            "deploy.ecr": PublishRules().docker_registry,
             "deploy.namespace": ClusterRules().namespace,
             "service.certificateScope": ClusterRules().service_certificate_scope,
             "service.domainName": ClusterRules().service_domain_name_suffix,
