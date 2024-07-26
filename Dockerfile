@@ -23,7 +23,7 @@ ARG POETRY_VIRTUALENVS_CREATE="false"
 ARG VIRTUAL_ENV=/root/.venv
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root --no-dev
+RUN poetry install --no-root --only main
 
 FROM python:3.10.6-slim-bullseye
 
@@ -111,4 +111,4 @@ COPY . .
 ARG POETRY_VIRTUALENVS_CREATE="false"
 # Poetry needs this to find the venv we created
 ARG VIRTUAL_ENV=/root/.venv
-RUN poetry install --no-dev
+RUN poetry install --only main
