@@ -60,7 +60,7 @@ RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-$AWS_CLI_VERS
     ./aws/install && \
     rm -rf aws && rm awscliv2.zip
 
-ARG AWS_IAM_AUTHENTICATOR_VERSION=0.5.12
+ARG AWS_IAM_AUTHENTICATOR_VERSION=0.5.21
 RUN curl -L \
         "https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v$AWS_IAM_AUTHENTICATOR_VERSION/aws-iam-authenticator_${AWS_IAM_AUTHENTICATOR_VERSION}_$(uname -s)_$(dpkg --print-architecture)" \
         -o /usr/local/bin/aws-iam-authenticator && \
@@ -78,7 +78,7 @@ ARG DOCKER_COMPOSE_2_VERSION=v2.14.2
 RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_2_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose-2 && \
     chmod 755 /usr/local/bin/docker-compose-2
 
-ARG KUBE_VERSION=1.27.13
+ARG KUBE_VERSION=1.28.10
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
@@ -87,12 +87,12 @@ RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-he
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}
 
-ARG KOPS_VERSION=1.28.4
+ARG KOPS_VERSION=1.29.0
 RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VERSION/kops-linux-$(dpkg --print-architecture) && \
     chmod +x ./kops && \
     mv ./kops /usr/local/bin/
 
-ARG ISTIO_VERSION=1.19.6
+ARG ISTIO_VERSION=1.20.8
 RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
     mv /istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
 
