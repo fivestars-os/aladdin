@@ -1,10 +1,8 @@
 import json
 import os
 import pathlib
-from distutils.util import strtobool
 
-from aladdin import __version__
-from aladdin.lib import logging
+from aladdin.lib import logging, utils
 
 logger = logging.getLogger(__name__)
 
@@ -67,4 +65,4 @@ def set_user_config_file(config: dict):
         json.dump(config, json_file, indent=2)
 
 
-ALADDIN_DEV = bool(strtobool(os.getenv("ALADDIN_DEV", "false")))
+ALADDIN_DEV = utils.strtobool(os.getenv("ALADDIN_DEV", "false"))

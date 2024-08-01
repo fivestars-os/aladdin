@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aladdin"
-version = "1.28.10.0"
+version = "1.28.10.2"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
 include = [
@@ -10,7 +10,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 boto3 = "^1.21.38"
 cached-property = "1.5.2"
 jmespath = "1.0.1"
@@ -22,8 +22,6 @@ networkx = "^2.4"
 jinja2 = "^2.11.2"
 lazy-object-proxy = "^1.5.1"
 urllib3 = "1.26.12"
-importlib-metadata = {version = "^1.0", python = "<3.8"}
-"backports.cached-property" = {version = "^1.0.1", python = "<3.8"}
 # jinja2 dependency, but there is a breaking change in v2.1.0
 markupsafe = "2.0.1"  # https://github.com/pallets/markupsafe/issues/284
 aws-sso-util = "^4.28.0"

@@ -42,7 +42,7 @@ def new_certificate_arn(boto_session, dns_name):
     acm = boto_session.client("acm")
 
     validation_dns = ".".join(dns_name.split(".")[-2:])
-    token = re.sub("\W", "_", dns_name)  # Dns name that match r'\w+'
+    token = re.sub(r"\W", "_", dns_name)  # Dns name that match r'\w+'
 
     log.info("Requesting a new certificate %s", dns_name)
     arn = acm.request_certificate(

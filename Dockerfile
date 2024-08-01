@@ -13,7 +13,7 @@ RUN python -m venv /root/.venv
 
 ENV PATH /root/.venv/bin:$PATH
 # also specified around line 48
-ARG POETRY_VERSION=1.3.1
+ARG POETRY_VERSION=1.8.2
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -23,7 +23,7 @@ ARG POETRY_VIRTUALENVS_CREATE="false"
 ARG VIRTUAL_ENV=/root/.venv
 # Install aladdin python requirements
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-root --no-dev
+RUN poetry install --no-root --only main
 
 FROM python:3.10.6-slim-bullseye
 
@@ -46,7 +46,7 @@ RUN apt-get update && \
     wget
 
 # also specified around line 15
-ARG POETRY_VERSION=1.3.1
+ARG POETRY_VERSION=1.8.2
 ENV PATH /root/.local/bin:$PATH
 RUN pip install --upgrade pip setuptools wheel && \
     curl -sSL https://install.python-poetry.org -o install-poetry.py && \
@@ -111,4 +111,4 @@ COPY . .
 ARG POETRY_VIRTUALENVS_CREATE="false"
 # Poetry needs this to find the venv we created
 ARG VIRTUAL_ENV=/root/.venv
-RUN poetry install --no-dev
+RUN poetry install --only main
