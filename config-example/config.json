@@ -14,7 +14,6 @@
     },
     "publish": {
         "aws_profile": "abcdefgh",
-        "docker_ecr_repo": "xxxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/",
-        "s3_helm_chart_bucket": "helm-charts-xxxxxxxxxxxxxx"
+        "docker_ecr_repo": "xxxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/"
     }
 }

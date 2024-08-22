@@ -10,10 +10,12 @@ from aladdin.lib.arg_tools import (
 from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import sync_ingress
 from aladdin.config import load_git_configs
+from aladdin.lib.arg_tools import expand_namespace
 from aladdin.lib.helm_rules import HelmRules
-from aladdin.lib.git import Git
+from aladdin.lib.git import Git, clone_and_checkout
 from aladdin.lib.k8s.helm import Helm
-from aladdin.lib.publish_rules import PublishRules
+from aladdin.lib.utils import working_directory
+from aladdin.lib.project_conf import ProjectConf
 
 
 def parse_args(sub_parser):
@@ -21,7 +23,7 @@ def parse_args(sub_parser):
         "deploy", help="Start the helm chart in non local environments",
         parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHART_OPTION_PARSER]
     )
-    subparser.set_defaults(func=deploy_args)
+    subparser.set_defaults(func=deploy)
     subparser.add_argument("project", help="which project to deploy")
     subparser.add_argument("git_ref", help="which git hash or tag or branch to deploy")
     subparser.add_argument(
@@ -36,22 +38,8 @@ def parse_args(sub_parser):
     )
 
 
-def deploy_args(args):
-    deploy(
-        args.project,
-        args.git_ref,
-        args.namespace,
-        args.chart,
-        args.dry_run,
-        args.force,
-        args.force_helm,
-        args.repo,
-        args.set_override_values,
-        args.values_files
-    )
-
-
 @container_command
+@expand_namespace
 def deploy(
     project,
     git_ref,
@@ -65,26 +53,25 @@ def deploy(
     values_files=None
 ):
     chart = chart or project
+    repo = repo or project
     if set_override_values is None:
         set_override_values = []
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        pr = PublishRules()
-        helm = Helm()
-        cr = ClusterRules(namespace=namespace)
-        helm_chart_path = "{}/{}".format(tmpdirname, chart)
-        git_account = load_git_configs()["account"]
-        repo = repo or project
-        git_url = f"git@github.com:{git_account}/{repo}.git"
-        git_ref = Git.extract_hash(git_ref, git_url)
+    helm = Helm()
+    cr = ClusterRules(namespace=namespace)
+    git_account = load_git_configs()["account"]
+    git_url = f"git@github.com:{git_account}/{repo}.git"
+    git_ref = Git.extract_hash(git_ref, git_url)
 
-        if not force and cr.check_branch and Git.extract_hash("HEAD", git_url) != git_ref:
-            logging.error(
-                f"You are deploying hash {git_ref} which does not match default branch"
-                f" on cluster {cr.cluster_domain_name} for project {project}... exiting"
-            )
-            sys.exit(1)
+    if not force and cr.check_branch and Git.extract_hash("HEAD", git_url) != git_ref:
+        logging.error(
+            f"You are deploying hash {git_ref} which does not match default branch"
+            f" on cluster {cr.cluster_domain_name} for project {project}... exiting"
+        )
+        sys.exit(1)
 
-        helm.pull_packages(project, pr, git_ref, tmpdirname, chart_name=chart)
+    with clone_and_checkout(git_ref, repo) as tmpdirname:
+        with working_directory(tmpdirname):
+            helm_chart_path = ProjectConf().get_helm_chart_path(chart)
 
         # We need to use --set-string in case the git ref is all digits
         helm_args = ["--set-string", f"deploy.imageTag={git_ref}"]
