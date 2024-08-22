@@ -2,9 +2,7 @@ import argparse
 import logging
 import os
 import subprocess
-import sys
-import tempfile
-from contextlib import contextmanager, suppress
+from contextlib import suppress
 from urllib.parse import urlparse, parse_qsl
 from typing import Optional
 
@@ -18,7 +16,7 @@ from aladdin.lib.arg_tools import (
     container_command,
 )
 from aladdin.lib.cluster_rules import ClusterRules
-from aladdin.lib.git import Git
+from aladdin.lib.git import Git, clone_and_checkout
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.project_conf import ProjectConf
@@ -110,47 +108,6 @@ def helm_values(
                 with open(output, "w") as outputfile:
                     outputfile.write(result.stdout)
                 logging.info("Values saved in: %s", output)
-
-
-@contextmanager
-def clone_and_checkout(githash, repo_name=None):
-    current_hash = None
-    current_repo = None
-    with suppress(subprocess.CalledProcessError):
-        current_repo = Git.get_repo_name()
-        current_hash = Git.get_hash()
-
-    if (
-        current_hash and
-        current_repo and
-        (current_repo == repo_name or not repo_name) and
-        current_hash == githash and
-        (Git.clean_working_tree() or HelmRules.debug)
-    ):
-        yield Git.get_base_directory()
-        return
-
-    if not repo_name:
-        logging.error(f"No repo found or specified")
-        return sys.exit(1)
-
-    git_account = load_git_configs()["account"]
-    git_url = f"git@github.com:{git_account}/{repo_name}.git"
-
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        try:
-            Git.clone(git_url, tmpdirname)
-        except subprocess.CalledProcessError:
-            logging.warn(f"Could not clone repo {git_url}. Does it exist?")
-            return sys.exit(1)
-        try:
-            Git.checkout(tmpdirname, githash)
-        except subprocess.CalledProcessError:
-            logging.warn(
-                f"Could not checkout to ref '{githash}' in repo {git_url}. Have you pushed it to remote?"
-            )
-            return sys.exit(1)
-        yield tmpdirname
 
 
 def get_current_chart_name() -> Optional[str]:

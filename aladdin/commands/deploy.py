@@ -12,7 +12,7 @@ from aladdin.commands import sync_ingress
 from aladdin.config import load_git_configs
 from aladdin.lib.arg_tools import expand_namespace
 from aladdin.lib.helm_rules import HelmRules
-from aladdin.lib.git import Git
+from aladdin.lib.git import Git, clone_and_checkout
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.utils import working_directory
 from aladdin.lib.project_conf import ProjectConf
@@ -69,9 +69,7 @@ def deploy(
         )
         sys.exit(1)
 
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        Git.clone(git_url, tmpdirname)
-        Git.checkout(tmpdirname, git_ref)
+    with clone_and_checkout(git_ref, repo) as tmpdirname:
         with working_directory(tmpdirname):
             helm_chart_path = ProjectConf().get_helm_chart_path(chart)
 
