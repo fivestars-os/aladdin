@@ -1,11 +1,9 @@
 import logging
 import os
 import subprocess
-import tempfile
 
-from aladdin.config import load_git_configs
 from aladdin.lib.docker import DockerCommands, Tag
-from aladdin.lib.git import Git
+from aladdin.lib.git import Git, clone_and_checkout
 from aladdin.lib.utils import working_directory
 from aladdin.lib.project_conf import ProjectConf
 from aladdin.lib.publish_rules import PublishRules
@@ -102,27 +100,12 @@ def publish(build_only):
 def publish_clean(
     build_only, repo, git_ref, init_submodules
 ):
-    g = Git()
-    git_account = load_git_configs()["account"]
     repo = repo or ProjectConf().name
-    git_url = f"git@github.com:{git_account}/{repo}.git"
-    ref = git_ref or g.get_full_hash()
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        try:
-            g.clone(git_url, tmpdirname)
-        except subprocess.CalledProcessError:
-            logging.warn(f"Could not clone repo {git_url}. Does it exist?")
-            return
-        try:
-            g.checkout(tmpdirname, ref)
-        except subprocess.CalledProcessError:
-            logging.warn(
-                f"Could not checkout to ref {ref} in repo {git_url}. Have you pushed it to remote?"
-            )
-            return
+    ref = git_ref or Git.get_full_hash()
+    with clone_and_checkout(ref, repo) as tmpdirname:
         if init_submodules or os.path.exists(f"{tmpdirname}/.gitmodules"):
             try:
-                g.init_submodules(tmpdirname)
+                Git.init_submodules(tmpdirname)
             except subprocess.CalledProcessError:
                 logging.warn(
                     "Could not initialize submodules. Make sure you use ssh urls in"

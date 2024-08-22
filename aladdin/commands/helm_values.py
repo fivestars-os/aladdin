@@ -73,7 +73,7 @@ def helm_values(
         f"git@github.com:{git_account}/{repo_name}.git" if repo_name else None
     )
 
-    with clone_and_checkout(git_ref, repo_name) as repo_dir:
+    with clone_and_checkout(git_ref, repo_name, debug=HelmRules.debug) as repo_dir:
         current_chart_name = get_current_chart_name()
         with working_directory(repo_dir):
             chart_path = os.path.abspath(

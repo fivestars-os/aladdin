@@ -6,8 +6,7 @@ import sys
 from contextlib import contextmanager, suppress
 
 from aladdin.lib.utils import working_directory
-from aladdin.lib.helm_rules import HelmRules
-from aladdin.config import load_git_configs
+from aladdin.config import load_git_configs, ALADDIN_DEV
 
 
 class Git:
@@ -97,7 +96,7 @@ class Git:
 
 
 @contextmanager
-def clone_and_checkout(githash, repo_name=None):
+def clone_and_checkout(githash, repo_name=None, debug=ALADDIN_DEV):
     current_hash = None
     current_repo = None
     with suppress(subprocess.CalledProcessError):
@@ -109,7 +108,7 @@ def clone_and_checkout(githash, repo_name=None):
         current_repo and
         (current_repo == repo_name or not repo_name) and
         current_hash == githash and
-        (Git.clean_working_tree() or HelmRules.debug)
+        (Git.clean_working_tree() or debug)
     ):
         yield Git.get_base_directory()
         return
