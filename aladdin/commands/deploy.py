@@ -69,21 +69,20 @@ def deploy(
     repo = repo or project
     if set_override_values is None:
         set_override_values = []
+    helm = Helm()
+    cr = ClusterRules(namespace=namespace)
+    git_account = load_git_configs()["account"]
+    git_url = f"git@github.com:{git_account}/{repo}.git"
+    git_ref = Git.extract_hash(git_ref, git_url)
+
+    if not force and cr.check_branch and Git.extract_hash("HEAD", git_url) != git_ref:
+        logging.error(
+            f"You are deploying hash {git_ref} which does not match default branch"
+            f" on cluster {cr.cluster_domain_name} for project {project}... exiting"
+        )
+        sys.exit(1)
+
     with tempfile.TemporaryDirectory() as tmpdirname:
-        helm = Helm()
-        cr = ClusterRules(namespace=namespace)
-        helm_chart_path = "{}/{}".format(tmpdirname, chart)
-        git_account = load_git_configs()["account"]
-        git_url = f"git@github.com:{git_account}/{repo}.git"
-        git_ref = Git.extract_hash(git_ref, git_url)
-
-        if not force and cr.check_branch and Git.extract_hash("HEAD", git_url) != git_ref:
-            logging.error(
-                f"You are deploying hash {git_ref} which does not match default branch"
-                f" on cluster {cr.cluster_domain_name} for project {project}... exiting"
-            )
-            sys.exit(1)
-
         Git.clone(git_url, tmpdirname)
         Git.checkout(tmpdirname, git_ref)
         with working_directory(tmpdirname):
