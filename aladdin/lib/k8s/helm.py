@@ -2,12 +2,8 @@
 import json
 import os
 import subprocess
-import sys
 from os.path import join
 from typing import List
-
-import yaml
-from botocore.exceptions import ClientError
 
 from aladdin.lib import logging
 
@@ -15,81 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 class Helm:
-    PACKAGE_DIR_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/"
-    PACKAGE_PATH = "helm_charts/0.0.0/{project_name}/{git_ref}/{chart_name}.{git_ref}.tgz"
-
-    def publish(self, project_name, publish_rules, chart_path, git_hash):
-
-        version = f"0.0.0+{git_hash}"
-
-        logger.info("Building package")
-
-        with open(os.path.join(chart_path, "Chart.yaml")) as chart_manifest:
-            chart_name = yaml.safe_load(chart_manifest)["name"]
-
-        subprocess.check_call([
-            "helm",
-            "package",
-            "--version",
-            version,
-            "--app-version",
-            git_hash,
-            "."
-        ], cwd=chart_path)
-
-        try:
-            package_path = join(chart_path, "{}-{}.tgz".format(chart_name, version))
-            bucket_path = self.PACKAGE_PATH.format(
-                project_name=project_name, chart_name=chart_name, git_ref=git_hash
-            )
-
-            logger.info("Uploading %s chart to %s", chart_name, bucket_path)
-            publish_rules.s3_bucket.upload_file(package_path, bucket_path)
-        finally:
-            os.remove(package_path)
-
-    def pull_packages(self, project_name, publish_rules, git_ref, extract_dir, chart_name=None):
-        """
-        Retrieve all charts published for this project at this git_ref.
-
-        This will download all the published charts and extract them to extract_dir.
-
-        :param project_name: The name of the aladdin project being retrieved.
-        :param publish_rules: Details for accessing the S3 bucket.
-        :param git_ref: The version of the chart(s) to retrieve.
-        :param extract_dir: Where to place the downloaded charts.
-        :param chart_name: Specific chart to pull.
-        """
-        # List the contents of the publish "directory" and find
-        # everything that looks like a chart.
-        package_keys = [
-            obj.key
-            for obj in publish_rules.s3_bucket.objects.filter(
-                Prefix=self.PACKAGE_DIR_PATH.format(project_name=project_name, git_ref=git_ref)
-            )
-            if obj.key.endswith(f"{chart_name}.{git_ref}.tgz" if chart_name else f".{git_ref}.tgz")
-        ]
-
-        if not package_keys:
-            logger.error(f"No published charts found for: {chart_name or project_name} in {project_name}@{git_ref}")
-            sys.exit(1)
-
-        # Download the chart archives and extract the contents into their own chart sub-directories
-        for package_key in package_keys:
-            downloaded_package = join(extract_dir, os.path.basename(package_key))
-            try:
-                publish_rules.s3_bucket.download_file(package_key, downloaded_package)
-            except ClientError:
-                logger.error("Error downloading from S3: {}".format(package_key))
-                raise
-            else:
-                subprocess.check_call(["tar", "-xvzf", downloaded_package, "-C", extract_dir])
-            finally:
-                try:
-                    os.remove(downloaded_package)
-                except FileNotFoundError:
-                    pass
-
     def find_values(self, chart_path: str, values_files: List[str], namespace: str):
         """
         Find all possible values yaml files for override in increasing priority

@@ -13,7 +13,8 @@ from aladdin.config import load_git_configs
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.git import Git
 from aladdin.lib.k8s.helm import Helm
-from aladdin.lib.publish_rules import PublishRules
+from aladdin.lib.utils import working_directory
+from aladdin.lib.project_conf import ProjectConf
 
 
 def parse_args(sub_parser):
@@ -65,15 +66,14 @@ def deploy(
     values_files=None
 ):
     chart = chart or project
+    repo = repo or project
     if set_override_values is None:
         set_override_values = []
     with tempfile.TemporaryDirectory() as tmpdirname:
-        pr = PublishRules()
         helm = Helm()
         cr = ClusterRules(namespace=namespace)
         helm_chart_path = "{}/{}".format(tmpdirname, chart)
         git_account = load_git_configs()["account"]
-        repo = repo or project
         git_url = f"git@github.com:{git_account}/{repo}.git"
         git_ref = Git.extract_hash(git_ref, git_url)
 
@@ -84,7 +84,10 @@ def deploy(
             )
             sys.exit(1)
 
-        helm.pull_packages(project, pr, git_ref, tmpdirname, chart_name=chart)
+        Git.clone(git_url, tmpdirname)
+        Git.checkout(tmpdirname, git_ref)
+        with working_directory(tmpdirname):
+            helm_chart_path = ProjectConf().get_helm_chart_path(chart)
 
         # We need to use --set-string in case the git ref is all digits
         helm_args = ["--set-string", f"deploy.imageTag={git_ref}"]
