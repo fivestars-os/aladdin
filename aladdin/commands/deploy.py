@@ -10,6 +10,7 @@ from aladdin.lib.arg_tools import (
 from aladdin.lib.cluster_rules import ClusterRules
 from aladdin.commands import sync_ingress
 from aladdin.config import load_git_configs
+from aladdin.lib.arg_tools import expand_namespace
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.git import Git
 from aladdin.lib.k8s.helm import Helm
@@ -22,7 +23,7 @@ def parse_args(sub_parser):
         "deploy", help="Start the helm chart in non local environments",
         parents=[COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHART_OPTION_PARSER]
     )
-    subparser.set_defaults(func=deploy_args)
+    subparser.set_defaults(func=deploy)
     subparser.add_argument("project", help="which project to deploy")
     subparser.add_argument("git_ref", help="which git hash or tag or branch to deploy")
     subparser.add_argument(
@@ -37,22 +38,8 @@ def parse_args(sub_parser):
     )
 
 
-def deploy_args(args):
-    deploy(
-        args.project,
-        args.git_ref,
-        args.namespace,
-        args.chart,
-        args.dry_run,
-        args.force,
-        args.force_helm,
-        args.repo,
-        args.set_override_values,
-        args.values_files
-    )
-
-
 @container_command
+@expand_namespace
 def deploy(
     project,
     git_ref,
