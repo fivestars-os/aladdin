@@ -45,8 +45,7 @@ The config.json file in the root of your config directory will contain non clust
     },
     "publish": {
         "aws_profile": "abcdefgh",
-        "docker_ecr_repo": "xxxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/",
-        "s3_helm_chart_bucket": "helm-charts-xxxxxxxxxxxxxx"
+        "docker_ecr_repo": "xxxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/"
     }
 }
 ```
@@ -64,7 +63,6 @@ The config.json file in the root of your config directory will contain non clust
 - Publish section:
   - aws_profile: which aws profile to publish your docker image and helm charts to
   - docker_ecr_repo: the ecr path of your aws profile, used to push your docker images to
-  - s3_helm_chart_bucket: which bucket to store your packaged helm charts to
 
 ## Cluster env.sh file
 The env.sh file in each of your subdirectories in your config folder will contain cluster-specific variables that aladdin sources. These variables are mainly used to create your cluster and to get the correct configuration. Here is the example env.sh file from the CLUSTERDEV folder.
