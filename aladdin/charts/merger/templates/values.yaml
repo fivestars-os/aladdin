@@ -1,1 +1,10 @@
-{{- toYaml .Values -}}
+{{- $overLay := get .Values "aladdin.overlay" }}
+{{- $values := unset .Values "aladdin.overlay" }}
+{{- if $overLay }}
+{{/* Enable the injection of render values into other values */}}
+{{- $overLay = tpl (toYaml ($overLay | default "")) (dict "Values" $values) }}
+{{- $overLay = fromYaml $overLay }}
+{{- toYaml (merge $values $overLay) }}
+{{- else }}
+{{- toYaml $values }}
+{{- end }}
