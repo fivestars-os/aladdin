@@ -81,9 +81,9 @@ RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE
 ARG GITHUB_CLI_VERSION=2.57.0
 RUN curl -Ls "https://github.com/cli/cli/releases/download/v$GITHUB_CLI_VERSION/gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture).tar.gz" -o github_cli.tar.gz && \
     tar -xzf github_cli.tar.gz && \
-    chmod +x ./gh_${GITHUB_CLI_VERSION}_linux_$(uname -m)/bin/gh && \
-    mv ./gh_${GITHUB_CLI_VERSION}_linux_$(uname -m)/bin/gh /usr/local/bin/ && \
-    rm -rf github_cli.tar.gz && rm -rf gh_${GITHUB_CLI_VERSION}_linux_$(uname -m) && \
+    chmod +x ./gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture)/bin/gh && \
+    mv ./gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture)/bin/gh /usr/local/bin/ && \
+    rm -rf github_cli.tar.gz && rm -rf gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture) && \
     gh version
 
 ARG KUBE_VERSION=1.29.8
