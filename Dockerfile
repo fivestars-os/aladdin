@@ -80,10 +80,11 @@ RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE
 
 ARG GITHUB_CLI_VERSION=2.57.0
 RUN curl "https://github.com/cli/cli/releases/download/v$GITHUB_CLI_VERSION/gh_$GITHUB_CLI_VERSION_$(uname -s)_$(uname -m).tar.gz" -o github_cli.tar.gz && \
-    unzip github_cli.tar.gz && \
+    tar -xf github_cli.tar.gz && \
     chmod +x ./gh_$GITHUB_CLI_VERSION_$(uname -s)_$(uname -m)/bin/gh && \
-    mv /gh_$GITHUB_CLI_VERSION_$(uname -s)_$(uname -m)/bin/gh /usr/local/bin/
-    rm -rf github_cli.tar.gz
+    mv ./gh_$GITHUB_CLI_VERSION_$(uname -s)_$(uname -m)/bin/gh /usr/local/bin/ && \
+    rm -rf github_cli.tar.gz && \
+    gh version
 
 ARG KUBE_VERSION=1.29.8
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
