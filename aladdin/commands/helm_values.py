@@ -20,7 +20,7 @@ from aladdin.lib.git import Git, clone_and_checkout
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.project_conf import ProjectConf
-from aladdin.lib.utils import working_directory
+from aladdin.lib.utils import working_directory, strtobool
 
 
 def parse_args(sub_parser):
@@ -63,7 +63,7 @@ def helm_values(
     output: str = None,
 ):
     uri = urlparse(uri)
-    params = dict(parse_qsl(uri.query))
+    params = dict(parse_qsl(uri.query, keep_blank_values=True))
     os.environ["CLUSTER_CODE"] = uri.netloc
     repo_name = uri.path.lstrip("/")
     ClusterRules(namespace=namespace)
@@ -72,6 +72,10 @@ def helm_values(
         git_ref or params.get("git-ref") or Git.get_full_hash(),
         f"git@github.com:{git_account}/{repo_name}.git" if repo_name else None
     )
+    if "all" in params:
+        if params.get("all") == "":
+            params["all"] = "true"
+        all_values = strtobool(params.get("all"))
 
     with clone_and_checkout(git_ref, repo_name, debug=HelmRules.debug) as repo_dir:
         current_chart_name = get_current_chart_name()
