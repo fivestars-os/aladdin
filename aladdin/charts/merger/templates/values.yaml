@@ -1,10 +1,8 @@
-{{- $overLay := get .Values "aladdin.overlay" }}
-{{- $values := unset .Values "aladdin.overlay" }}
-{{- if $overLay }}
-{{/* Enable the injection of render values into other values */}}
-{{- $overLay = tpl (toYaml ($overLay | default "")) (dict "Values" $values) }}
-{{- $overLay = fromYaml $overLay }}
-{{- toYaml (merge $values $overLay) }}
-{{- else }}
-{{- toYaml $values }}
+{{- $templateValues := dig "aladdin" "templateValues" 0 .Values.AsMap }}
+{{- $valuesYaml := toYaml .Values }}
+{{- $values := .Values }}
+{{- range untilStep 0 (int $templateValues) 1 }}
+    {{- $valuesYaml = tpl $valuesYaml (dict "Values" $values "Chart" $.Chart) }}
+    {{- $values = fromYaml $valuesYaml }}
 {{- end }}
+{{- $valuesYaml }}
