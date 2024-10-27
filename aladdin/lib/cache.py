@@ -6,6 +6,8 @@ import functools
 import shelve
 from collections import defaultdict
 
+from aladdin.lib.cluster_rules import ClusterRules
+
 
 def certificate_cache(func):
     cache_path = pathlib.Path.home() / ".aladdin" / "cache" / "certificates"
@@ -14,9 +16,9 @@ def certificate_cache(func):
         lambda: datetime.timedelta(hours=1),
         # for new certificates, we want to check the status more frequently
         {
-            "": datetime.timedelta(minutes=5),
-            None: datetime.timedelta(minutes=5),
-        }
+            "": datetime.timedelta(minutes=1),
+            None: datetime.timedelta(minutes=1),
+        },
     )
 
     @functools.wraps(func)
@@ -27,7 +29,11 @@ def certificate_cache(func):
         age = time.time() - data.get("time", 0)
         value = data.get("value")
         ttl = ttls[value]
-        if not data or age > ttl.total_seconds():
+        if (
+            not data
+            or age > ttl.total_seconds()
+            or not ClusterRules().certificate_lookup_cache
+        ):
             value = func(certificate_scope)
             cache[certificate_scope] = {
                 "value": value,
