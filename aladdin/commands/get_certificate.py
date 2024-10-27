@@ -28,7 +28,7 @@ def parse_args(parser):
     subparser.add_argument(
         "--poll-interval",
         type=int,
-        default=10,
+        default=30,
         dest="poll_interval",
         help="Seconds to wait between polls to AWS ACM",
     )
@@ -40,9 +40,9 @@ def get_certificate(
     namespace: str,
     for_cluster: bool = False,
     wait: int = 0,
-    poll_interval: int = 10
+    poll_interval: int = 30
 ):
-    cr = ClusterRules(namespace=namespace)
+    ClusterRules(namespace=namespace)
     cert = None
     timeout_start = time.time()
     while not cert:

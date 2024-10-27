@@ -5,6 +5,7 @@ import logging
 import re
 from hashlib import md5
 
+from aladdin.lib.cache import certificate_cache
 from aladdin.lib.aws.dns_mapping import fill_hostedzone
 from aladdin.lib.cluster_rules import ClusterRules
 
@@ -113,12 +114,14 @@ def get_service_certificate_arn(certificate_scope: str = None) -> str:
     certificate_scope = certificate_scope or ClusterRules().service_certificate_scope
     return _get_certificate_arn(certificate_scope)
 
+
 def get_cluster_certificate_arn(certificate_scope: str = None) -> str:
     certificate_scope = certificate_scope or ClusterRules().cluster_certificate_scope
     return _get_certificate_arn(certificate_scope)
 
-def _get_certificate_arn(certificate_scope) -> str:
 
+@certificate_cache
+def _get_certificate_arn(certificate_scope: str) -> str:
     cert = search_certificate_arn(ClusterRules().boto, certificate_scope)
 
     # Check against None to allow empty string
