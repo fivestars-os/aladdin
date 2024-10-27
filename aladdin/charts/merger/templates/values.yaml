@@ -2,7 +2,7 @@
 {{- $valuesYaml := toYaml .Values }}
 {{- $values := .Values }}
 {{- range untilStep 0 (int $templateValues) 1 }}
-    {{- $valuesYaml = tpl $valuesYaml (dict "Values" $values "Chart" $.Chart) }}
+    {{- $valuesYaml = tpl $valuesYaml (dict "Values" $values "Chart" $.Chart "Release" $.Release) }}
     {{- $values = fromYaml $valuesYaml }}
 {{- end }}
 {{- $valuesYaml }}

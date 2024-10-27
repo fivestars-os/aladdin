@@ -42,6 +42,7 @@ def parse_args(sub_parser):
         help="show all values, including default values",
         dest="all_values",
         action="store_true",
+        default=True,
     )
     parser.add_argument(
         "-o",
@@ -59,7 +60,7 @@ def helm_values(
     uri: str,
     git_ref: str = None,
     chart: str = None,
-    all_values: bool = False,
+    all_values: bool = True,
     output: str = None,
 ):
     uri = urlparse(uri)
