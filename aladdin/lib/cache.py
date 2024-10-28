@@ -39,6 +39,9 @@ def certificate_cache(func):
     @functools.wraps(func)
     @clear_on_error()
     def wrapper(certificate_scope):
+        if not ClusterRules().certificate_lookup_cache:
+            return func(certificate_scope)
+
         cache = shelve.open(str(cache_path))
         data: dict = cache.get(certificate_scope) or {}
 
@@ -48,7 +51,6 @@ def certificate_cache(func):
         if (
             not data
             or age > ttl.total_seconds()
-            or not ClusterRules().certificate_lookup_cache
         ):
             value = func(certificate_scope)
             cache[certificate_scope] = {
