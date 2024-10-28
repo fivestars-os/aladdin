@@ -20,6 +20,7 @@ def clear_on_error():
     except Exception:
         logging.info("Clearing cache due to error")
         shutil.rmtree(cache_root, ignore_errors=True)
+        raise
 
 
 def certificate_cache(func):
@@ -38,7 +39,7 @@ def certificate_cache(func):
     @functools.wraps(func)
     @clear_on_error()
     def wrapper(certificate_scope):
-        cache = shelve.open(cache_path)
+        cache = shelve.open(str(cache_path))
         data: dict = cache.get(certificate_scope) or {}
 
         age = time.time() - data.get("time", 0)
