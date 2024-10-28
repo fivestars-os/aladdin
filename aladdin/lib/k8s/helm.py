@@ -133,6 +133,7 @@ class Helm:
         force=False,
         dry_run=False,
         helm_args: list = None,
+        all_values=True,
         **values,
     ):
         if helm_args is None:
@@ -148,6 +149,8 @@ class Helm:
             "--install",
             f"--namespace={namespace}",
         ]
+        if all_values:
+            command.append(f"--values={chart_path}/values.yaml")
 
         command = self.prepare_command(
             command, chart_path, values_files, namespace, helm_args=helm_args, **values
