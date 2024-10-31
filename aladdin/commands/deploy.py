@@ -75,7 +75,7 @@ def deploy(
             helm_chart_path = ProjectConf().get_helm_chart_path(chart)
 
         helm_args = [
-            f"--values=aladdin://{cluster_code}"
+            f"--values=aladdin://{cluster_code}",
         ]
         values = HelmRules.get_helm_values()
         # Add user-specified values files
