@@ -15,7 +15,7 @@ def _create_ingress_service_tuples(services, dual_dns_prefix_annotation_name):
             annotation_names = []
             try:
                 # create service tuple from annotation dns
-                annotation_name = service.metadata.annotations[
+                annotation_names = service.metadata.annotations[
                     dual_dns_prefix_annotation_name
                 ].split(",")
             except (AttributeError, KeyError, TypeError):
