@@ -77,12 +77,11 @@ def deploy(
         helm_args = [
             f"--values=aladdin://{cluster_code}",
         ]
-        values = HelmRules.get_helm_values()
         # Add user-specified values files
         for file_path in (values_files or []):
             helm_args.append(f"--values={os.path.join(helm_chart_path, 'values', file_path)}")
         # Update with --set-override-values
-        values.update(dict(value.split("=") for value in set_override_values))
+        values = dict(value.split("=") for value in set_override_values)
 
         helm.upgrade(
             HelmRules.get_release_name(chart),
