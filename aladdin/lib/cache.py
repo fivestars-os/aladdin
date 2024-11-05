@@ -5,7 +5,7 @@ import time
 import functools
 import shelve
 import shutil
-from contextlib import contextmanager
+from contextlib import contextmanager, closing
 from collections import defaultdict
 
 from aladdin.lib.cluster_rules import ClusterRules
@@ -42,26 +42,26 @@ def certificate_cache(func):
         if not ClusterRules().certificate_lookup_cache:
             return func(certificate_scope)
 
-        cache = shelve.open(str(cache_path))
-        data: dict = cache.get(certificate_scope) or {}
+        with closing(shelve.open(str(cache_path))) as cache:
+            data: dict = cache.get(certificate_scope) or {}
 
-        age = time.time() - data.get("time", 0)
-        value = data.get("value")
-        ttl = ttls[value]
-        if (
-            not data
-            or age > ttl.total_seconds()
-        ):
-            value = func(certificate_scope)
-            cache[certificate_scope] = {
-                "value": value,
-                "time": time.time(),
-            }
-            cache.close()
-        elif value:
-            logging.info(
-                "Found CACHED certificate %s for %s", value, certificate_scope
-            )
-        return value
+            age = time.time() - data.get("time", 0)
+            value = data.get("value")
+            ttl = ttls[value]
+            if (
+                not data
+                or age > ttl.total_seconds()
+            ):
+                value = func(certificate_scope)
+                cache[certificate_scope] = {
+                    "value": value,
+                    "time": time.time(),
+                }
+            elif value:
+                logging.info(
+                    "Found CACHED certificate %s for %s",
+                    value, certificate_scope
+                )
+            return value
 
     return wrapper
