@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import sys
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager, suppress, nullcontext
 
 from aladdin.lib.utils import working_directory
 from aladdin.config import load_git_configs, ALADDIN_DEV
@@ -96,7 +96,7 @@ class Git:
 
 
 @contextmanager
-def clone_and_checkout(githash, repo_name=None, debug=ALADDIN_DEV):
+def clone_and_checkout(githash, repo_name=None, debug=ALADDIN_DEV, cwd=False):
     current_hash = None
     current_repo = None
     with suppress(subprocess.CalledProcessError):
@@ -110,11 +110,14 @@ def clone_and_checkout(githash, repo_name=None, debug=ALADDIN_DEV):
         current_hash == githash and
         (Git.clean_working_tree() or debug)
     ):
-        yield Git.get_base_directory()
+        dir = Git.get_base_directory()
+        context = working_directory(dir) if cwd else nullcontext()
+        with context:
+            yield dir
         return
 
     if not repo_name:
-        logging.error(f"No repo found or specified")
+        logging.error("No repo found or specified")
         return sys.exit(1)
 
     git_account = load_git_configs()["account"]
@@ -133,4 +136,6 @@ def clone_and_checkout(githash, repo_name=None, debug=ALADDIN_DEV):
                 f"Could not checkout to ref '{githash}' in repo {git_url}. Have you pushed it to remote?"
             )
             return sys.exit(1)
-        yield tmpdirname
+        context = working_directory(tmpdirname) if cwd else nullcontext()
+        with context:
+            yield tmpdirname
