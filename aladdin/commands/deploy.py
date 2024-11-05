@@ -70,9 +70,8 @@ def deploy(
         )
         sys.exit(1)
 
-    with clone_and_checkout(git_ref, repo) as tmpdirname:
-        with working_directory(tmpdirname):
-            helm_chart_path = ProjectConf().get_helm_chart_path(chart)
+    with clone_and_checkout(git_ref, repo, cwd=True):
+        helm_chart_path = ProjectConf().get_helm_chart_path(chart)
 
         helm_args = [
             f"--values=aladdin://{cluster_code}",
