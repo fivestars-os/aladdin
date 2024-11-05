@@ -86,7 +86,6 @@ def deploy(
         helm.upgrade(
             HelmRules.get_release_name(chart),
             helm_chart_path,
-            [],
             namespace,
             force=force_helm,
             dry_run=dry_run,

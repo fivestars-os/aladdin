@@ -128,12 +128,10 @@ class Helm:
         self,
         release_name: str,
         chart_path: str,
-        values_files: List[str],
         namespace: str,
         force=False,
         dry_run=False,
         helm_args: list = None,
-        all_values=True,
         **values,
     ):
         if helm_args is None:
@@ -149,12 +147,12 @@ class Helm:
             "--install",
             f"--namespace={namespace}",
         ]
-        if all_values:
-            command.append(f"--values={chart_path}/values.yaml")
 
-        command = self.prepare_command(
-            command, chart_path, values_files, namespace, helm_args=helm_args, **values
-        )
+        for set_name, set_val in values.items():
+            command.extend(["--set", "{}={}".format(set_name, set_val)])
+
+        if helm_args:
+            command.extend(helm_args)
 
         logger.info("Executing: %s", " ".join(command))
         return subprocess.run(["helm", *command], check=True)
