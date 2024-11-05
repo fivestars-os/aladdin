@@ -12,17 +12,17 @@ def _create_ingress_service_tuples(services, dual_dns_prefix_annotation_name):
             name_port = "%s:%s" % (service.metadata.name, port)
             # create service tuple from default service name
             service_tuples_dict[name_port] = (service.metadata.name, port, service)
-            if dual_dns_prefix_annotation_name:
-                try:
-                    # create service tuple from annotation dns
-                    annotation_name = service.metadata.annotations[
-                        dual_dns_prefix_annotation_name
-                    ]
-                except (AttributeError, KeyError, TypeError):
-                    pass  # no annotation found
-                else:
-                    name_port = "%s:%s" % (annotation_name, port)
-                    service_tuples_dict[name_port] = (annotation_name, port, service)
+            annotation_names = []
+            try:
+                # create service tuple from annotation dns
+                annotation_name = service.metadata.annotations[
+                    dual_dns_prefix_annotation_name
+                ].split(",")
+            except (AttributeError, KeyError, TypeError):
+                pass  # no annotation found
+            for annotation_name in annotation_names:
+                name_port = "%s:%s" % (annotation_name, port)
+                service_tuples_dict[name_port] = (annotation_name, port, service)
 
     return list(service_tuples_dict.values())
 
