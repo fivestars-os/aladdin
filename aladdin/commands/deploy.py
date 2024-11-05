@@ -2,7 +2,7 @@
 import logging
 import os
 import sys
-import tempfile
+import typing
 
 from aladdin.lib.arg_tools import (
     COMMON_OPTION_PARSER, HELM_OPTION_PARSER, CHART_OPTION_PARSER, container_command
@@ -49,7 +49,7 @@ def deploy(
     force=False,
     force_helm=False,
     repo=None,
-    set_override_values=None,
+    set_override_values: typing.List[str] = None,
     values_files=None
 ):
     chart = chart or project
@@ -58,6 +58,7 @@ def deploy(
         set_override_values = []
     helm = Helm()
     cr = ClusterRules(namespace=namespace)
+    cluster_code = os.environ["CLUSTER_CODE"]
     git_account = load_git_configs()["account"]
     git_url = f"git@github.com:{git_account}/{repo}.git"
     git_ref = Git.extract_hash(git_ref, git_url)
@@ -73,23 +74,18 @@ def deploy(
         with working_directory(tmpdirname):
             helm_chart_path = ProjectConf().get_helm_chart_path(chart)
 
-        # We need to use --set-string in case the git ref is all digits
-        helm_args = ["--set-string", f"deploy.imageTag={git_ref}"]
-        values = HelmRules.get_helm_values()
-        values.update({
-            "project.name": project,
-        })
+        helm_args = [
+            f"--values=aladdin://{cluster_code}",
+        ]
         # Add user-specified values files
-        if values_files:
-            for file_path in values_files:
-                helm_args.append(f"--values={os.path.join(helm_chart_path, 'values', file_path)}")
+        for file_path in (values_files or []):
+            helm_args.append(f"--values={os.path.join(helm_chart_path, 'values', file_path)}")
         # Update with --set-override-values
-        values.update(dict(value.split("=") for value in set_override_values))
+        values = dict(value.split("=") for value in set_override_values)
 
         helm.upgrade(
             HelmRules.get_release_name(chart),
             helm_chart_path,
-            cr.values_files,
             namespace,
             force=force_helm,
             dry_run=dry_run,

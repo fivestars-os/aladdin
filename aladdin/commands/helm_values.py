@@ -98,6 +98,7 @@ def helm_values(
                 chart_path,
                 ClusterRules().values_files,
                 ClusterRules().namespace,
+                # We need to use --set-string in case the git ref is all digits
                 helm_args=["--set-string", f"deploy.imageTag={git_ref}"],
                 **HelmRules.get_helm_values(),
             )
