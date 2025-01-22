@@ -1,10 +1,7 @@
 # Troubleshooting
 You may want to first try:
 - Rerunning your aladdin command with `--init` flag
-- Restarting your LOCAL cluster via `k3d cluster delete LOCAL && aladdin --init` and then rerunning your command
 ## Specific Issues
-### InvalidSignatureException
-Fix this by restarting your LOCAL cluster via `k3d cluster delete LOCAL && aladdin --init` and then rerunning your command
 ### Problems with git processing during aladdin deploy or publish
 If your error is something like this:
 ```

@@ -8,8 +8,6 @@ set -eu -o pipefail
 
 # To force the script to do the full check, use the parameter '--force'
 
-#- from : https://github.com/rancher/k3d/releases
-VERSION_K3D="4.4.8"
 #- from : https://github.com/kubernetes/kubernetes/releases
 VERSION_KUBECTL="1.27.13"
 #- from : https://github.com/kubernetes/helm/releases
@@ -18,8 +16,6 @@ VERSION_HELM="3.12.0"
 
 # This script is meant to check and test the necessary tools for using the infra tools.
 #
-# To run k3d :
-# - k3d
 # - kubectl
 # - helm
 
@@ -284,26 +280,6 @@ function install_wget_win(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 function install_wget_mac(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 function install_wget_ubuntu(){ eval $install_cmd wget >/dev/null 2>/dev/null ; }
 
-
-function check_k3d(){ version "$ALADDIN_BIN/k3d version" "$VERSION_K3D" ;}
-
-function install_k3d() {
-    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | K3D_INSTALL_DIR=$ALADDIN_BIN TAG=v${VERSION_K3D} USE_SUDO=false bash
-}
-
-function install_k3d_win(){
-    install_k3d
-}
-function install_k3d_mac(){
-    install_k3d
-}
-function install_k3d_alpine(){
-    install_k3d
-}
-function install_k3d_ubuntu(){
-    install_k3d
-}
-
 function check_kubectl(){ version "$ALADDIN_BIN/kubectl version --client" "Client.*v$VERSION_KUBECTL" ; }
 function install_kubectl_win(){
     typeset url="https://dl.k8s.io/v${VERSION_KUBECTL}/kubernetes-client-windows-amd64.tar.gz"
@@ -353,28 +329,15 @@ function install_git_alpine(){ eval $install_cmd git >/dev/null 2>/dev/null ; }
 function install_git_ubuntu(){ eval $install_cmd git >/dev/null 2>/dev/null ; }
 function check_git(){ has_prog git ; }
 
-function install_python3_win(){ eval $install_cmd python3 >/dev/null 2>/dev/null ; }
-function install_python3_mac(){ eval $install_cmd python3 >/dev/null 2>/dev/null ; }
-function install_python3_alpine(){ eval $install_cmd python3 >/dev/null 2>/dev/null ; }
-function install_python3_ubuntu(){ eval $install_cmd python3 >/dev/null 2>/dev/null ; }
-function check_python3(){ has_prog python3 ; }
-
 function install_awscli_win(){ python3 -m pip install --upgrade awscli >/dev/null 2>/dev/null ; }
 function install_awscli_mac(){ python3 -m pip install --upgrade awscli >/dev/null 2>/dev/null ; }
 function install_awscli_alpine(){ python3 -m pip install --upgrade awscli >/dev/null 2>/dev/null ; }
 function install_awscli_ubuntu(){ pip install --upgrade awscli >/dev/null 2>/dev/null ; }
 function check_awscli(){ has_prog aws ; }
 
-function check_openssl(){ openssl version; }
-function install_openssl_alpine(){ eval $install_cmd ca-certificates && update-ca-certificates && eval $install_cmd ca-certificates openssl; }
-function install_openssl_ubuntu(){ eval $install_cmd ca-certificates && update-ca-certificates && eval $install_cmd ca-certificates openssl; }
-
 function install_jq_alpine(){ eval $install_cmd jq ; }
 function install_jq_ubuntu(){ eval $install_cmd jq ; }
 
-function install_pip_ubuntu(){ eval $install_cmd python-pip ; }
-
-function check_pip(){ has_prog pip; }
 function check_socat(){ has_prog socat ; }
 
 function main(){
@@ -389,11 +352,9 @@ function main(){
                 check_and_warn "apt-cyg            " aptcyg
                 check_and_warn "unzip              " unzip
                 check_and_warn "wget               " wget
-                check_and_install "k3d ($VERSION_K3D)   " k3d
                 check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
                 check_and_install "helm ($VERSION_HELM)       " helm
                 check_and_warn "jq                 " jq
-                #check_and_warn "git                " git
                 check_and_warn "python3            " python3
                 check_and_warn "aws-cli            " awscli
 
@@ -404,11 +365,9 @@ function main(){
             mac)
               check_and_warn "brew               " brew
               check_and_warn "wget               " wget
-              check_and_install "k3d ($VERSION_K3D)        " k3d
               check_and_install "kubectl ($VERSION_KUBECTL)   " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
               check_and_warn "jq                 " jq
-              #check_and_warn "git                " git
               check_and_warn "python3            " python3
               check_and_warn "aws-cli            " awscli
 
@@ -418,11 +377,9 @@ function main(){
             alpine)
               check_and_warn "openssl               " openssl
               check_and_warn "wget                " wget
-              check_and_install "k3d ($VERSION_K3D)  " k3d
               check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
               check_and_warn "jq                 " jq
-              #check_and_warn "git                " git
               check_and_warn "python3            " python3
               check_and_warn "aws-cli            " awscli
 
@@ -431,15 +388,10 @@ function main(){
 
             ;;
             ubuntu)
-              #check_and_install "openssl               " openssl
               check_and_warn "wget                " wget
-              check_and_install "k3d ($VERSION_K3D)  " k3d
               check_and_install "kubectl ($VERSION_KUBECTL)    " kubectl
               check_and_install "helm ($VERSION_HELM)       " helm
               check_and_warn "jq                 " jq
-              #check_and_warn "git                " git
-              check_and_warn "python-pip         " pip
-              check_and_warn "python3            " python3
               check_and_warn "aws-cli            " awscli
 
               # Only validate the script install at the end

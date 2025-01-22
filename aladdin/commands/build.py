@@ -1,8 +1,7 @@
 import argparse
 
-from aladdin.lib.project_conf import ProjectConf
 from aladdin.lib.arg_tools import container_command
-from aladdin.lib.k8s.k3d import K3d
+from aladdin.lib.project_conf import ProjectConf
 
 
 def parse_args(sub_parser):
@@ -20,9 +19,5 @@ def build_args(args):
 @container_command
 def build(build_args):
     tag = "local"
-    k3d = K3d()
     pc = ProjectConf()
     pc.build_docker(env={"HASH": tag}, build_args=build_args)
-    images = pc.get_docker_images()
-    if images:
-        k3d.import_images([f"{image}:{tag}" for image in images])

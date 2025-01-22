@@ -30,7 +30,7 @@
         "help": "Show the history of a helm release"
     },
     "host": {
-        "help": "Give instructions to update local /etc/hosts file for k3d ingress compatibility"
+        "help": "Give instructions to update local /etc/hosts file for local ingress compatibility"
     },
     "load-images": {
         "help": "Import local images"
@@ -39,7 +39,7 @@
         "help": "Export images locally"
     },
     "test-local": {
-        "help": "Test aladdin local commands using a test k3d cluster"
+        "help": "Test aladdin local commands using a test cluster"
     },
     "test-remote": {
         "help": "Test aladdin remote commands on a remote test cluster"

@@ -2,7 +2,7 @@
 
 ## What is Aladdin?
 
-Inspired by the Genie of the Lamp, Aladdin is a command line tool built by Fivestars to simplify kubernetes operations for clusters management and application development. We have done this by combining several command line tools including kops, k3d, docker, kubectl, helm, awscli, and git.
+Inspired by the Genie of the Lamp, Aladdin is a command line tool built by Fivestars to simplify kubernetes operations for clusters management and application development. We have done this by combining several command line tools including kops, docker, kubectl, helm, awscli, and git.
 
 Use aladdin to:
 - Create and manage an aws kubernetes cluster
@@ -17,7 +17,6 @@ The host component is responsible for:
 - Parsing command line options
 - Running any commands to be executed on the host machine
 - Checking and warning about any missing dependencies or installing the dependency in `~/.aladdin/bin` if possible
-- Starting k3d (make sure your docker engine is running before running aladdin!)
 - Pulling the aladdin image
 - Running the aladdin docker container (the container component)
 
@@ -74,12 +73,6 @@ Then run:
 aladdin config set manage.software_dependencies false
 ```
 
-#### k3d
-aladdin uses k3d to support local development
-
-### Local Cluster Resource Configuration
-Currently, you can configure cpu, memory, and disk by going to your docker desktop UI, going to preferences, and then going to resources. The recommended configuration is 2 CPUs, 8GB memory, and 60GB disk.
-
 ## Creating and managing an aws kubernetes cluster
 This is all encapsulated in the [aladdin cluster command](./docs/cluster_cmd.md)
 
@@ -131,7 +124,6 @@ We have several aladdin commands used for development and deployment. Note that 
 - `aladdin create-namespace` create the namespace you pass in.
 - `aladdin delete-namespace` delete the namespace you pass in _after_ removing all the helm packages on that namespace.
 - `aladdin get-dashboard-url` will output the url of your cluster's dashboard assuming it is installed.
-- `aladdin host` give instructions to update your local /etc/hosts file for k3d ingress compatibility.
 - For a complete list of aladdin commands, run `aladdin -h`.
 
 ## Optional arguments to aladdin
@@ -227,7 +219,7 @@ Aladdin supports an ingress per namespace feature. This is off by default. We re
         "ingress_name": "ingress"
     }
 ```
-The "namespace_init" field tells aladdin to install the ingress-nginx project on namespace creation. This will be needed on remote clusters, but not on LOCAL, since k3d comes with that out of the box.
+The "namespace_init" field tells aladdin to install the ingress-nginx project on namespace creation. This will be needed on remote clusters, but not on LOCAL.
 The "ingress_info" field tells aladdin how to sync your ingress. Services installed on a cluster with this feature will want to have their service type set to `NodePort` rather than `LoadBalancer`. This is most easily done by setting it in the values.yaml in your cluster's directory in aladdin config, i.e. adding this:
 ```yaml
   service:

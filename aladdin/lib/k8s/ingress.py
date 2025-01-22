@@ -40,7 +40,7 @@ def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress
     )
     # A little bit of a hack to have the ingress put the port:443 entries before the port:80 entries,
     # so that the port:80 entries take precedence if the service name is the same. Without this
-    # we get ssl errors when accessing services behind the ingress locally because of k3d internals
+    # we get ssl errors when accessing services behind the ingress locally
     service_tuples = sorted(service_tuples, key=lambda x: x[1], reverse=True)
     for dns_prefix, port, service in service_tuples:
         ingress_rule = client.V1IngressRule()
@@ -53,11 +53,13 @@ def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress
                 name=service.metadata.name,
             )
         )
-        ingress_rule.http = client.V1HTTPIngressRuleValue([
-            client.V1HTTPIngressPath(
-                path="/", backend=backend, path_type="ImplementationSpecific"
-            )
-        ])
+        ingress_rule.http = client.V1HTTPIngressRuleValue(
+            [
+                client.V1HTTPIngressPath(
+                    path="/", backend=backend, path_type="ImplementationSpecific"
+                )
+            ]
+        )
 
         ingress.spec.rules.append(ingress_rule)
 
