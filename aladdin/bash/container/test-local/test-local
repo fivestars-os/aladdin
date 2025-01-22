@@ -28,7 +28,7 @@ function test_local {
 function usage {
     cat <<-EOF
 		usage: aladdin test-local [-h]
-          
+
 		optional arguments:
 		  -h, --help            show this help message and exit
 	EOF
@@ -38,7 +38,7 @@ if [[ $# -eq 0 ]]; then
     if $IS_LOCAL && $IS_TESTING; then
         test_local
     else
-        echo >&2 "aladdin test-local should only be called on a local testing k3d cluster"
+        echo >&2 "aladdin test-local should only be called on a local testing cluster"
     fi
 elif [[ "$1" == "-h" || "$1" == "--help" ]]; then
     usage

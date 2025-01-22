@@ -37,9 +37,9 @@ function check_cluster_alias() {
 }
 
 function get_config_variables() {
-    LOCAL_CLUSTER_PROVIDER="k3d"
+    LOCAL_CLUSTER_PROVIDER="none"
     if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        LOCAL_CLUSTER_PROVIDER=$(jq -r '.local_cluster_provider // "k3d"' $HOME/.aladdin/config/config.json)
+        LOCAL_CLUSTER_PROVIDER=$(jq -r '.local_cluster_provider // "none"' $HOME/.aladdin/config/config.json)
     fi
 }
 
@@ -78,50 +78,6 @@ function check_and_handle_init() {
     fi
     if "$ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"; then
         "$SCRIPT_DIR"/infra_k8s_check.sh $infra_k8s_check_args
-    fi
-    if "$IS_LOCAL" && [[ "$LOCAL_CLUSTER_PROVIDER" == "k3d" ]]; then
-        check_or_start_k3d
-    fi
-}
-
-function _start_k3d() {
-    # Get k3d service port
-    K3D_SERVICE_PORT=8081 # default value
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        K3D_SERVICE_PORT=$(jq -r '.k3d.service_port // 8081' $HOME/.aladdin/config/config.json)
-    fi
-    # Get k3d api port
-    K3D_API_PORT=6550 # default value
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        K3D_API_PORT=$(jq -r '.k3d.api_port // 6550' $HOME/.aladdin/config/config.json)
-    fi
-    # start k3d cluster
-    k3d cluster create LOCAL \
-        --api-port "$K3D_API_PORT" \
-        -p "$K3D_SERVICE_PORT:80@loadbalancer" \
-        --image "rancher/k3s:v$KUBERNETES_VERSION-k3s1" \
-        --k3s-server-arg "--tls-san=$HOST_ADDR" \
-        `# these last two are for compatibility with newer linux kernels` \
-        `# https://k3d.io/faq/faq/#solved-nodes-fail-to-start-or-get-stuck-in-notready-state-with-log-nf_conntrack_max-permission-denied` \
-        `# https://github.com/rancher/k3d/issues/607` \
-        --k3s-server-arg "--kube-proxy-arg=conntrack-max-per-core=0" \
-        --k3s-agent-arg "--kube-proxy-arg=conntrack-max-per-core=0"
-}
-
-function check_or_start_k3d() {
-    if docker info | grep "Cgroup Version: 2" > /dev/null && [[ "$KUBERNETES_VERSION" == "1.19.7" ]]; then
-        echoerr "ERROR: Current version of k3d is not compatible with cgroups v2"
-        echoerr "ERROR: If using Docker Desktop please downgrade to v4.2.0"
-    fi
-    if ! k3d cluster list | grep LOCAL > /dev/null; then
-        echoerr "Starting k3d LOCAL cluster... (this will take a moment)"
-        _start_k3d
-    else
-        if ! kubectl version | grep "Server" | grep "$KUBERNETES_VERSION" > /dev/null; then
-            echoerr "k3d detected on the incorrect version, stopping and restarting"
-            k3d cluster delete LOCAL > /dev/null
-            check_or_start_k3d
-        fi
     fi
 }
 

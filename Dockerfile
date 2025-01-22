@@ -104,9 +104,6 @@ ARG ISTIO_VERSION=1.20.8
 RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
     mv /istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
 
-ARG K3D_VERSION=4.4.8
-RUN curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v$K3D_VERSION bash
-
 RUN curl -fsSL https://raw.githubusercontent.com/ahmetb/kubectl-aliases/master/.kubectl_aliases -o /etc/profile.d/kubectl_aliases.sh && \
     chmod +x /etc/profile.d/kubectl_aliases.sh
 
