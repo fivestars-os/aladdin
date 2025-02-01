@@ -12,7 +12,6 @@ ALADDIN_DEV=${ALADDIN_DEV:-false}
 INIT=false
 CLUSTER_CODE=${CLUSTER_CODE:-LOCAL}
 NAMESPACE=${NAMESPACE:-default}
-IS_TERMINAL=true
 SKIP_PROMPTS=false
 KUBERNETES_VERSION="1.27.13"
 
@@ -25,24 +24,6 @@ PATH="$ALADDIN_BIN":"$PATH"
 
 source "$SCRIPT_DIR/shared.sh"
 
-# Check for cluster name aliases and alias them accordingly
-function check_cluster_alias() {
-    if [[ -z "${ALADDIN_CONFIG_DIR:-}" ]]; then
-        return 0
-    fi
-    cluster_alias=$(jq -r --arg key "$CLUSTER_CODE" '.cluster_aliases[$key]' "$ALADDIN_CONFIG_DIR/config.json")
-    if [[ $cluster_alias != null ]]; then
-        export CLUSTER_CODE=$cluster_alias
-    fi
-}
-
-function get_config_variables() {
-    LOCAL_CLUSTER_PROVIDER="none"
-    if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
-        LOCAL_CLUSTER_PROVIDER=$(jq -r '.local_cluster_provider // "none"' $HOME/.aladdin/config/config.json)
-    fi
-}
-
 function get_host_addr() {
     case "$OSTYPE" in
         linux*) HOST_ADDR="172.17.0.1" ;;
@@ -53,7 +34,7 @@ function get_host_addr() {
 function check_and_handle_init() {
     # Check if we need to force initialization
     local last_launched_file init_every current_time previous_run
-    last_launched_file="$HOME/.infra/last_checked_${NAMESPACE}_${CLUSTER_CODE}"
+    last_launched_file="$HOME/.aladdin/infra_k8s_check_${NAMESPACE}_${CLUSTER_CODE}"
     # once per day
     init_every=$((3600 * 24))
     current_time="$(date +'%s')"
@@ -62,13 +43,6 @@ function check_and_handle_init() {
     previous_run="$(cat "$last_launched_file")"
     if [[ "$current_time" -gt "$((${previous_run:-0}+init_every))" || "$previous_run" -gt "$current_time" ]]; then
         INIT=true
-    fi
-    if ! docker image inspect $ALADDIN_IMAGE &> /dev/null; then
-        readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_DIR/config.json")"
-        if [[ "$repo_login_command" != "null" ]]; then
-            eval "$repo_login_command"
-        fi
-        docker pull "$ALADDIN_IMAGE"
     fi
     # Handle initialization logic
     local infra_k8s_check_args=""
@@ -79,22 +53,12 @@ function check_and_handle_init() {
     if "$ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"; then
         "$SCRIPT_DIR"/infra_k8s_check.sh $infra_k8s_check_args
     fi
-}
-
-function set_cluster_helper_vars() {
-    IS_LOCAL="$(_extract_cluster_config_value is_local)"
-    if [[ -z "$IS_LOCAL" ]]; then
-        IS_LOCAL=false
-    fi
-
-    IS_PROD="$(_extract_cluster_config_value is_prod)"
-    if [[ -z "$IS_PROD" ]]; then
-        IS_PROD=false
-    fi
-
-    IS_TESTING="$(_extract_cluster_config_value is_testing)"
-    if [[ -z "$IS_TESTING" ]]; then
-        IS_TESTING=false
+    if ! docker image inspect $ALADDIN_IMAGE &> /dev/null; then
+        readonly repo_login_command="$(jq -r '.aladdin.repo_login_command' "$ALADDIN_CONFIG_DIR/config.json")"
+        if [[ "$repo_login_command" != "null" ]]; then
+            eval "$repo_login_command"
+        fi
+        docker pull "$ALADDIN_IMAGE"
     fi
 }
 
@@ -125,40 +89,12 @@ function pathnorm(){
 }
 
 function confirm_production() {
-    if $IS_TERMINAL ; then  # if this is an interactive shell and not jenkins or piped input, then verify
-        echoerr "Script is running in a terminal. Let us make user aware that this is production";
-        >&2 echo -ne '\033[;31mYou are on production. Please type "production" to continue: \033[0m'; read -r
-        if [[ ! $REPLY = "production" ]]; then
-            echoerr 'Exiting since you did not type production'
-            exit 0
-        fi
-    else
-        echoerr "This is production environment. This script is NOT running in a terminal, hence supressing user prompt to type 'production'";
+    echoerr "Script is running in a terminal. Let us make user aware that this is production";
+    >&2 echo -ne '\033[;31mYou are on production. Please type "production" to continue: \033[0m'; read -r
+    if [[ ! $REPLY = "production" ]]; then
+        echoerr 'Exiting since you did not type production'
+        exit 0
     fi
-}
-
-function handle_ostypes() {
-    case "$OSTYPE" in
-        jenkins*|linux*|darwin*) # Running on jenkins/linux/osx
-            true # use the default pathnorm
-        ;;
-        cygwin*) # Cygwin under windows
-            function pathnorm(){
-                # Normalize the path, the path should exists
-                typeset abspath="$(cd "$1" ; pwd)"
-                echo "${abspath#/cygdrive}"
-            }
-        ;;
-        win*|bsd*|solaris*) # Windows
-            echoerr "Not sure how to launch docker here. Exiting ..."
-            return 1
-        ;;
-        *)
-            echoerr "unknown OS: $OSTYPE"
-            echoerr "Not sure how to launch docker here. Exiting ..."
-            return 1
-        ;;
-    esac
 }
 
 function prepare_volume_mount_options() {
@@ -178,7 +114,7 @@ function prepare_volume_mount_options() {
     if "$ALADDIN_DEV" || "$IS_LOCAL"; then
         if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
             HOST_DIR=$(jq -r .host_dir $HOME/.aladdin/config/config.json)
-            if [[ "$HOST_DIR" == null ]]; then
+            if [[ "$HOST_DIR" == "None" ]]; then
                 # defaults to osx
                 HOST_DIR="$HOME"
             fi
@@ -245,11 +181,7 @@ function enter_docker_container() {
         confirm_production
     fi
 
-    FLAGS="--privileged --rm -i"
-    # Set pseudo-tty only if aladdin is being run from a terminal
-    if $IS_TERMINAL ; then
-        FLAGS+="t"
-    fi
+    FLAGS="--privileged --rm -it"
 
     docker run $FLAGS \
         `# Environment` \
@@ -290,9 +222,6 @@ while [[ $# -gt 0 ]]; do
         -i|--init)
             INIT=true
         ;;
-        --non-terminal)
-            IS_TERMINAL=false
-        ;;
         --skip-prompts)
             SKIP_PROMPTS=true
         ;;
@@ -305,14 +234,10 @@ while [[ $# -gt 0 ]]; do
     shift # past argument or value
 done
 
-set_cluster_helper_vars
 get_host_addr
-check_cluster_alias
-get_config_variables
 exec_host_command "$@"
 exec_host_plugin "$@"
 check_and_handle_init
-handle_ostypes
 prepare_volume_mount_options
 prepare_ssh_options
 enter_docker_container "$@"

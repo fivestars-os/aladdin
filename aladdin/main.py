@@ -1,12 +1,12 @@
 import argparse
+import contextlib
 import logging
 import sys
 
-import verboselogs
 import coloredlogs
+import verboselogs
 
 from aladdin import env
-from aladdin.lib.arg_tools import get_bash_commands, bash_wrapper
 from aladdin.commands import (
     build,
     build_components,
@@ -28,7 +28,13 @@ from aladdin.commands import (
     sync_ingress,
     tail,
     undeploy,
-    version
+    version,
+)
+from aladdin.lib.arg_tools import (
+    EnvStoreAction,
+    EnvStoreTrueAction,
+    bash_wrapper,
+    get_bash_commands,
 )
 
 
@@ -41,6 +47,7 @@ def cli():
         prog="aladdin",
         description="Managing kubernetes projects",
         epilog="If no arguments are specified, the help text is displayed",
+        exit_on_error=False,
     )
     subparsers = parser.add_subparsers(help="aladdin commands")
     subcommands = [
@@ -70,7 +77,8 @@ def cli():
     # We want to have python help include host commands that run in bash portion of aladdin
     # Create list of tuples going from command name to parse args function
     subcommands = [
-        (subcommand.__name__.split(".")[-1], subcommand.parse_args) for subcommand in subcommands
+        (subcommand.__name__.split(".")[-1], subcommand.parse_args)
+        for subcommand in subcommands
     ]
     bash_commands = get_bash_commands()
     bash_command_names = list(map(lambda arg: arg[0], bash_commands))
@@ -82,17 +90,32 @@ def cli():
         subcommand(subparsers)
 
     # Add optional aladdin wide arguments for better help visibility
-    parser.add_argument("--cluster", "-c", help="The cluster name you want to interact with")
-    parser.add_argument("--namespace", "-n", help="The namespace name you want to interact with")
-    parser.add_argument("-i", "--init", action="store_true", help="Force initialization logic")
-    parser.add_argument("--image", help="Use the specified aladdin image (if building it yourself)")
     parser.add_argument(
-        "--skip-prompts",
-        action="store_true",
-        help="Skip confirmation prompts during command execution",
+        "--cluster",
+        "-c",
+        help="The cluster name you want to interact with",
+        dest="CLUSTER_CODE",
+        action=EnvStoreAction,
     )
     parser.add_argument(
-        "--non-terminal", action="store_true", help="Run aladdin container without tty"
+        "--namespace",
+        "-n",
+        help="The namespace name you want to interact with",
+        dest="NAMESPACE",
+        action=EnvStoreAction,
+    )
+    parser.add_argument(
+        "-i",
+        "--init",
+        help="Force initialization logic",
+        dest="INIT",
+        action=EnvStoreTrueAction,
+    )
+    parser.add_argument(
+        "--skip-prompts",
+        help="Skip confirmation prompts during command execution",
+        dest="SKIP_PROMPTS",
+        action=EnvStoreTrueAction,
     )
 
     # Initialize logging across python
@@ -125,7 +148,6 @@ def cli():
     if not sys.argv[1:] or sys.argv[1] in ["-h", "--help"]:
         return parser.print_help()
 
-
     cmd_args = list(filter(lambda arg: not arg.startswith("-"), sys.argv[1:]))
     command = cmd_args[0] if cmd_args else None
 
@@ -134,6 +156,12 @@ def cli():
     # to configure the aladdin config
     if command != "config" and not env.set_config_path():
         return sys.exit(1)
+
+    with contextlib.suppress(argparse.ArgumentError):
+        # loads up arguments and stores them as env variables
+        # fails if the command is bash or plugin, but we still
+        # want the env variables to get configured
+        parser.parse_known_args()
     env.configure_env()
 
     # if it's not a command we know about it might be a plugin

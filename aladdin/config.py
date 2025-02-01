@@ -16,7 +16,9 @@ def load_cluster_configs():
 
 
 def load_cluster_config(cluster):
-    return load_config_from_file(f'{os.environ["ALADDIN_CONFIG_DIR"]}/{cluster}/config.json')
+    return load_config_from_file(
+        f'{os.environ["ALADDIN_CONFIG_DIR"]}/{cluster}/config.json'
+    )
 
 
 def load_namespace_override_config(cluster, namespace):
@@ -54,8 +56,13 @@ def load_user_config() -> dict:
     try:
         return load_config_from_file(path)
     except FileNotFoundError:
-        set_user_config_file({})
-        return {}
+        logger.warning("User config file not found, creating one with default values")
+        default_values = {
+            "config_repo": "git@github.com:fivestars/aladdin-config.git",
+            "plugin_repo": "git@github.com:fivestars/aladdin-plugins.git",
+        }
+        set_user_config_file(default_values)
+        return default_values
 
 
 def set_user_config_file(config: dict):

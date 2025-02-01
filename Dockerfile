@@ -117,3 +117,5 @@ ARG POETRY_VIRTUALENVS_CREATE="false"
 # Poetry needs this to find the venv we created
 ARG VIRTUAL_ENV=/root/.venv
 RUN poetry install --only main
+
+ENV ALADDIN_CONTAINER=1
