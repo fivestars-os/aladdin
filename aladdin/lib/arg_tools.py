@@ -3,10 +3,10 @@ import functools
 import json
 import os
 import sys
-import pkg_resources
 from contextlib import suppress
 from inspect import signature
 
+import pkg_resources
 from kubernetes import config as kube_config
 
 from aladdin.config import PROJECT_ROOT
@@ -49,13 +49,14 @@ def container_command(func=None):
     Decorator to wrap aladdin commands that
     need to be run inside the aladdin container
     """
+
     @functools.wraps(func)
     def _wrapper(*args, **kwargs):
-        # using `CLUSTER_CODE` as tell-tale to know
-        # if we're "in" the aladdin container
-        if not os.getenv("CLUSTER_CODE"):
+        # using `ALADDIN_CONTAINER` as way to know if we're "in" the aladdin container
+        if not os.getenv("ALADDIN_CONTAINER"):
             return bash_wrapper()
         return func(*args, **kwargs)
+
     if not func:
         return container_command
     return _wrapper
@@ -73,6 +74,7 @@ def get_bash_commands():
         def add_command(parser, cmd=bash_cmd, help_msg=bash_help["help"]):
             sub_parser = parser.add_parser(cmd, help=help_msg)
             sub_parser.set_defaults(func=lambda args: bash_wrapper())
+
         commands.append((bash_cmd, add_command))
     return commands
 
@@ -148,3 +150,17 @@ def expand_namespace(func=None):
     if not func:
         return expand_namespace
     return wrapper
+
+
+class EnvActionMixin:
+    def __call__(self, parser, namespace, values, option_string=None):
+        super().__call__(parser, namespace, values, option_string)
+        os.environ[self.dest] = str(getattr(namespace, self.dest))
+
+
+class EnvStoreAction(EnvActionMixin, argparse._StoreAction):
+    pass
+
+
+class EnvStoreTrueAction(EnvActionMixin, argparse._StoreTrueAction):
+    pass

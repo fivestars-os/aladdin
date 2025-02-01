@@ -9,9 +9,9 @@ set -eu -o pipefail
 # To force the script to do the full check, use the parameter '--force'
 
 #- from : https://github.com/kubernetes/kubernetes/releases
-VERSION_KUBECTL="1.27.13"
+VERSION_KUBECTL="1.29.8"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="3.12.0"
+VERSION_HELM="3.17.0"
 
 
 # This script is meant to check and test the necessary tools for using the infra tools.
@@ -37,7 +37,7 @@ RESET_COLOR="$(tput sgr0 2>/dev/null || printf "\e[0m")"
 # Check things are installed
 ############################
 # Do not show the check again if it has already been installed
-ALREADY_INSTALLED_FILE="$HOME/.infra/installed"
+ALREADY_INSTALLED_FILE="$HOME/.aladdin/infra_k8s_check"
 
 ALADDIN_BIN="$HOME/.aladdin/bin"
 

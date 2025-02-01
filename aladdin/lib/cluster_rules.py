@@ -1,19 +1,21 @@
 import os
-import boto3
 from typing import List
+
+import boto3
+
 try:
     from functools import cached_property
 except ImportError:
     # Running on pre-3.8 Python; use backport
     from backports.cached_property import cached_property
 
+from aladdin.config import load_cluster_config, load_namespace_override_config
 from aladdin.lib.arg_tools import get_current_namespace
 from aladdin.lib.utils import singleton, strtobool
-from aladdin.config import load_cluster_config, load_namespace_override_config
 
 
 @singleton
-class ClusterRules(object):
+class ClusterRules:
     def __init__(self, cluster=None, namespace=None):
         self.rules = _cluster_rules(cluster=cluster, namespace=namespace)
         self._namespace = namespace or get_current_namespace()
@@ -90,6 +92,10 @@ class ClusterRules(object):
         return self.rules.get("is_prod", False)
 
     @property
+    def is_testing(self):
+        return self.rules.get("is_testing", False)
+
+    @property
     def ingress_info(self):
         return self.rules.get("ingress_info", None)
 
@@ -152,7 +158,9 @@ def _cluster_rules(cluster=None, namespace=None) -> dict:
     try:
         cluster_config = load_cluster_config(cluster)
     except FileNotFoundError:
-        raise FileNotFoundError(f"Could not find config.json file for cluster {cluster}")
+        raise FileNotFoundError(
+            f"Could not find config.json file for cluster {cluster}"
+        )
 
     try:
         namespace_override_config = load_namespace_override_config(cluster, namespace)

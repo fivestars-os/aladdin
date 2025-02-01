@@ -1,17 +1,19 @@
 """
 Module to configure environment variables used by Aladdin
 """
-import os
+
 import os
 import pathlib
 import subprocess
 from contextlib import suppress
+from pathlib import Path
 from typing import Optional
 
 from jmespath import search
 
 from aladdin import __version__, config
 from aladdin.lib import logging
+from aladdin.lib.cluster_rules import ClusterRules
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +23,14 @@ def configure_env():
     user_config = {}
     with suppress(FileNotFoundError):
         user_config = config.load_user_config()
-    manage_software_dependencies: Optional[bool] = search("manage.software_dependencies", user_config)
+    manage_software_dependencies: Optional[bool] = search(
+        "manage.software_dependencies", user_config
+    )
     os.environ["ALADDIN_MANAGE_SOFTWARE_DEPENDENCIES"] = str(
         # default of True if not specified
-        True if manage_software_dependencies is None else manage_software_dependencies
+        True
+        if manage_software_dependencies is None
+        else manage_software_dependencies
     ).lower()
 
     aladdin_config = {}
@@ -37,8 +43,21 @@ def configure_env():
         # use the aladdin version as the image tag
         os.environ["ALADDIN_IMAGE"] = "{}:{}".format(
             search("aladdin.repo", aladdin_config) or config.ALADDIN_DOCKER_REPO,
-            __version__
+            __version__,
         )
+
+    for key in [
+        "IS_LOCAL",
+        "IS_PROD",
+        "IS_TESTING",
+    ]:
+        os.environ[key] = str(getattr(ClusterRules(), key.lower()))
+
+    for key, default_value in {
+        "local_cluster_provider": "rancher-desktop",
+        "host_dir": str(Path.home()),
+    }.items():
+        os.environ[key.upper()] = str(user_config.get(key, default_value))
 
 
 def set_config_path() -> bool:
@@ -48,10 +67,14 @@ def set_config_path() -> bool:
     any aladdin command, so returning False should be preceded by some
     user-friendly error statement about why we're exiting
     """
-    return set_repo_path("ALADDIN_CONFIG_DIR", "config_dir", "config_repo", required=True)
+    return set_repo_path(
+        "ALADDIN_CONFIG_DIR", "config_dir", "config_repo", required=True
+    )
 
 
-def set_repo_path(env_key: str, dir_key: str, repo_key: str, required: bool = False) -> bool:
+def set_repo_path(
+    env_key: str, dir_key: str, repo_key: str, required: bool = False
+) -> bool:
     """
     Function to set the "dir_key" env var
     Uses git to fetch the latest revision of the repo specified under "repo_key"
@@ -64,7 +87,7 @@ def set_repo_path(env_key: str, dir_key: str, repo_key: str, required: bool = Fa
     err_message = (
         f"Unable to find {repo_key}. "
         f"Please use 'aladdin config set {repo_key} "
-        "<git@github.com:{git_account}/{repo}.git>' "
+        "git@github.com:{git_account}/{repo}.git' "
         f"to set {repo_key} repo"
     )
     try:
@@ -120,10 +143,7 @@ def set_repo_path(env_key: str, dir_key: str, repo_key: str, required: bool = Fa
         we update git tags and checkout the latest revision
         """
         cwd = remote_config_path
-        git_commands = [
-            "git fetch --tags --prune -f",
-            f"git checkout {__version__}"
-        ]
+        git_commands = ["git fetch --tags --prune -f", f"git checkout {__version__}"]
     for command in git_commands:
         try:
             subprocess.run(
@@ -138,7 +158,7 @@ def set_repo_path(env_key: str, dir_key: str, repo_key: str, required: bool = Fa
                 "Failed to fetch aladdin %s (%s) from remote: \n%s",
                 repo_key,
                 repo_value,
-                e.stderr.strip() or e.stdout.strip()
+                e.stderr.strip() or e.stdout.strip(),
             )
             return False
 

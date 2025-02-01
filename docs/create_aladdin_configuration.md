@@ -33,10 +33,6 @@ The config.json file in the root of your config directory will contain non clust
     "aladdin": {
       "repo": "fivestarsos/aladdin"
     },
-    "cluster_aliases": {
-        "DEV": "CLUSTERDEV",
-        "PROD": "CLUSTERPROD"
-    },
     "git": {
         "account": "fivestars-os"
     },

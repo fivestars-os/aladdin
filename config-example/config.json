@@ -2,10 +2,6 @@
     "aladdin": {
       "repo": "fivestarsos/aladdin"
     },
-    "cluster_aliases": {
-        "DEV": "CLUSTERDEV",
-        "PROD": "CLUSTERPROD"
-    },
     "git": {
         "account": "fivestars-os"
     },
