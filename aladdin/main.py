@@ -95,6 +95,7 @@ def cli():
         "-c",
         help="The cluster name you want to interact with",
         dest="CLUSTER_CODE",
+        default="LOCAL",
         action=EnvStoreAction,
     )
     parser.add_argument(
@@ -102,6 +103,7 @@ def cli():
         "-n",
         help="The namespace name you want to interact with",
         dest="NAMESPACE",
+        default="default",
         action=EnvStoreAction,
     )
     parser.add_argument(
@@ -109,12 +111,14 @@ def cli():
         "--init",
         help="Force initialization logic",
         dest="INIT",
+        default=False,
         action=EnvStoreTrueAction,
     )
     parser.add_argument(
         "--skip-prompts",
         help="Skip confirmation prompts during command execution",
         dest="SKIP_PROMPTS",
+        default=False,
         action=EnvStoreTrueAction,
     )
 

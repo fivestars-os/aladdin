@@ -46,6 +46,7 @@ def configure_env():
             __version__,
         )
 
+    os.environ.setdefault("CLUSTER_CODE", "LOCAL")
     for key in [
         "IS_LOCAL",
         "IS_PROD",
