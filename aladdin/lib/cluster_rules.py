@@ -11,10 +11,9 @@ except ImportError:
 
 from aladdin.config import load_cluster_config, load_namespace_override_config
 from aladdin.lib.arg_tools import get_current_namespace
-from aladdin.lib.utils import singleton, strtobool
+from aladdin.lib.utils import strtobool
 
 
-@singleton
 class ClusterRules:
     def __init__(self, cluster=None, namespace=None):
         self.rules = _cluster_rules(cluster=cluster, namespace=namespace)
