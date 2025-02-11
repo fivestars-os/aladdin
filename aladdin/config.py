@@ -11,17 +11,39 @@ PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 ALADDIN_DOCKER_REPO = "fivestarsos/aladdin"
 
 
+emitted_warnings = set()
+
+
+def _should_warn(warning):
+    if warning in emitted_warnings:
+        return False
+    emitted_warnings.add(warning)
+    return True
+
+
+def _warn_missing_aladdin_config():
+    if not os.getenv("ALADDIN_CONFIG_DIR"):
+        if _should_warn("aladdin config directory not set"):
+            logger.warning("aladdin config directory not set")
+        return True
+    return False
+
+
 def load_cluster_configs():
     return load_config()["clusters"]
 
 
 def load_cluster_config(cluster):
+    if _warn_missing_aladdin_config():
+        return {}
     return load_config_from_file(
         f'{os.environ["ALADDIN_CONFIG_DIR"]}/{cluster}/config.json'
     )
 
 
 def load_namespace_override_config(cluster, namespace):
+    if _warn_missing_aladdin_config():
+        return {}
     aladdin_config_dir = os.environ["ALADDIN_CONFIG_DIR"]
     return load_config_from_file(
         f"{aladdin_config_dir}/{cluster}/namespace-overrides/{namespace}/config.json"
@@ -47,6 +69,8 @@ def load_config_from_file(file):
 
 
 def load_config():
+    if _warn_missing_aladdin_config():
+        return {}
     config_dir = os.getenv("ALADDIN_CONFIG_DIR")
     return load_config_from_file(f"{config_dir}/config.json")
 
