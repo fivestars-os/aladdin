@@ -171,7 +171,7 @@ def _cluster_rules(cluster=None, namespace=None) -> dict:
     if namespace_override_config:
         _update_rules(rules, namespace_override_config)
 
-    allowed_namespaces = rules["allowed_namespaces"]
+    allowed_namespaces = rules.get("allowed_namespaces", ["*"])
     if allowed_namespaces != ["*"] and namespace not in allowed_namespaces:
         raise KeyError(f"Namespace {namespace} is not allowed on cluster {cluster}")
 
