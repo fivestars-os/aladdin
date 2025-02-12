@@ -78,3 +78,5 @@ jobs:
         uses: werf/actions/cleanup@v2
         with:
           version: v2.26.6
+        env:
+          WERF_WITHOUT_KUBE: "true"

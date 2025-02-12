@@ -40,4 +40,4 @@ jobs:
 
           werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
 
-          werf build
+          werf build --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
