@@ -24,6 +24,10 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v2
 
+      # QEMU is needed to support multi-platform builds
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       - uses: werf/actions/install@v2
         with:
           version: v2.14.0

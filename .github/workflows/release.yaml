@@ -25,6 +25,10 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v2
 
+      # QEMU is needed to support multi-platform builds
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
       # this will select the right tags depending on the Github event
       # master branch will build the "latest" and "main" Dockerhub tags
       # git tags will build the Dockerhub tag matching the git tag
