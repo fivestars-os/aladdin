@@ -54,7 +54,7 @@ jobs:
           script: |
             const tags = '${{ steps.meta.outputs.tags }}'.split(',')
 
-            return tags.map((tag) => `--tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${tag}`)
+            return tags.map((tag) => `--tag ${tag}`)
 
       - name: werf publish
         run: |
