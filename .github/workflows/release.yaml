@@ -21,9 +21,7 @@ jobs:
       packages: write
       id-token: write
     steps:
-
-      - name: Check Out Repo
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       # QEMU is needed to support multi-platform builds
       - name: Set up QEMU
@@ -64,18 +62,33 @@ jobs:
 
           werf export --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} ${{ steps.werf-args.outputs.result }}
 
+  python:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - run: pip3 install poetry==2.0.1
+
+      - run: poetry build
+
+      - if: github.ref != 'refs/heads/main'
+        continue-on-error: true  # remove once the connection to the PyPi cloud is setup
+        run: poetry publish -r fivestars -u fivestars -p ${{ secrets.PYPI_CLOUD_PASSWORD }}
+
   cleanup:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Fetch all history for all tags and branches
-        run: git fetch --prune --unshallow
+      - run: git fetch --prune --unshallow
 
-      - name: Cleanup
-        uses: werf/actions/cleanup@v2
+      - uses: werf/actions/cleanup@v2
         with:
           version: v2.26.6
         env:

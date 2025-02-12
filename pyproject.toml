@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "aladdin"
-version = "1.29.8.12"
+version = "2.0.0"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
 include = [
@@ -10,7 +10,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8.1"
 boto3 = "^1.21.38"
 cached-property = "1.5.2"
 jmespath = "1.0.1"
@@ -26,7 +26,8 @@ urllib3 = "1.26.12"
 markupsafe = "2.0.1"  # https://github.com/pallets/markupsafe/issues/284
 aws-sso-util = "^4.28.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
+flake8 = "^7.1.1"
 
 [tool.poetry.scripts]
 aladdin = "aladdin.main:cli"
@@ -34,3 +35,8 @@ aladdin = "aladdin.main:cli"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "fivestars"
+url = "https://pypi.internal.fivestars.com/simple/"
+priority = "explicit"
