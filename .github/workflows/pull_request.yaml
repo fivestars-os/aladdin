@@ -35,6 +35,7 @@ jobs:
       - name: werf build
         env:
           WERF_DISABLE_AUTO_HOST_CLEANUP: "1"
+          WERF_BUILDAH_MODE: auto
         run: |
           . $(werf ci-env github --as-file)
 

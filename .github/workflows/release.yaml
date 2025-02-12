@@ -29,6 +29,10 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
+      - uses: werf/actions/install@v2
+        with:
+          version: v2.14.0
+
       # this will select the right tags depending on the Github event
       # master branch will build the "latest" and "main" Dockerhub tags
       # git tags will build the Dockerhub tag matching the git tag
@@ -53,6 +57,7 @@ jobs:
       - name: werf publish
         env:
           WERF_DISABLE_AUTO_HOST_CLEANUP: "1"
+          WERF_BUILDAH_MODE: auto
         run: |
           . $(werf ci-env github --as-file)
 
