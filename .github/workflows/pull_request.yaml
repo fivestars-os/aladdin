@@ -35,11 +35,8 @@ jobs:
       - name: werf build
         env:
           WERF_DISABLE_AUTO_HOST_CLEANUP: "1"
-          WERF_BUILDAH_MODE: auto
         run: |
           . $(werf ci-env github --as-file)
-
-          apt-get install -y buildah uidmap
 
           werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
 
