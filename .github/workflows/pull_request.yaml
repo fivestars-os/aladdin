@@ -14,15 +14,13 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v2
 
-      # QEMU is needed to support multi-platform builds
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Build
-        uses: docker/build-push-action@v2
+      - uses: werf/actions/install@v2
         with:
-          push: false  # don't push to Dockerhub for all PRs
-          platforms: linux/amd64,linux/arm64  # ensure builds succeed for both platforms
+          version: v2.14.0
+
+      - name: Run script
+        run: |
+          . $(werf ci-env github --as-file)
+          werf build
+        env:
+          WERF_DISABLE_AUTO_HOST_CLEANUP: "1"
