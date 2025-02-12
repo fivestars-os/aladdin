@@ -1,0 +1,10 @@
+project: aladdin
+configVersion: 1
+build:
+  platform:
+    - linux/arm64
+    - linux/amd64
+---
+image: aladdin
+context: .
+dockerfile: Dockerfile

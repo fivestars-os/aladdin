@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
-ALADDIN_DOCKER_REPO = "fivestarsos/aladdin"
+ALADDIN_DOCKER_REPO = "ghcr.io/fivestars-os/aladdin/aladdin"
 
 
 emitted_warnings = set()
