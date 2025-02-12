@@ -66,17 +66,12 @@ RUN curl -L \
         -o /usr/local/bin/aws-iam-authenticator && \
     chmod 755 /usr/local/bin/aws-iam-authenticator
 
-ARG DOCKER_VERSION=20.10.22
-RUN curl -fsSL https://get.docker.com -o /tmp/get-docker.sh && \
-    VERSION=$DOCKER_VERSION sh /tmp/get-docker.sh
+ARG DOCKER_VERSION=27.3.1
+RUN curl -fsSL https://get.docker.com | bash -s -- --version ${DOCKER_VERSION}
 
-ARG DOCKER_COMPOSE_VERSION=1.29.2
-RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
+ARG DOCKER_COMPOSE_2_VERSION=v2.32.4
+RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_2_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && \
     chmod 755 /usr/local/bin/docker-compose
-
-ARG DOCKER_COMPOSE_2_VERSION=v2.14.2
-RUN curl -L "https://github.com/docker/compose/releases/download/$DOCKER_COMPOSE_2_VERSION/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose-2 && \
-    chmod 755 /usr/local/bin/docker-compose-2
 
 ARG GITHUB_CLI_VERSION=2.57.0
 RUN curl -Ls "https://github.com/cli/cli/releases/download/v$GITHUB_CLI_VERSION/gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture).tar.gz" -o github_cli.tar.gz && \
