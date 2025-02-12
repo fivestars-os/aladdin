@@ -39,6 +39,8 @@ jobs:
         run: |
           . $(werf ci-env github --as-file)
 
+          apt-get install -y buildah uidmap
+
           werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
 
           werf build
