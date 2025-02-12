@@ -2,13 +2,23 @@
 # At this time it only ensures the docker image is buildable
 # In the future it could run linting, tests, etc
 name: Pull Request
+
 on:
   pull_request:
     branches:
       - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     steps:
 
       - name: Check Out Repo
@@ -18,9 +28,12 @@ jobs:
         with:
           version: v2.14.0
 
-      - name: Run script
-        run: |
-          . $(werf ci-env github --as-file)
-          werf build
+      - name: werf build
         env:
           WERF_DISABLE_AUTO_HOST_CLEANUP: "1"
+        run: |
+          . $(werf ci-env github --as-file)
+
+          werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
+
+          werf build
