@@ -31,7 +31,7 @@ The config.json file in the root of your config directory will contain non clust
 ```
 {
     "aladdin": {
-      "repo": "fivestarsos/aladdin"
+      "repo": "ghcr.io/fivestars-os/aladdin/aladdin"
     },
     "git": {
         "account": "fivestars-os"

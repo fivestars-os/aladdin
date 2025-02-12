@@ -27,14 +27,14 @@ jobs:
       # QEMU is needed to support multi-platform builds
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64, linux/arm64
 
       - uses: werf/actions/install@v2
         with:
-          version: v2.14.0
+          version: v2.26.6
 
       - name: werf build
-        env:
-          WERF_DISABLE_AUTO_HOST_CLEANUP: "1"
         run: |
           . $(werf ci-env github --as-file)
 
