@@ -1,4 +1,4 @@
-FROM python:3.10.6-bullseye as build
+FROM python:3.10.16-bookworm as build
 
 WORKDIR /root/aladdin
 
@@ -25,7 +25,7 @@ ARG VIRTUAL_ENV=/root/.venv
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root --only main
 
-FROM python:3.10.6-slim-bullseye
+FROM python:3.10.16-slim-bookworm
 
 # Remove the default $PS1 manipulation
 RUN rm /etc/bash.bashrc
