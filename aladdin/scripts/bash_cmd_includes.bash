@@ -31,7 +31,7 @@ function with_aladdin_perms_wrapper() {
 }
 
 # Allow aladdin python commands to be accessible directly
-for cmd_path in `ls $ALADDIN_DIR/aladdin/commands/*.py`; do
+for cmd_path in `ls $ALADDIN_DIR/commands/*.py`; do
     cmd=$(basename ${cmd_path%%.*});
     cmd=${cmd//_/-}
     alias $cmd="with_aladdin_perms_wrapper $PY_MAIN $cmd"
@@ -39,11 +39,11 @@ done
 
 alias build-components="with_aladdin_perms_wrapper $PY_MAIN build-components"
 
-for cmd in `ls $ALADDIN_DIR/aladdin/bash/container/`; do
+for cmd in `ls $ALADDIN_DIR/bash/container/`; do
     if [[ "$cmd" == "change-permissions" ]]; then
-        alias $cmd="$ALADDIN_DIR/aladdin/bash/container/$cmd/$cmd"
+        alias $cmd="$ALADDIN_DIR/bash/container/$cmd/$cmd"
     else
-        alias $cmd="with_aladdin_perms_wrapper $ALADDIN_DIR/aladdin/bash/container/$cmd/$cmd"
+        alias $cmd="with_aladdin_perms_wrapper $ALADDIN_DIR/bash/container/$cmd/$cmd"
     fi
 done
 
