@@ -3,11 +3,6 @@ name = "aladdin"
 version = "2.0.0"
 description = ""
 authors = ["Fivestars <dev@fivestars.com>"]
-include = [
-    "aladdin.sh",
-    "aladdin-container.sh",
-    "scripts/*",
-]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
