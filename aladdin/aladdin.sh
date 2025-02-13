@@ -65,7 +65,7 @@ function check_and_handle_init() {
 function exec_host_command() {
     local command_path
 
-    command_path="$ALADDIN_DIR/aladdin/bash/host/$command/$command"
+    command_path="$ALADDIN_DIR/bash/host/$command/$command"
     if [[ -x "$command_path" ]]; then
         exec "$command_path" "$@"
     fi
@@ -101,17 +101,15 @@ function prepare_volume_mount_options() {
     # if this is not production or staging, we are mounting kubernetes folder so that
     # config maps and other settings can be customized by developers
     VOLUME_MOUNTS_OPTIONS=""
-    if "$ALADDIN_DEV"; then
-        VOLUME_MOUNTS_OPTIONS="-v $(pathnorm "$ALADDIN_DIR")/aladdin:/root/aladdin/aladdin"
-        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/scripts:/root/aladdin/scripts"
-        VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm "$ALADDIN_DIR")/aladdin-container.sh:/root/aladdin/aladdin-container.sh"
+    if [ "$ALADDIN_DEV" = true ]; then
+        VOLUME_MOUNTS_OPTIONS="-v $(pathnorm "$ALADDIN_DIR"):/root/aladdin/aladdin"
     fi
 
     if [[ -n "$ALADDIN_PLUGIN_DIR" ]]; then
         VOLUME_MOUNTS_OPTIONS="$VOLUME_MOUNTS_OPTIONS -v $(pathnorm $ALADDIN_PLUGIN_DIR):/root/aladdin-plugins"
     fi
 
-    if "$ALADDIN_DEV" || "$IS_LOCAL"; then
+    if [ "$ALADDIN_DEV" = true ] || [ "$IS_LOCAL" = true ]; then
         if [[ -f "$HOME/.aladdin/config/config.json" ]]; then
             HOST_DIR=$(jq -r .host_dir $HOME/.aladdin/config/config.json)
             if [[ "$HOST_DIR" == "None" ]]; then
@@ -205,7 +203,7 @@ function enter_docker_container() {
         ${SSH_OPTIONS} \
         "$ALADDIN_IMAGE" \
         `# Finally, launch the command` \
-        /root/aladdin/aladdin-container.sh "$@"
+        /root/aladdin/aladdin/aladdin-container.sh "$@"
 }
 
 command="-h" # default command is help

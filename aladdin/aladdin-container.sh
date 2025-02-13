@@ -37,8 +37,8 @@ function exec_command_or_plugin() {
     # Execute a container command in order python command > bash command > container plugin
     local plugin_path command_path
 
-    python_command_path="$ALADDIN_DIR/aladdin/commands/${command//-/_}.py"
-    bash_command_path="$ALADDIN_DIR/aladdin/bash/container/$command/$command"
+    python_command_path="$ALADDIN_DIR/commands/${command//-/_}.py"
+    bash_command_path="$ALADDIN_DIR/bash/container/$command/$command"
     plugin_path="$ALADDIN_PLUGIN_DIR/container/$command/$command"
 
     if [[ -f "$python_command_path" || $command == "--help" || $command == "-h" ]]; then
@@ -92,7 +92,7 @@ function environment_init() {
 
     if $INIT; then
         kubectl cluster-info
-        $ALADDIN_DIR/aladdin/bash/container/create-namespace/create-namespace $NAMESPACE || true
+        $ALADDIN_DIR/bash/container/create-namespace/create-namespace $NAMESPACE || true
         $PY_MAIN namespace-init --force
     fi
 

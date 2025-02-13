@@ -52,7 +52,7 @@ def configure_env():
         "IS_PROD",
         "IS_TESTING",
     ]:
-        os.environ[key] = str(getattr(ClusterRules(), key.lower()))
+        os.environ[key] = str(getattr(ClusterRules(), key.lower())).lower()
 
     for key, default_value in {
         "local_cluster_provider": "rancher-desktop",

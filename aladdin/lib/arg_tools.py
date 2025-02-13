@@ -155,7 +155,10 @@ def expand_namespace(func=None):
 class EnvActionMixin:
     def __call__(self, parser, namespace, values, option_string=None):
         super().__call__(parser, namespace, values, option_string)
-        os.environ[self.dest] = str(getattr(namespace, self.dest))
+        value = getattr(namespace, self.dest)
+        if isinstance(value, bool):
+            value = str(value).lower()
+        os.environ[self.dest] = str(value)
 
 
 class EnvStoreAction(EnvActionMixin, argparse._StoreAction):
