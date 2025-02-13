@@ -323,6 +323,12 @@ function install_jq_alpine(){ eval $install_cmd jq >/dev/null 2>/dev/null ; }
 function install_jq_ubuntu(){ eval $install_cmd jq >/dev/null 2>/dev/null ; }
 function check_jq(){ has_prog jq ; }
 
+function install_gh_win(){ eval $install_cmd gh >/dev/null 2>/dev/null ; }
+function install_gh_mac(){ eval $install_cmd gh >/dev/null 2>/dev/null ; }
+function install_gh_alpine(){ eval $install_cmd gh >/dev/null 2>/dev/null ; }
+function install_gh_ubuntu(){ eval $install_cmd gh >/dev/null 2>/dev/null ; }
+function check_gh(){ has_prog gh ; }
+
 function install_git_win(){ eval $install_cmd git >/dev/null 2>/dev/null ; }
 function install_git_mac(){ eval $install_cmd git >/dev/null 2>/dev/null ; }
 function install_git_alpine(){ eval $install_cmd git >/dev/null 2>/dev/null ; }
@@ -370,6 +376,7 @@ function main(){
               check_and_warn "jq                 " jq
               check_and_warn "python3            " python3
               check_and_warn "aws-cli            " awscli
+              check_and_install "gh              " gh
 
               # Only validate the script install at the end
               echo "$SCRIPT_HASH" > "$ALREADY_INSTALLED_FILE"
