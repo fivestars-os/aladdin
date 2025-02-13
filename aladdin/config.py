@@ -7,7 +7,7 @@ from aladdin.lib import logging, utils
 logger = logging.getLogger(__name__)
 
 
-PROJECT_ROOT = pathlib.Path(__file__).parent.parent
+PROJECT_ROOT = pathlib.Path(__file__).parent
 ALADDIN_DOCKER_REPO = "ghcr.io/fivestars-os/aladdin/aladdin"
 
 
