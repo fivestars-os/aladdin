@@ -87,7 +87,7 @@ def helm_values(
             command = [
                 "helm",
                 "template",
-                str(PROJECT_ROOT / "aladdin/charts/merger"),
+                str(PROJECT_ROOT / "charts/merger"),
                 f"--namespace={namespace}"
             ]
             if all_values:
