@@ -338,6 +338,12 @@ function check_awscli(){ has_prog aws ; }
 function install_jq_alpine(){ eval $install_cmd jq ; }
 function install_jq_ubuntu(){ eval $install_cmd jq ; }
 
+function install_python3_win(){ eval $install_cmd python3 >/dev/null 2>/dev/null ; }
+function install_python3_mac(){ eval $install_cmd python3 >/dev/null 2>/dev/null ; }
+function install_python3_alpine(){ eval $install_cmd python3 >/dev/null 2>/dev/null ; }
+function install_python3_ubuntu(){ eval $install_cmd python3 >/dev/null 2>/dev/null ; }
+function check_python3(){ has_prog python3 ; }
+
 function check_socat(){ has_prog socat ; }
 
 function main(){
