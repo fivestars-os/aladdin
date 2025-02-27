@@ -102,7 +102,7 @@ def cli():
         "--namespace",
         "-n",
         help="The namespace name you want to interact with",
-        dest="NAMESPACE",
+        dest="namespace",
         default="default",
         action=EnvStoreAction,
     )

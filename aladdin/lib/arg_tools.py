@@ -13,14 +13,15 @@ from aladdin.config import PROJECT_ROOT
 
 
 def get_current_namespace():
-    namespace = None
-
-    with suppress(KeyError, kube_config.config_exception.ConfigException):
-        _, active_context = kube_config.list_kube_config_contexts()
-        namespace = active_context["context"]["namespace"]
+    namespace = os.getenv("HELM_NAMESPACE")
 
     if not namespace:
         namespace = os.getenv("NAMESPACE")
+
+    if not namespace:
+        with suppress(KeyError, kube_config.config_exception.ConfigException):
+            _, active_context = kube_config.list_kube_config_contexts()
+            namespace = active_context["context"]["namespace"]
 
     if not namespace:
         namespace = "default"
@@ -33,6 +34,8 @@ def add_namespace_argument(arg_parser):
         "--namespace",
         "-n",
         default=_current_namespace,
+        dest="namespace",
+        action=EnvStoreAction,
         help=f"namespace name, defaults to current: [{_current_namespace}]",
     )
 
@@ -129,7 +132,6 @@ CHARTS_OPTION_PARSER.add_argument(
 )
 
 COMMON_OPTION_PARSER = argparse.ArgumentParser(add_help=False)
-add_namespace_argument(COMMON_OPTION_PARSER)
 
 
 def expand_namespace(func=None):
@@ -158,7 +160,7 @@ class EnvActionMixin:
         value = getattr(namespace, self.dest)
         if isinstance(value, bool):
             value = str(value).lower()
-        os.environ[self.dest] = str(value)
+        os.environ[self.dest.upper()] = str(value)
 
 
 class EnvStoreAction(EnvActionMixin, argparse._StoreAction):
@@ -167,3 +169,6 @@ class EnvStoreAction(EnvActionMixin, argparse._StoreAction):
 
 class EnvStoreTrueAction(EnvActionMixin, argparse._StoreTrueAction):
     pass
+
+
+add_namespace_argument(COMMON_OPTION_PARSER)
