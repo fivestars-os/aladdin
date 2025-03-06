@@ -7,7 +7,9 @@ RUN apt-get update && \
     gettext \
     gcc \
     g++ \
-    curl
+    curl \
+    libssl-dev \
+    libffi-dev
 
 RUN python -m venv /root/.venv
 
