@@ -45,7 +45,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
-            type=ref,event=tag,value=default
+            type=ref,event=tag
 
       - name: werf publish
         run: |
