@@ -63,6 +63,8 @@ jobs:
           werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
 
           werf export --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} ${{ steps.werf-args.outputs.result }}
+          werf export --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            --tag ${{ steps.meta.outputs.version }}
 
   cleanup:
     runs-on: ubuntu-latest
