@@ -24,6 +24,26 @@ jobs:
       - name: Check Out Repo
         uses: actions/checkout@v2
 
+      # TODO Delete
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+
+      - uses: actions/github-script@v7
+        id: werf-args
+        with:
+          result-encoding: string
+          script: |
+            const tags = '${{ steps.meta.outputs.tags }}'.split('\n')
+
+            return tags.map((tag) => `--tag ${tag}`)
+      ## Delete
+
       # QEMU is needed to support multi-platform builds
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
