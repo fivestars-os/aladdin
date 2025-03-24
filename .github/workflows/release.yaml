@@ -47,22 +47,15 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
 
-      - uses: actions/github-script@v7
-        id: werf-args
-        with:
-          result-encoding: string
-          script: |
-            const tags = '${{ steps.meta.outputs.tags }}'.split('\n')
-
-            return tags.map((tag) => `--tag ${tag}`)
-
       - name: werf publish
         run: |
           . $(werf ci-env github --as-file)
 
           werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
 
-          werf export --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} ${{ steps.werf-args.outputs.result }}
+          werf export --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            --tag ${{ fromJSON(steps.meta.outputs.json).tags[0] }} \
+            --tag ${{ fromJSON(steps.meta.outputs.json).tags[1] }} 
 
   cleanup:
     runs-on: ubuntu-latest
