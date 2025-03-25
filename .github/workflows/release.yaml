@@ -10,8 +10,8 @@ on:
       - '*.*.*.*'
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  REGISTRY: index.docker.io
+  IMAGE_NAME: fivestarsos/aladdin
 
 jobs:
   build:
@@ -42,7 +42,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: fivestarsos/aladdin
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=ref,event=tag
@@ -56,20 +56,15 @@ jobs:
 
             return tags.map((tag) => `--tag ${tag}`)
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
-        with:
-          # these creds are setup in the repository secrets
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-
       - name: werf publish
         run: |
           . $(werf ci-env github --as-file)
 
-          werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
+          werf cr login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} ${{ env.REGISTRY }}
 
-          werf export --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} ${{ steps.werf-args.outputs.result }}
+          werf export \
+            --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            ${{ steps.werf-args.outputs.result }}
 
   cleanup:
     runs-on: ubuntu-latest
