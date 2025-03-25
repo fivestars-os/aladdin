@@ -3,8 +3,8 @@ import logging
 import os
 import subprocess
 from contextlib import suppress
-from urllib.parse import urlparse, parse_qsl
 from typing import Optional
+from urllib.parse import parse_qsl, urlparse
 
 import yaml
 
@@ -20,7 +20,7 @@ from aladdin.lib.git import Git, clone_and_checkout
 from aladdin.lib.helm_rules import HelmRules
 from aladdin.lib.k8s.helm import Helm
 from aladdin.lib.project_conf import ProjectConf
-from aladdin.lib.utils import working_directory, strtobool
+from aladdin.lib.utils import strtobool, working_directory
 
 
 def parse_args(sub_parser):
@@ -96,8 +96,8 @@ def helm_values(
             command = Helm().prepare_command(
                 command,
                 chart_path,
-                ClusterRules().values_files,
-                ClusterRules().namespace,
+                ClusterRules(namespace=namespace).values_files,
+                ClusterRules(namespace=namespace).namespace,
                 # We need to use --set-string in case the git ref is all digits
                 helm_args=["--set-string", f"deploy.imageTag={git_ref}"],
                 **HelmRules.get_helm_values(),
