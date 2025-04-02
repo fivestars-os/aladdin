@@ -60,7 +60,7 @@ RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-$AWS_CLI_VERS
     ./aws/install && \
     rm -rf aws && rm awscliv2.zip
 
-ARG AWS_IAM_AUTHENTICATOR_VERSION=0.5.21
+ARG AWS_IAM_AUTHENTICATOR_VERSION=0.6.20
 RUN curl -L \
         "https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v$AWS_IAM_AUTHENTICATOR_VERSION/aws-iam-authenticator_${AWS_IAM_AUTHENTICATOR_VERSION}_$(uname -s)_$(dpkg --print-architecture)" \
         -o /usr/local/bin/aws-iam-authenticator && \
@@ -81,7 +81,7 @@ RUN curl -Ls "https://github.com/cli/cli/releases/download/v$GITHUB_CLI_VERSION/
     rm -rf github_cli.tar.gz && rm -rf gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture) && \
     gh version
 
-ARG KUBE_VERSION=1.29.8
+ARG KUBE_VERSION=1.30.10
 RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
