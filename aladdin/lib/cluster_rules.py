@@ -112,7 +112,7 @@ class ClusterRules:
 
     @property
     def certificate_lookup(self):
-        if strtobool(os.getenv("IS_LOCAL", "false")):
+        if self.is_local:
             return False
         if strtobool(os.getenv("ALADDIN_DISABLE_CERTIFICATE_LOOKUP", "false")):
             return False
@@ -120,7 +120,7 @@ class ClusterRules:
 
     @property
     def certificate_lookup_cache(self):
-        if strtobool(os.getenv("IS_LOCAL", "false")):
+        if self.is_local:
             return False
         if strtobool(os.getenv("ALADDIN_DISABLE_CERTIFICATE_LOOKUP_CACHE", "false")):
             return False
@@ -128,7 +128,7 @@ class ClusterRules:
 
     @property
     def dns_sync(self):
-        if strtobool(os.getenv("IS_LOCAL", "false")) or self.is_local:
+        if self.is_local:
             return False
         if strtobool(os.getenv("ALADDIN_DISABLE_DNS_SYNC", "false")):
             return False
