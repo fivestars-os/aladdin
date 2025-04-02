@@ -1,10 +1,7 @@
 import os
 from contextlib import suppress
 
-from .aws.certificate import (
-    get_cluster_certificate_arn,
-    get_service_certificate_arn,
-)
+from .aws.certificate import get_cluster_certificate_arn, get_service_certificate_arn
 from .cluster_rules import ClusterRules
 from .project_conf import ProjectConf
 from .utils import strtobool
@@ -37,9 +34,11 @@ class HelmRules:
             )
 
         with suppress(FileNotFoundError):
-            values.update({
-                "project.name": ProjectConf().name,
-            })
+            values.update(
+                {
+                    "project.name": ProjectConf().name,
+                }
+            )
 
         values.update(ClusterRules().values)
 

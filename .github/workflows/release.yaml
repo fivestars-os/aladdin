@@ -52,7 +52,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const tags = '${{ steps.meta.outputs.tags }}'.split('\n')
+            const tags = `${{ steps.meta.outputs.tags }}`.split('\n')
 
             return tags.map((tag) => `--tag ${tag}`)
 
