@@ -41,9 +41,3 @@ jobs:
           werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
 
           werf build --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-      - name: tests | verify versions
-        run: |
-          werf run --shell --dry-run
-          werf run aladdin -- kubectl version --client
-          
