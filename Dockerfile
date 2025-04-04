@@ -82,7 +82,7 @@ RUN curl -Ls "https://github.com/cli/cli/releases/download/v$GITHUB_CLI_VERSION/
     gh version
 
 ARG KUBE_VERSION=1.30.10
-RUN curl -L -o /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
+RUN curl -L -o /usr/local/bin/kubectl https://dl.k8s.io/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
 ARG HELM_VERSION=3.17.2
