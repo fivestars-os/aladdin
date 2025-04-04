@@ -82,7 +82,7 @@ RUN curl -Ls "https://github.com/cli/cli/releases/download/v$GITHUB_CLI_VERSION/
     gh version
 
 ARG KUBE_VERSION=1.30.10
-RUN curl -L -o /usr/local/bin/kubectl https://dl.k8s.io/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
+RUN curl -fL -o /usr/local/bin/kubectl https://dl.k8s.io/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
 ARG HELM_VERSION=3.17.2
@@ -91,12 +91,12 @@ RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-he
     ./get-helm-3.sh --version v${HELM_VERSION}
 
 ARG KOPS_VERSION=1.30.4
-RUN curl -Lo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VERSION/kops-linux-$(dpkg --print-architecture) && \
+RUN curl -fLo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VERSION/kops-linux-$(dpkg --print-architecture) && \
     chmod +x ./kops && \
     mv ./kops /usr/local/bin/
 
 ARG ISTIO_VERSION=1.20.8
-RUN curl -L https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
+RUN curl -fL https://istio.io/downloadIstio | ISTIO_VERSION="$ISTIO_VERSION" sh - && \
     mv /istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin/istioctl
 
 RUN curl -fsSL https://raw.githubusercontent.com/ahmetb/kubectl-aliases/master/.kubectl_aliases -o /etc/profile.d/kubectl_aliases.sh && \
