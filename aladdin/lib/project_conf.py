@@ -5,10 +5,10 @@ import subprocess
 import sys
 from collections import namedtuple
 
+from jmespath import search
+
 from aladdin.lib import logging
 from aladdin.lib.utils import singleton
-
-from jmespath import search
 
 DockerContext = namedtuple("DockerContext", ["dockerfile", "context", "name"])
 HelmContext = namedtuple("HelmContext", ["chart_home", "values_files", "name"])
@@ -50,7 +50,7 @@ class ProjectConf:
         self.path, lamp_path = self.project_root_locate(path)
         # load lamp.json
         with open(lamp_path) as f:
-            self.lamp_content = json.load(f)
+            self.lamp_content: dict = json.load(f)
         self.lamp_checker()
 
     @property
@@ -59,7 +59,10 @@ class ProjectConf:
 
     @property
     def build_command(self):
-        cmd = search("build_docker", self.lamp_content) or ["aladdin", "build-components"]
+        cmd = search("build_docker", self.lamp_content) or [
+            "aladdin",
+            "build-components",
+        ]
         return [cmd] if isinstance(cmd, str) else cmd
 
     def build_docker(self, env=None, build_args=None):
@@ -92,6 +95,29 @@ class ProjectConf:
                 return chart
         if not chart_name or len(charts) == 1:
             return charts[0]
+
+    def get_image_tag_aliases(self):
+        aliases = ["deploy.imageTag"]
+        if search("globalImageTag", self.lamp_content):
+            """
+            Setting globalImageTag to true in lamp.json will inject
+            the image tag into "global.image.tag"
+            {
+                "globalImageTag": true
+            }
+            """
+            aliases.append("global.image.tag")
+        lamp_aliases = search("imageTagAlias", self.lamp_content) or []
+        if lamp_aliases:
+            """
+            Setting imageTagAlias in lamp.json will inject
+            the image tag into all the paths in the list
+            {
+                "imageTagAlias": ["global.image.tag", "global.image.tag2"]
+            }
+            """
+            aliases.extend(lamp_aliases)
+        return aliases
 
     def lamp_checker(self):
         try:
