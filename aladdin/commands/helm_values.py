@@ -98,13 +98,17 @@ def helm_values(
             if all_values:
                 command.append(f"--values={chart_path}/values.yaml")
 
+            helm_args = []
+            for alias in ProjectConf().get_image_tag_aliases():
+                # We need to use --set-string in case the git ref is all digits
+                helm_args.extend("--set-string", f"{alias}={git_ref}")
+
             command = Helm().prepare_command(
                 command,
                 chart_path,
                 ClusterRules(namespace=namespace).values_files,
                 ClusterRules(namespace=namespace).namespace,
-                # We need to use --set-string in case the git ref is all digits
-                helm_args=["--set-string", f"deploy.imageTag={git_ref}"],
+                helm_args=helm_args,
                 **HelmRules.get_helm_values(),
             )
 
