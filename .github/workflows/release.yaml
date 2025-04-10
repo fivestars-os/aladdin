@@ -54,7 +54,7 @@ jobs:
           script: |
             const tags = `${{ steps.meta.outputs.tags }}`.split('\n')
 
-            return tags.map((tag) => `--tag ${tag}`)
+            return tags.map((tag) => `--tag ${tag}`).join(' ')
 
       - name: werf publish
         run: |
