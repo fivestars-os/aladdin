@@ -24,7 +24,9 @@ jobs:
     steps:
 
       - name: Check Out Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # QEMU is needed to support multi-platform builds
       - name: Set up QEMU
@@ -34,7 +36,7 @@ jobs:
 
       - uses: werf/actions/install@v2
         with:
-          version: v2.26.6
+          version: v2.34.1
 
       # this will select the right tags depending on the Github event
       # master branch will build the "latest" and "main" Dockerhub tags
