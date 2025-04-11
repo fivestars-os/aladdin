@@ -74,8 +74,10 @@ jobs:
         run: |
           . $(werf ci-env github --as-file)
           werf export \
-            --repo ${{ env.ECR_REGISTRY }}/aladdin-cache \
-            ${{ steps.werf-args.outputs.result }}
+            --repo ${{ env.ECR_REGISTRY }}/%image%-cache \
+            --tag ${{ env.ECR_REGISTRY }}/%image%:${{ github.sha }} \
+            --tag ${{ env.ECR_REGISTRY }}/%image%: ${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+            --tag ${{ env.FS_REGISTRY }}/%image%:latest
 
       - name: werf publish
         run: |
