@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  ECR_REGISTRY: public.ecr.aws/h3y2s2h7
+  ECR_REGISTRY: 281649891004.dkr.ecr.us-east-1.amazonaws.com
 
 jobs:
   build:
@@ -46,14 +46,14 @@ jobs:
           output-credentials: true
 
       - name: Login to ECR
-        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
       - name: werf build (ECR)
         run: |
           . $(werf ci-env github --as-file)
           werf export \
-            --repo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }} \
-            --tag ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            --repo ${{ env.ECR_REGISTRY }}/aladdin \
+            --tag ${{ env.ECR_REGISTRY }}/aladdin:${{ github.sha }}
 
       - name: werf build
         run: |
