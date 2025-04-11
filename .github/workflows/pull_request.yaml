@@ -11,6 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  ECR_REGISTRY: public.ecr.aws
 
 jobs:
   build:
@@ -33,6 +34,22 @@ jobs:
       - uses: werf/actions/install@v2
         with:
           version: v2.26.6
+
+      - name: Configure aws credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::281649891004:role/github-actions
+          aws-region: us-east-1
+          output-credentials: true
+
+      - name: werf build (ECR)
+        run: |
+          . $(werf ci-env github --as-file)
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+          werf export \
+            --repo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }} \
+            ${{ steps.werf-args.outputs.result }}
 
       - name: werf build
         run: |

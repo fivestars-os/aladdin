@@ -12,6 +12,7 @@ on:
 env:
   REGISTRY: index.docker.io
   IMAGE_NAME: fivestarsos/aladdin
+  ECR_REGISTRY: public.ecr.aws
 
 jobs:
   build:
@@ -55,6 +56,22 @@ jobs:
             const tags = `${{ steps.meta.outputs.tags }}`.split('\n')
 
             return tags.map((tag) => `--tag ${tag}`).join(' ')
+
+      - name: Configure aws credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::281649891004:role/github-actions
+          aws-region: us-east-1
+          output-credentials: true
+
+      - name: werf publish (ECR)
+        run: |
+          . $(werf ci-env github --as-file)
+          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+          werf export \
+            --repo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }} \
+            ${{ steps.werf-args.outputs.result }}
 
       - name: werf publish
         run: |
