@@ -63,7 +63,7 @@ jobs:
           werf export \
             --repo ${{ env.ECR_REGISTRY }}/aladdin-cache \
             --tag ${{ env.ECR_REGISTRY }}/aladdin:${{ github.sha }} \
-            --tag ${{ env.FS_REGISTRY }}/aladdin:latest
+            --tag ${{ env.ECR_REGISTRY }}/aladdin:latest
 
       - name: werf build
         run: |

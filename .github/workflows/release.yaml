@@ -77,7 +77,7 @@ jobs:
             --repo ${{ env.ECR_REGISTRY }}/aladdin-cache \
             --tag ${{ env.ECR_REGISTRY }}/aladdin:${{ github.sha }} \
             --tag ${{ env.ECR_REGISTRY }}/aladdin:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
-            --tag ${{ env.FS_REGISTRY }}/aladdin:latest
+            --tag ${{ env.ECR_REGISTRY }}/aladdin:latest
 
       - name: werf publish
         run: |
