@@ -48,6 +48,14 @@ jobs:
             type=ref,event=branch
             type=ref,event=tag
 
+      - name: Configure aws credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::281649891004:role/github-actions
+          aws-region: us-east-1
+          output-credentials: true
+
       - uses: actions/github-script@v7
         id: werf-args
         with:
@@ -57,16 +65,8 @@ jobs:
 
             return tags.map((tag) => `--tag ${tag}`).join(' ')
 
-      - name: Configure aws credentials
-        id: creds
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::281649891004:role/github-actions
-          aws-region: us-east-1
-          output-credentials: true
-
-      - name: Login to  ECR
-        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+      - name: Login to ECR
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
 
       - name: werf publish (ECR)
         run: |
