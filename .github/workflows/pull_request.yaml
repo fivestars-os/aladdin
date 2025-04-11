@@ -11,7 +11,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  ECR_REGISTRY: public.ecr.aws
+  ECR_REGISTRY: public.ecr.aws/h3y2s2h7
 
 jobs:
   build:

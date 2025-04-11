@@ -12,7 +12,7 @@ on:
 env:
   REGISTRY: index.docker.io
   IMAGE_NAME: fivestarsos/aladdin
-  ECR_REGISTRY: public.ecr.aws
+  ECR_REGISTRY: public.ecr.aws/h3y2s2h7
 
 jobs:
   build:
