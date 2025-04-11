@@ -62,8 +62,8 @@ jobs:
           . $(werf ci-env github --as-file)
           werf export \
             --repo ${{ env.ECR_REGISTRY }}/aladdin-cache \
-            --tag ${{ env.ECR_REGISTRY }}/%image%:${{ github.sha }} \
-            --tag ${{ env.FS_REGISTRY }}/%image%:latest
+            --tag ${{ env.ECR_REGISTRY }}/aladdin:${{ github.sha }} \
+            --tag ${{ env.FS_REGISTRY }}/aladdin:latest
 
       - name: werf build
         run: |
