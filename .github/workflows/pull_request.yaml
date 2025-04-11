@@ -37,6 +37,15 @@ jobs:
         with:
           version: v2.34.1
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+
       - name: Configure aws credentials
         id: creds
         uses: aws-actions/configure-aws-credentials@v4
