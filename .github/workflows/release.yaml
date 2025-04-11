@@ -74,7 +74,7 @@ jobs:
         run: |
           . $(werf ci-env github --as-file)
           werf export \
-            --repo ${{ env.ECR_REGISTRY }}/aladdin \
+            --repo ${{ env.ECR_REGISTRY }}/aladdin-cache \
             ${{ steps.werf-args.outputs.result }}
 
       - name: werf publish
