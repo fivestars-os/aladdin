@@ -23,7 +23,9 @@ jobs:
     steps:
 
       - name: Check Out Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # QEMU is needed to support multi-platform builds
       - name: Set up QEMU
@@ -33,7 +35,7 @@ jobs:
 
       - uses: werf/actions/install@v2
         with:
-          version: v2.26.6
+          version: v2.34.1
 
       - name: Configure aws credentials
         id: creds
@@ -51,7 +53,7 @@ jobs:
           . $(werf ci-env github --as-file)
           werf export \
             --repo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }} \
-            ${{ steps.werf-args.outputs.result }}
+            --tag ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
       - name: werf build
         run: |

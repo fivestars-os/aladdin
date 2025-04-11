@@ -65,10 +65,12 @@ jobs:
           aws-region: us-east-1
           output-credentials: true
 
+      - name: Login to  ECR
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
       - name: werf publish (ECR)
         run: |
           . $(werf ci-env github --as-file)
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
           werf export \
             --repo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }} \
             ${{ steps.werf-args.outputs.result }}
