@@ -12,7 +12,7 @@ on:
 env:
   REGISTRY: index.docker.io
   IMAGE_NAME: fivestarsos/aladdin
-  ECR_REGISTRY: public.ecr.aws/h3y2s2h7
+  ECR_REGISTRY: 281649891004.dkr.ecr.us-east-1.amazonaws.com
 
 jobs:
   build:
@@ -66,13 +66,13 @@ jobs:
             return tags.map((tag) => `--tag ${tag}`).join(' ')
 
       - name: Login to ECR
-        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+        run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
       - name: werf publish (ECR)
         run: |
           . $(werf ci-env github --as-file)
           werf export \
-            --repo ${{ env.ECR_REGISTRY }}/${{ env.IMAGE_NAME }} \
+            --repo ${{ env.ECR_REGISTRY }}/aladdin \
             ${{ steps.werf-args.outputs.result }}
 
       - name: werf publish
