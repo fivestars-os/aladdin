@@ -81,7 +81,7 @@ RUN curl -Ls "https://github.com/cli/cli/releases/download/v$GITHUB_CLI_VERSION/
     rm -rf github_cli.tar.gz && rm -rf gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture) && \
     gh version
 
-ARG KUBE_VERSION=1.30.10
+ARG KUBE_VERSION=1.31.9
 RUN curl -fL -o /usr/local/bin/kubectl https://dl.k8s.io/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
@@ -90,7 +90,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-he
     chmod 700 get-helm-3.sh && \
     ./get-helm-3.sh --version v${HELM_VERSION}
 
-ARG KOPS_VERSION=1.30.4
+ARG KOPS_VERSION=1.31.0
 RUN curl -fLo kops https://github.com/kubernetes/kops/releases/download/v$KOPS_VERSION/kops-linux-$(dpkg --print-architecture) && \
     chmod +x ./kops && \
     mv ./kops /usr/local/bin/
