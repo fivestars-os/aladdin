@@ -81,7 +81,7 @@ RUN curl -Ls "https://github.com/cli/cli/releases/download/v$GITHUB_CLI_VERSION/
     rm -rf github_cli.tar.gz && rm -rf gh_${GITHUB_CLI_VERSION}_linux_$(dpkg --print-architecture) && \
     gh version
 
-ARG KUBE_VERSION=1.31.9
+ARG KUBE_VERSION=1.31.11
 RUN curl -fL -o /usr/local/bin/kubectl https://dl.k8s.io/release/v$KUBE_VERSION/bin/linux/$(dpkg --print-architecture)/kubectl && \
     chmod 755 /usr/local/bin/kubectl
 
