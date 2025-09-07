@@ -17,7 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write
       id-token: write
     steps:
 
@@ -71,6 +70,9 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     needs: build
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -78,9 +80,24 @@ jobs:
       - name: Fetch all history for all tags and branches
         run: git fetch --prune --unshallow
 
-      - name: Cleanup
-        uses: werf/actions/cleanup@v2
+      - name: Configure aws credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::281649891004:role/public-github-actions
+          aws-region: us-east-1
+          output-credentials: true
+
+      - name: Login to ECR
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
+
+      - uses: werf/actions/install@v2
         with:
           version: v2.47.3
-        env:
-          WERF_WITHOUT_KUBE: "true"
+
+      - run: |
+          . $(werf ci-env github --as-file)
+
+          werf cleanup \
+            --repo "${{ env.ECR_REGISTRY }}" \
+            --without-kube=true
