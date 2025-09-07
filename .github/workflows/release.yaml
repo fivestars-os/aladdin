@@ -34,7 +34,7 @@ jobs:
 
       - uses: werf/actions/install@v2
         with:
-          version: v2.34.1
+          version: v2.47.3
 
       # this will select the right tags depending on the Github event
       # master branch will build the "latest" and "main" Dockerhub tags
@@ -81,6 +81,6 @@ jobs:
       - name: Cleanup
         uses: werf/actions/cleanup@v2
         with:
-          version: v2.34.1
+          version: v2.47.3
         env:
           WERF_WITHOUT_KUBE: "true"

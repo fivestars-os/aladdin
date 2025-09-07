@@ -56,7 +56,7 @@ RUN pip install --upgrade pip setuptools wheel && \
 
 ARG AWS_CLI_VERSION=2.8.11
 RUN curl https://awscli.amazonaws.com/awscli-exe-linux-$(uname -m)-$AWS_CLI_VERSION.zip -o awscliv2.zip && \
-    unzip awscliv2.zip && \
+    unzip -q awscliv2.zip && \
     ./aws/install && \
     rm -rf aws && rm awscliv2.zip
 

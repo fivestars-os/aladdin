@@ -33,7 +33,7 @@ jobs:
 
       - uses: werf/actions/install@v2
         with:
-          version: v2.34.1
+          version: v2.47.3
 
       - name: Docker meta
         id: meta
