@@ -9,7 +9,6 @@
         "label": "app"
     },
     "publish": {
-        "aws_profile": "abcdefgh",
         "docker_ecr_repo": "xxxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/"
     }
 }

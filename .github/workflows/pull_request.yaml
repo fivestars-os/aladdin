@@ -9,9 +9,7 @@ on:
       - main
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-  ECR_REGISTRY: 281649891004.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: public.ecr.aws/fivestars/aladdin
 
 jobs:
   build:
@@ -41,7 +39,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.ECR_REGISTRY }}
           tags: |
             type=ref,event=branch
             type=ref,event=tag
@@ -50,25 +48,17 @@ jobs:
         id: creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::281649891004:role/github-actions
+          role-to-assume: arn:aws:iam::281649891004:role/public-github-actions
           aws-region: us-east-1
           output-credentials: true
 
       - name: Login to ECR
         run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
-      - name: werf build (ECR)
-        run: |
-          . $(werf ci-env github --as-file)
-          werf export \
-            --repo ${{ env.ECR_REGISTRY }}/aladdin-cache \
-            --tag ${{ env.ECR_REGISTRY }}/aladdin:${{ github.sha }} \
-            --tag ${{ env.ECR_REGISTRY }}/aladdin:latest
-
       - name: werf build
         run: |
           . $(werf ci-env github --as-file)
 
-          werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
-
-          werf build --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          werf export \
+            --repo ${{ env.ECR_REGISTRY }} \
+            --tag ${{ env.ECR_REGISTRY }}:${{ github.sha }}

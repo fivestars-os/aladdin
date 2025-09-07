@@ -1,5 +1,5 @@
-# This workflow is setup to build and publish aladdin to Dockerhub
-name: Push to Docker Hub
+# This workflow is setup to build and publish aladdin to ECR
+name: Push to ECR
 
 on:
   push:
@@ -10,9 +10,7 @@ on:
       - '*.*.*.*'
 
 env:
-  REGISTRY: index.docker.io
-  IMAGE_NAME: fivestarsos/aladdin
-  ECR_REGISTRY: 281649891004.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REGISTRY: public.ecr.aws/fivestars/aladdin
 
 jobs:
   build:
@@ -45,7 +43,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.ECR_REGISTRY }}
           tags: |
             type=ref,event=branch
             type=ref,event=tag
@@ -54,40 +52,21 @@ jobs:
         id: creds
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::281649891004:role/github-actions
+          role-to-assume: arn:aws:iam::281649891004:role/public-github-actions
           aws-region: us-east-1
           output-credentials: true
 
-      - uses: actions/github-script@v7
-        id: werf-args
-        with:
-          result-encoding: string
-          script: |
-            const tags = `${{ steps.meta.outputs.tags }}`.split('\n')
-
-            return tags.map((tag) => `--tag ${tag}`).join(' ')
-
       - name: Login to ECR
         run: aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
-
-      - name: werf publish (ECR)
-        run: |
-          . $(werf ci-env github --as-file)
-          werf export \
-            --repo ${{ env.ECR_REGISTRY }}/aladdin-cache \
-            --tag ${{ env.ECR_REGISTRY }}/aladdin:${{ github.sha }} \
-            --tag ${{ env.ECR_REGISTRY }}/aladdin:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }} \
-            --tag ${{ env.ECR_REGISTRY }}/aladdin:latest
 
       - name: werf publish
         run: |
           . $(werf ci-env github --as-file)
 
-          werf cr login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} ${{ env.REGISTRY }}
-
           werf export \
-            --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            ${{ steps.werf-args.outputs.result }}
+            --repo ${{ env.ECR_REGISTRY }} \
+            --tag ${{ env.ECR_REGISTRY }}:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
 
   cleanup:
     runs-on: ubuntu-latest
@@ -102,6 +81,6 @@ jobs:
       - name: Cleanup
         uses: werf/actions/cleanup@v2
         with:
-          version: v2.26.6
+          version: v2.34.1
         env:
           WERF_WITHOUT_KUBE: "true"
