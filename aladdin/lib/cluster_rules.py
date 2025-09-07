@@ -136,7 +136,7 @@ class ClusterRules:
 
     @cached_property
     def boto(self):
-        return boto3.Session(profile_name=self.aws_profile)
+        return boto3.Session()
 
 
 def _cluster_rules(cluster=None, namespace=None) -> dict:

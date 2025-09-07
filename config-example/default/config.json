@@ -1,5 +1,4 @@
 {
-    "aws_profile": "abcdefgh",
     "allowed_namespaces": [
         "default", "kube-system"
     ],

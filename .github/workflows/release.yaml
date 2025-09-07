@@ -1,5 +1,5 @@
-# This workflow is setup to build and publish aladdin to Dockerhub
-name: Push to Docker Hub
+# This workflow is setup to build and publish aladdin to ECR
+name: Push to ECR
 
 on:
   push:
@@ -10,8 +10,7 @@ on:
       - '*.*.*.*'
 
 env:
-  REGISTRY: index.docker.io
-  IMAGE_NAME: fivestarsos/aladdin
+  ECR_REGISTRY: public.ecr.aws/fivestars/aladdin
 
 jobs:
   build:
@@ -23,7 +22,9 @@ jobs:
     steps:
 
       - name: Check Out Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # QEMU is needed to support multi-platform builds
       - name: Set up QEMU
@@ -33,7 +34,7 @@ jobs:
 
       - uses: werf/actions/install@v2
         with:
-          version: v2.26.6
+          version: v2.47.3
 
       # this will select the right tags depending on the Github event
       # master branch will build the "latest" and "main" Dockerhub tags
@@ -42,29 +43,30 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.ECR_REGISTRY }}
           tags: |
             type=ref,event=branch
             type=ref,event=tag
 
-      - uses: actions/github-script@v7
-        id: werf-args
+      - name: Configure aws credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          result-encoding: string
-          script: |
-            const tags = `${{ steps.meta.outputs.tags }}`.split('\n')
+          role-to-assume: arn:aws:iam::281649891004:role/public-github-actions
+          aws-region: us-east-1
+          output-credentials: true
 
-            return tags.map((tag) => `--tag ${tag}`).join(' ')
+      - name: Login to ECR
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
       - name: werf publish
         run: |
           . $(werf ci-env github --as-file)
 
-          werf cr login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} ${{ env.REGISTRY }}
-
           werf export \
-            --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
-            ${{ steps.werf-args.outputs.result }}
+            --repo ${{ env.ECR_REGISTRY }} \
+            --tag ${{ env.ECR_REGISTRY }}:${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}
+
 
   cleanup:
     runs-on: ubuntu-latest
@@ -79,6 +81,6 @@ jobs:
       - name: Cleanup
         uses: werf/actions/cleanup@v2
         with:
-          version: v2.26.6
+          version: v2.47.3
         env:
           WERF_WITHOUT_KUBE: "true"

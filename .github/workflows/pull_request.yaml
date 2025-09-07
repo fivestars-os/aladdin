@@ -9,8 +9,7 @@ on:
       - main
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  ECR_REGISTRY: public.ecr.aws/fivestars/aladdin
 
 jobs:
   build:
@@ -22,7 +21,9 @@ jobs:
     steps:
 
       - name: Check Out Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       # QEMU is needed to support multi-platform builds
       - name: Set up QEMU
@@ -32,12 +33,32 @@ jobs:
 
       - uses: werf/actions/install@v2
         with:
-          version: v2.26.6
+          version: v2.47.3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.ECR_REGISTRY }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+
+      - name: Configure aws credentials
+        id: creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::281649891004:role/public-github-actions
+          aws-region: us-east-1
+          output-credentials: true
+
+      - name: Login to ECR
+        run: aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_REGISTRY }}
 
       - name: werf build
         run: |
           . $(werf ci-env github --as-file)
 
-          werf cr login -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }} ${{ env.REGISTRY }}
-
-          werf build --repo ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          werf export \
+            --repo ${{ env.ECR_REGISTRY }} \
+            --tag ${{ env.ECR_REGISTRY }}:${{ github.sha }}

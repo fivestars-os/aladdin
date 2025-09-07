@@ -40,7 +40,6 @@ The config.json file in the root of your config directory will contain non clust
         "label": "app"
     },
     "publish": {
-        "aws_profile": "abcdefgh",
         "docker_ecr_repo": "xxxxxxxxxxxx.dkr.ecr.us-east-1.amazonaws.com/"
     }
 }
@@ -57,7 +56,6 @@ The config.json file in the root of your config directory will contain non clust
 - Kubernetes section:
   - label: which label to use when filter kubernetes resources. Several aladdin commands use this label to specify which exact resource to modify.
 - Publish section:
-  - aws_profile: which aws profile to publish your docker image and helm charts to
   - docker_ecr_repo: the ecr path of your aws profile, used to push your docker images to
 
 ## Cluster env.sh file
@@ -101,7 +99,6 @@ The config.json file in each of your subdirectories in your config folder will c
 
 ```jsonc
 {
-    "aws_profile": "abcdefgh",
     "cluster_name": "CLUSTERDEV",
     "certificate_lookup": true,  // optional, defaults to true
     "root_dns": "clusterdev.exampledev.info",
@@ -115,7 +112,6 @@ The config.json file in each of your subdirectories in your config folder will c
     "dual_dns_prefix_annotation_name": "dns-name"
 }
 ```
-- aws_profile section: which aws profile you are interacting with for the cluster
 - cluster_name section: the name of your cluster. This will match the name of the subdirectory in most cases.
 - root_dns section: the dns for your cluster. This should match the DNS_ZONE from your env.sh file in most cases. This is used by aladdin when it maps dns for each of your externally accessible services.
 - service_dns_suffix section: aladdin maps your services to `{service name}.{namespace}.{root_dns}`, and thus, will request a certificate for `*.{namespace}.{root_dns}`. By setting this, it will instead request a certificate for `*.{service_dns_suffix}`. Note that you will still need manually to map your service from `{service name}.{service_dns_suffix}` to `{service name}.{namespace}.{root_dns}`.
