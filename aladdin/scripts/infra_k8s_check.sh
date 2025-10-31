@@ -9,9 +9,9 @@ set -eu -o pipefail
 # To force the script to do the full check, use the parameter '--force'
 
 #- from : https://github.com/kubernetes/kubernetes/releases
-VERSION_KUBECTL="1.29.8"
+VERSION_KUBECTL="1.32.7"
 #- from : https://github.com/kubernetes/helm/releases
-VERSION_HELM="3.17.0"
+VERSION_HELM="3.18.6"
 
 
 # This script is meant to check and test the necessary tools for using the infra tools.
