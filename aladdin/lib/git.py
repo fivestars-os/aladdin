@@ -1,16 +1,15 @@
 import logging
 import os
 import subprocess
-import tempfile
 import sys
-from contextlib import contextmanager, suppress, nullcontext
+import tempfile
+from contextlib import contextmanager, nullcontext, suppress
 
+from aladdin.config import ALADDIN_DEV, load_git_configs
 from aladdin.lib.utils import working_directory
-from aladdin.config import load_git_configs, ALADDIN_DEV
 
 
 class Git:
-    SHORT_HASH_SIZE = 10
 
     @classmethod
     def clone(cls, git_repo, dest_path):
@@ -34,7 +33,7 @@ class Git:
 
     @classmethod
     def get_hash(cls):
-        return cls._full_hash_to_short_hash(cls.get_full_hash())
+        return cls.get_full_hash()
 
     @classmethod
     def get_full_hash(cls):
@@ -54,10 +53,6 @@ class Git:
         return subprocess.check_output(["git", "rev-parse", "--show-toplevel"], encoding="utf-8").strip()
 
     @classmethod
-    def _full_hash_to_short_hash(cls, full_hash):
-        return full_hash[: cls.SHORT_HASH_SIZE]
-
-    @classmethod
     def extract_hash(cls, value, git_url=None):
         """
         Get a hash out of whatever is the value given.
@@ -65,14 +60,13 @@ class Git:
         """
         if not git_url:
             # There is no way to check anything
-            return cls._full_hash_to_short_hash(str(value))
+            return str(value)
 
         ls_remote_res = cls._get_hash_ls_remote(value, git_url)
         if ls_remote_res:
-            return cls._full_hash_to_short_hash(str(ls_remote_res))
-
+            return str(ls_remote_res)
         # Default is to return the value, truncated to the size of a hash
-        return cls._full_hash_to_short_hash(value)
+        return str(value)
 
     @classmethod
     def _get_hash_ls_remote(cls, ref, url):

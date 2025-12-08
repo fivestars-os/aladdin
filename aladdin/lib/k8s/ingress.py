@@ -38,7 +38,7 @@ def build_ingress(services, dns_suffix, dual_dns_prefix_annotation_name, ingress
     service_tuples = _create_ingress_service_tuples(
         services, dual_dns_prefix_annotation_name
     )
-    # A little bit of a hack to have the ingress put the port:443 entries before the port:80 entries,
+    # A little bit of a hack to have the ingress put the port:443 entries before the port:80 entries
     # so that the port:80 entries take precedence if the service name is the same. Without this
     # we get ssl errors when accessing services behind the ingress locally
     service_tuples = sorted(service_tuples, key=lambda x: x[1], reverse=True)
