@@ -2,12 +2,12 @@ import logging
 import os
 import subprocess
 
+from aladdin.lib.arg_tools import container_command
 from aladdin.lib.docker import DockerCommands, Tag
 from aladdin.lib.git import Git, clone_and_checkout
-from aladdin.lib.utils import working_directory
 from aladdin.lib.project_conf import ProjectConf
 from aladdin.lib.publish_rules import PublishRules
-from aladdin.lib.arg_tools import container_command
+from aladdin.lib.utils import working_directory
 
 
 def parse_args(sub_parser):
@@ -47,7 +47,8 @@ def parse_args(sub_parser):
         help="which git repo to pull from, which should be used if it differs from chart name",
     )
     remote_options_group.add_argument(
-        "--git-ref", help="which commit hash or branch or tag to checkout and publish from"
+        "--git-ref",
+        help="which commit hash or branch or tag to checkout and publish from",
     )
     remote_options_group.add_argument(
         "--init-submodules",
@@ -68,12 +69,7 @@ def publish_args(args):
     if args.build_local:
         publish(args.build_only)
     else:
-        publish_clean(
-            args.build_only,
-            args.repo,
-            args.git_ref,
-            args.init_submodules
-        )
+        publish_clean(args.build_only, args.repo, args.git_ref, args.init_submodules)
 
 
 def publish(build_only):
@@ -97,9 +93,7 @@ def publish(build_only):
     logging.info(f"Ran publish on {pc.name} with git hash: {git_hash}")
 
 
-def publish_clean(
-    build_only, repo, git_ref, init_submodules
-):
+def publish_clean(build_only, repo, git_ref, init_submodules):
     repo = repo or ProjectConf().name
     ref = git_ref or Git.get_full_hash()
     with clone_and_checkout(ref, repo) as tmpdirname:

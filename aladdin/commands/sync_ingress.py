@@ -2,8 +2,8 @@ import logging
 
 from aladdin.lib.arg_tools import add_namespace_argument, container_command
 from aladdin.lib.cluster_rules import ClusterRules
-from aladdin.lib.k8s.kubernetes import Kubernetes
 from aladdin.lib.k8s.ingress import build_ingress
+from aladdin.lib.k8s.kubernetes import Kubernetes
 
 
 def parse_args(sub_parser):

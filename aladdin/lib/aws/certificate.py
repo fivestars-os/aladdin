@@ -1,12 +1,13 @@
 """
 Helpers function to get/create certificates the way we want
 """
+
 import logging
 import re
 from hashlib import md5
 
-from aladdin.lib.cache import certificate_cache
 from aladdin.lib.aws.dns_mapping import fill_hostedzone
+from aladdin.lib.cache import certificate_cache
 from aladdin.lib.cluster_rules import ClusterRules
 
 
@@ -20,7 +21,9 @@ def search_certificate_arn(boto_session, dns_name):
         log.info("Found ISSUED certificate %s for %s", certicate, dns_name)
         return certicate
 
-    certicate = _search_certificate(acm, dns_name, CertificateStatuses=["PENDING_VALIDATION"])
+    certicate = _search_certificate(
+        acm, dns_name, CertificateStatuses=["PENDING_VALIDATION"]
+    )
     if certicate:
         _validate_certificate_with_retry(boto_session, certicate)
 
@@ -36,6 +39,7 @@ def search_certificate_arn(boto_session, dns_name):
 
     # No cert found
     return None
+
 
 def new_certificate_arn(boto_session, dns_name):
     """Ask for a new certificate"""
